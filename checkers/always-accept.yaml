@@ -1,4 +1,3 @@
-name: always-accept
 version: "1.0"
 build: "true"
 run: exit 0 #

@@ -4,65 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lean Kernel Arena</title>
+    <link rel="stylesheet" href="https://unpkg.com/chota@latest">
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-    <header>
-        <h1>Lean Kernel Arena</h1>
-    </header>
+    <div class="container">
+        <header class="is-center">
+            <h1>Lean Kernel Arena</h1>
+        </header>
 
-    <main>
-        <section id="tests">
-            <h2>Tests</h2>
-            {% if tests %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for test in tests %}
-                    <tr>
-                        <td>{{ test.name }}</td>
-                        <td>{{ test.type }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>No tests defined.</p>
-            {% endif %}
-        </section>
+        <main>
+            <section class="card">
+                <header>
+                    <h3>Tests</h3>
+                </header>
+                {% if tests %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in tests %}
+                        <tr>
+                            <td>{{ test.name }}</td>
+                            <td>{{ test.type }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-grey">No tests defined.</p>
+                {% endif %}
+            </section>
 
-        <section id="checkers">
-            <h2>Checkers</h2>
-            {% if checkers %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Version</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for checker in checkers %}
-                    <tr>
-                        <td>{{ checker.name }}</td>
-                        <td>{{ checker.version }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>No checkers defined.</p>
-            {% endif %}
-        </section>
-    </main>
+            <section class="card">
+                <header>
+                    <h3>Checkers</h3>
+                </header>
+                {% if checkers %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for checker in checkers %}
+                        <tr>
+                            <td>{{ checker.name }}</td>
+                            <td>{{ checker.version }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-grey">No checkers defined.</p>
+                {% endif %}
+            </section>
+        </main>
 
-    <footer>
-        <p>Lean Kernel Arena</p>
-    </footer>
+        <footer class="is-center text-grey">
+            <p>Lean Kernel Arena</p>
+        </footer>
+    </div>
 </body>
 </html>

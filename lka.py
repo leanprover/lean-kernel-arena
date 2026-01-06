@@ -26,6 +26,8 @@ def load_yaml_files(directory: Path) -> list[dict]:
         with open(file, "r") as f:
             data = yaml.safe_load(f)
             data["_file"] = file.name
+            # Derive name from filename (without .yaml extension)
+            data["name"] = file.stem
             items.append(data)
     return items
 
@@ -43,7 +45,7 @@ def load_checkers() -> list[dict]:
 def find_test_by_name(name: str) -> dict | None:
     """Find a test by name."""
     for test in load_tests():
-        if test.get("name") == name:
+        if test["name"] == name:
             return test
     return None
 
@@ -51,7 +53,7 @@ def find_test_by_name(name: str) -> dict | None:
 def find_checker_by_name(name: str) -> dict | None:
     """Find a checker by name."""
     for checker in load_checkers():
-        if checker.get("name") == name:
+        if checker["name"] == name:
             return checker
     return None
 
@@ -61,41 +63,113 @@ def find_checker_by_name(name: str) -> dict | None:
 # =============================================================================
 
 
-def create_test_lake(test: dict, output_dir: Path) -> bool:
-    """Create a test from a lake project."""
+def setup_work_dir(test: dict, output_dir: Path) -> Path | None:
+    """Set up the working directory for a test.
+    
+    Handles three cases:
+    - url: Clone a git repository
+    - dir: Use a local directory
+    - neither: Create an empty directory
+    
+    Returns the working directory path, or None on failure.
+    """
     name = test["name"]
-    url = test["url"]
+    url = test.get("url")
+    local_dir = test.get("dir")
     ref = test.get("ref")
-    rev = test["rev"]
-    module = test["module"]
-    pre_build = test.get("pre-build")
+    rev = test.get("rev")
 
     work_dir = output_dir / "work" / name
+    
+    # Clean up existing work directory
+    if work_dir.exists():
+        shutil.rmtree(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    # Clone the repository
-    print(f"  Cloning {url}...")
-    clone_cmd = ["git", "clone", "--depth=1"]
-    if ref:
-        clone_cmd.extend(["--branch", ref])
-    clone_cmd.extend([url, str(work_dir / "repo")])
+    if url:
+        # Clone from git repository
+        print(f"  Cloning {url}...")
+        clone_cmd = ["git", "clone"]
+        if ref:
+            clone_cmd.extend(["--branch", ref])
+        clone_cmd.extend([url, str(work_dir / "repo")])
 
-    result = subprocess.run(clone_cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"  Error cloning: {result.stderr}")
+        result = subprocess.run(clone_cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"  Error cloning: {result.stderr}")
+            return None
+
+        repo_dir = work_dir / "repo"
+
+        # Checkout specific revision if specified
+        if rev:
+            result = subprocess.run(
+                ["git", "checkout", rev],
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                print(f"  Error checking out {rev}: {result.stderr}")
+                return None
+
+        return repo_dir
+
+    elif local_dir:
+        # Use a local directory (copy it to work dir)
+        source_dir = get_project_root() / local_dir
+        if not source_dir.exists():
+            print(f"  Source directory not found: {source_dir}")
+            return None
+        
+        repo_dir = work_dir / "repo"
+        shutil.copytree(source_dir, repo_dir)
+        print(f"  Copied {source_dir} to {repo_dir}")
+        return repo_dir
+
+    else:
+        # Empty directory
+        repo_dir = work_dir / "repo"
+        repo_dir.mkdir(parents=True, exist_ok=True)
+        return repo_dir
+
+
+def create_test(test: dict, output_dir: Path) -> bool:
+    """Create a single test."""
+    name = test["name"]
+    module = test.get("module")
+    run_cmd = test.get("run")
+    file_path = test.get("file")
+    pre_build = test.get("pre-build")
+
+    # Determine test type based on fields present
+    if module:
+        test_type = "module"
+    elif run_cmd:
+        test_type = "run"
+    elif file_path:
+        test_type = "file"
+    else:
+        print(f"  Error: Test {name} must have 'module', 'run', or 'file' field")
         return False
 
-    repo_dir = work_dir / "repo"
+    print(f"Creating test: {name} (type: {test_type})")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{name}.ndjson"
 
-    # Checkout specific revision
-    result = subprocess.run(
-        ["git", "checkout", rev],
-        cwd=repo_dir,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"  Error checking out {rev}: {result.stderr}")
+    # Handle static file case (no work directory needed)
+    if file_path:
+        source_file = get_project_root() / file_path
+        if not source_file.exists():
+            print(f"  Source file not found: {source_file}")
+            return False
+        shutil.copy(source_file, output_file)
+        print(f"  Copied {source_file} to {output_file}")
+        return True
+
+    # Set up work directory (url, dir, or empty)
+    work_dir = setup_work_dir(test, output_dir)
+    if work_dir is None:
         return False
 
     # Run pre-build command if specified
@@ -104,7 +178,7 @@ def create_test_lake(test: dict, output_dir: Path) -> bool:
         result = subprocess.run(
             pre_build,
             shell=True,
-            cwd=repo_dir,
+            cwd=work_dir,
             capture_output=True,
             text=True,
         )
@@ -112,79 +186,82 @@ def create_test_lake(test: dict, output_dir: Path) -> bool:
             print(f"  Pre-build failed: {result.stderr}")
             return False
 
-    # Build and export the module
-    print(f"  Building and exporting module {module}...")
-    output_file = output_dir / f"{name}.leantar"
-    export_cmd = f"lake env lean -o {output_file} --export={output_file} {module}"
+    # Execute based on test type
+    if module:
+        # Set up lean4export in a sibling directory
+        # TODO: Check out a tag based on the lean-toolchain of the test repository
+        lean4export_dir = work_dir.parent / "lean4export"
+        if not lean4export_dir.exists():
+            print(f"  Cloning lean4export...")
+            clone_cmd = ["git", "clone", "--branch", "json_output",
+                        "https://github.com/ammkrn/lean4export",
+                        str(lean4export_dir)]
+            result = subprocess.run(clone_cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"  Error cloning lean4export: {result.stderr}")
+                return False
 
-    result = subprocess.run(
-        export_cmd,
-        shell=True,
-        cwd=repo_dir,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"  Export failed: {result.stderr}")
-        return False
+            print(f"  Building lean4export...")
+            result = subprocess.run(
+                "lake build",
+                shell=True,
+                cwd=lean4export_dir,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                print(f"  Error building lean4export: {result.stderr}")
+                return False
+
+        # Build the module in the repo
+        print(f"  Building module {module}...")
+        result = subprocess.run(
+            f"lake build {module}",
+            shell=True,
+            cwd=work_dir,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(f"  Build failed: {result.stderr}")
+            return False
+
+        # Export using lean4export
+        print(f"  Exporting module {module}...")
+        lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
+        export_cmd = f"lake env {lean4export_bin} {module} > {output_file}"
+
+        result = subprocess.run(
+            export_cmd,
+            shell=True,
+            cwd=work_dir,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(f"  Export failed: {result.stderr}")
+            return False
+
+    elif run_cmd:
+        # Run the script with $OUT environment variable
+        print(f"  Running: {run_cmd}")
+        env = os.environ.copy()
+        env["OUT"] = str(output_file)
+
+        result = subprocess.run(
+            run_cmd,
+            shell=True,
+            cwd=work_dir,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if result.returncode != 0:
+            print(f"  Script failed: {result.stderr}")
+            return False
 
     print(f"  Created {output_file}")
     return True
-
-
-def create_test_script(test: dict, output_dir: Path) -> bool:
-    """Create a test by running a script."""
-    name = test["name"]
-    run_cmd = test["run"]
-    output_file = output_dir / f"{name}.leantar"
-
-    print(f"  Running: {run_cmd} {output_file}")
-    result = subprocess.run(
-        f"{run_cmd} {output_file}",
-        shell=True,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"  Script failed: {result.stderr}")
-        return False
-
-    print(f"  Created {output_file}")
-    return True
-
-
-def create_test_static(test: dict, output_dir: Path) -> bool:
-    """Create a test by copying a static file."""
-    name = test["name"]
-    source_file = get_project_root() / test["file"]
-    output_file = output_dir / f"{name}.leantar"
-
-    if not source_file.exists():
-        print(f"  Source file not found: {source_file}")
-        return False
-
-    shutil.copy(source_file, output_file)
-    print(f"  Copied {source_file} to {output_file}")
-    return True
-
-
-def create_test(test: dict, output_dir: Path) -> bool:
-    """Create a single test."""
-    name = test["name"]
-    test_type = test["type"]
-    print(f"Creating test: {name} (type: {test_type})")
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    if test_type == "lake":
-        return create_test_lake(test, output_dir)
-    elif test_type == "script":
-        return create_test_script(test, output_dir)
-    elif test_type == "static":
-        return create_test_static(test, output_dir)
-    else:
-        print(f"  Unknown test type: {test_type}")
-        return False
 
 
 def cmd_create_test(args: argparse.Namespace) -> int:
@@ -326,7 +403,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     test_name = test["name"]
     run_cmd = checker["run"]
 
-    test_file = tests_dir / f"{test_name}.leantar"
+    test_file = tests_dir / f"{test_name}.ndjson"
     if not test_file.exists():
         return {
             "checker": checker_name,
