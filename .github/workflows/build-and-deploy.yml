@@ -1,0 +1,54 @@
+name: Build and Deploy Site
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v26
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Generate tests
+        run: |
+          nix develop -c ./lka.py create-test
+      
+      - name: Build checkers
+        run: |
+          nix develop -c ./lka.py build-checker
+      
+      - name: Run checkers on tests
+        run: |
+          nix develop -c ./lka.py run-checker
+      
+      - name: Generate website
+        run: |
+          nix develop -c ./lka.py build-site
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_out'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
