@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block static_path %}../../{% endblock %}
+
+{% block title %}{{ checker.name }} - Lean Kernel Arena{% endblock %}
+
+{% block h1 %}<a href="../../">Lean Kernel Arena</a> / {{ checker.name }}{% endblock %}
+
+{% block style %}
+.bg-success { background-color: #d4edda; }
+.bg-error { background-color: #f8d7da; }
+.bg-warning { background-color: #fff3cd; }
+.yaml-block {
+    background-color: #f5f5f5;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+.yaml-block pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+section pre {
+    background-color: #f5f5f5;
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+}
+{% endblock %}
+
+{% block content %}
+<section>
+    <header>
+        <h3>Checker Definition</h3>
+    </header>
+    <div class="yaml-block">
+        <pre><code>{{ checker_yaml }}</code></pre>
+    </div>
+    {% if checker.url %}
+    <p><a href="{{ checker.url }}" class="button outline">View on GitHub</a></p>
+    {% endif %}
+</section>
+
+<section>
+    <header>
+        <h3>Statistics</h3>
+    </header>
+    <div class="row">
+        <div class="col-6">
+            <div class="card">
+                <header>Accepted (valid proofs)</header>
+                <p class="is-center" style="font-size: 2rem;">
+                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
+                </p>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card">
+                <header>Rejected (invalid proofs)</header>
+                <p class="is-center" style="font-size: 2rem;">
+                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <header>
+        <h3>Test Results</h3>
+    </header>
+    {% if results %}
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Expected</th>
+                <th>Result</th>
+                <th class="text-right">Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td><a href="#test-{{ result.test }}">{{ result.test }}</a></td>
+                <td>{{ result.expected or '-' }}</td>
+                <td class="{% if result.status == 'accepted' %}bg-success{% elif result.status == 'rejected' %}bg-error{% else %}bg-warning{% endif %}">
+                    {{ result.status }}
+                </td>
+                <td class="text-right">{{ format_duration(result.duration) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% for result in results %}
+    <h3 id="test-{{ result.test }}">{{ result.test }}</h3>
+    <table>
+        <tr>
+            <th>Expected</th>
+            <td>{{ result.expected or '-' }}</td>
+        </tr>
+        <tr>
+            <th>Result</th>
+            <td class="{% if result.status == 'accepted' %}bg-success{% elif result.status == 'rejected' %}bg-error{% else %}bg-warning{% endif %}">
+                {{ result.status }}
+            </td>
+        </tr>
+        <tr>
+            <th>Duration</th>
+            <td>{{ format_duration(result.duration) }}</td>
+        </tr>
+        <tr>
+            <th>Exit code</th>
+            <td>{{ result.exit_code }}</td>
+        </tr>
+    </table>
+    {% if result.stdout %}
+    <h5>stdout:</h5>
+    <pre>{{ result.stdout }}</pre>
+    {% endif %}
+    {% if result.stderr %}
+    <h5>stderr:</h5>
+    <pre>{{ result.stderr }}</pre>
+    {% endif %}
+    {% if not result.stdout and not result.stderr %}
+    <p class="text-grey">No output</p>
+    {% endif %}
+    {% endfor %}
+
+    {% else %}
+    <p class="text-grey">No test results available.</p>
+    {% endif %}
+</section>
+{% endblock %}

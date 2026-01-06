@@ -1,91 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lean Kernel Arena</title>
-    <link rel="stylesheet" href="https://unpkg.com/chota@latest">
-    <link rel="stylesheet" href="static/style.css">
-</head>
-<body>
-    <div class="container">
-        <header class="is-center">
-            <h1>Lean Kernel Arena</h1>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            <section>
-                <header>
-                    <h3>Checkers</h3>
-                </header>
-                {% if checkers %}
-                <table class="striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Version</th>
-                            <th class="text-center" title="Correctly accepted valid proofs">✅</th>
-                            <th class="text-center" title="Correctly rejected invalid proofs">❌</th>
-                            <th class="text-right" title="Time to process mathlib test">⏱️</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for checker in checkers %}
-                        <tr>
-                            <td>{{ checker.name }}</td>
-                            <td>{{ checker.version }}</td>
-                            <td class="text-center {% if checker.stats.accept_correct == checker.stats.accept_total and checker.stats.accept_total > 0 %}bg-success{% elif checker.stats.accept_correct < checker.stats.accept_total %}bg-error{% endif %}">
-                                {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
-                            </td>
-                            <td class="text-center {% if checker.stats.reject_correct == checker.stats.reject_total and checker.stats.reject_total > 0 %}bg-success{% elif checker.stats.reject_correct < checker.stats.reject_total %}bg-error{% endif %}">
-                                {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
-                            </td>
-                            <td class="text-right">
-                                {% if checker.stats.mathlib_time is not none %}
-                                    {{ format_duration(checker.stats.mathlib_time) }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="text-grey">No checkers defined.</p>
-                {% endif %}
-            </section>
+{% block static_path %}{% endblock %}
 
-            <section>
-                <header>
-                    <h3>Tests</h3>
-                </header>
-                {% if tests %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Expected Outcome</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for test in tests %}
-                        <tr>
-                            <td>{{ test.name }}</td>
-                            <td>{{ test.outcome or '-' }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="text-grey">No tests defined.</p>
-                {% endif %}
-            </section>
-        </main>
+{% block style %}
+.checker-name { font-weight: 600; }
+.bg-success { background-color: #d4edda; }
+.bg-danger { background-color: #f8d7da; }
+.bg-warning { background-color: #fff3cd; }
+.text-muted { color: #6c757d; }
+{% endblock %}
 
-        <footer class="is-center text-grey">
-            <p>Lean Kernel Arena</p>
-        </footer>
-    </div>
-</body>
-</html>
+{% block content %}
+<section>
+    <header>
+        <h3>Checkers</h3>
+    </header>
+    {% if checkers %}
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th class="text-center" title="Correctly accepted valid proofs">✅</th>
+                <th class="text-center" title="Correctly rejected invalid proofs">❌</th>
+                <th class="text-right" title="Time to process mathlib test">⏱️</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for checker in checkers %}
+            <tr>
+                <td><a href="checker/{{ checker.name }}/">{{ checker.name }}</a></td>
+                <td>{{ checker.version }}</td>
+                <td class="text-center {% if checker.stats.accept_correct == checker.stats.accept_total and checker.stats.accept_total > 0 %}bg-success{% elif checker.stats.accept_correct < checker.stats.accept_total %}bg-error{% endif %}">
+                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
+                </td>
+                <td class="text-center {% if checker.stats.reject_correct == checker.stats.reject_total and checker.stats.reject_total > 0 %}bg-success{% elif checker.stats.reject_correct < checker.stats.reject_total %}bg-error{% endif %}">
+                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
+                </td>
+                <td class="text-right">
+                    {% if checker.stats.mathlib_time is not none %}
+                        {{ format_duration(checker.stats.mathlib_time) }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-grey">No checkers defined.</p>
+    {% endif %}
+</section>
+
+<section>
+    <header>
+        <h3>Tests</h3>
+    </header>
+    {% if tests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Expected Outcome</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+            <tr>
+                <td>{{ test.name }}</td>
+                <td>{{ test.outcome or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-grey">No tests defined.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -695,6 +695,43 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         print(f"Error rendering template: {e}")
         return 1
 
+    # Generate per-checker pages
+    try:
+        checker_template = env.get_template("checker.html")
+        for checker in checkers:
+            checker_dir = output_dir / "checker" / checker["name"]
+            checker_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Read the raw YAML file for display
+            checker_yaml_path = get_project_root() / "checkers" / f"{checker['name']}.yaml"
+            checker_yaml = ""
+            if checker_yaml_path.exists():
+                with open(checker_yaml_path, "r") as f:
+                    checker_yaml = f.read()
+            
+            # Gather results for this checker
+            checker_results = []
+            for test in tests:
+                key = (checker["name"], test["name"])
+                if key in results:
+                    result = results[key].copy()
+                    result["expected"] = test.get("outcome")
+                    checker_results.append(result)
+            
+            checker_data = {
+                "checker": checker,
+                "checker_yaml": checker_yaml,
+                "results": checker_results,
+                "format_duration": format_duration,
+            }
+            
+            output_file = checker_dir / "index.html"
+            checker_template.stream(checker_data).dump(str(output_file))
+            print(f"Generated: {output_file}")
+    except Exception as e:
+        print(f"Error rendering checker template: {e}")
+        return 1
+
     # Copy static files if they exist
     static_dir = templates_dir / "static"
     if static_dir.exists():

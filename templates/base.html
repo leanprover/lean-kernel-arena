@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lean Kernel Arena{% endblock %}</title>
+    <link rel="stylesheet" href="https://unpkg.com/chota@latest">
+    <link rel="stylesheet" href="{% block static_path %}{% endblock %}static/style.css">
+    <style>
+        {% block style %}{% endblock %}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="is-center">
+            <h1>{% block h1 %}Lean Kernel Arena{% endblock %}</h1>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="is-center text-grey">
+            <p>Lean Kernel Arena</p>
+        </footer>
+    </div>
+</body>
+</html>
