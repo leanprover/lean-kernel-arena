@@ -580,6 +580,81 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
 # =============================================================================
 
 
+def load_results() -> dict:
+    """Load all result JSON files from _results directory.
+    
+    Returns a dict keyed by (checker_name, test_name) tuples.
+    """
+    results = {}
+    results_dir = get_project_root() / "_results"
+    if not results_dir.exists():
+        return results
+    
+    for file in results_dir.glob("*.json"):
+        with open(file, "r") as f:
+            data = json.load(f)
+            key = (data["checker"], data["test"])
+            results[key] = data
+    
+    return results
+
+
+def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> dict:
+    """Compute statistics for a checker across all tests.
+    
+    Returns a dict with:
+    - accept_correct: number of tests with outcome=accept that checker accepted
+    - accept_total: number of tests with outcome=accept that weren't declined
+    - reject_correct: number of tests with outcome=reject that checker rejected
+    - reject_total: number of tests with outcome=reject that weren't declined
+    - mathlib_time: duration for the mathlib test (or None)
+    """
+    checker_name = checker["name"]
+    
+    accept_correct = 0
+    accept_total = 0
+    reject_correct = 0
+    reject_total = 0
+    mathlib_time = None
+    
+    for test in tests:
+        test_name = test["name"]
+        expected_outcome = test.get("outcome")
+        
+        key = (checker_name, test_name)
+        result = results.get(key)
+        
+        if result is None:
+            continue
+        
+        status = result.get("status")
+        
+        # Track mathlib time
+        if test_name == "mathlib" and result.get("duration") is not None:
+            mathlib_time = result["duration"]
+        
+        # Skip declined tests
+        if status == "declined":
+            continue
+        
+        if expected_outcome == "accept":
+            accept_total += 1
+            if status == "accepted":
+                accept_correct += 1
+        elif expected_outcome == "reject":
+            reject_total += 1
+            if status == "rejected":
+                reject_correct += 1
+    
+    return {
+        "accept_correct": accept_correct,
+        "accept_total": accept_total,
+        "reject_correct": reject_correct,
+        "reject_total": reject_total,
+        "mathlib_time": mathlib_time,
+    }
+
+
 def cmd_build_site(args: argparse.Namespace) -> int:
     """Handle the build-site command."""
     output_dir = Path(args.outdir)
@@ -597,11 +672,17 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
     tests = load_tests()
     checkers = load_checkers()
+    results = load_results()
+    
+    # Compute stats for each checker
+    for checker in checkers:
+        checker["stats"] = compute_checker_stats(checker, tests, results)
 
     # Build context data
     data = {
         "tests": tests,
         "checkers": checkers,
+        "format_duration": format_duration,
     }
 
     # Render index.html

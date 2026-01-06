@@ -1,5 +1,5 @@
-name: init
 url: https://github.com/ammkrn/lean4export
 ref: json_output
 rev: c840756
 run: lake build && lake exe lean4export Init > $OUT
+outcome: accept
