@@ -1,0 +1,21 @@
+name: Test Build and Deploy
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v26
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Test build
+        run: |
+          nix develop -c ./lka.py --help
