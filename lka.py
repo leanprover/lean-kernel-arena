@@ -2,6 +2,7 @@
 """Lean Kernel Arena - Tool for managing Lean kernel tests and checkers."""
 
 import argparse
+import datetime
 import json
 import os
 import shutil
@@ -691,6 +692,53 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
     }
 
 
+def get_build_metadata() -> dict:
+    """Get build metadata including timestamp, git revision, and GitHub action info."""
+    metadata = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "git_revision": None,
+        "git_revision_short": None,
+        "github_url": None,
+        "github_action_url": None,
+    }
+    
+    # Get git revision
+    try:
+        result = run_cmd(["git", "rev-parse", "HEAD"], capture_output=True)
+        if result.returncode == 0:
+            git_revision = result.stdout.strip()
+            metadata["git_revision"] = git_revision
+            metadata["git_revision_short"] = git_revision[:8]
+            # Build GitHub URL (assuming GitHub)
+            try:
+                remote_result = run_cmd(["git", "remote", "get-url", "origin"], capture_output=True)
+                if remote_result.returncode == 0:
+                    remote_url = remote_result.stdout.strip()
+                    # Convert git URL to GitHub web URL
+                    if "github.com" in remote_url:
+                        if remote_url.startswith("git@"):
+                            # Convert git@github.com:user/repo.git to https://github.com/user/repo
+                            repo_path = remote_url.split(":")[-1].replace(".git", "")
+                            metadata["github_url"] = f"https://github.com/{repo_path}/commit/{git_revision}"
+                        elif remote_url.startswith("https://"):
+                            repo_path = remote_url.replace("https://github.com/", "").replace(".git", "")
+                            metadata["github_url"] = f"https://github.com/{repo_path}/commit/{git_revision}"
+            except:
+                pass
+    except:
+        pass
+    
+    # Get GitHub Action info from environment variables
+    github_server = os.environ.get("GITHUB_SERVER_URL")
+    github_repo = os.environ.get("GITHUB_REPOSITORY")
+    github_run_id = os.environ.get("GITHUB_RUN_ID")
+    
+    if github_server and github_repo and github_run_id:
+        metadata["github_action_url"] = f"{github_server}/{github_repo}/actions/runs/{github_run_id}"
+    
+    return metadata
+
+
 def cmd_build_site(args: argparse.Namespace) -> int:
     """Handle the build-site command."""
     output_dir = Path(args.outdir)
@@ -715,11 +763,15 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     for checker in checkers:
         checker["stats"] = compute_checker_stats(checker, tests, results)
 
+    # Get build metadata
+    build_info = get_build_metadata()
+
     # Build context data
     data = {
         "tests": tests,
         "checkers": checkers,
         "format_duration": format_duration,
+        "build_info": build_info,
     }
 
     # Render index.html
@@ -768,6 +820,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 "checker_yaml": checker_yaml,
                 "results": checker_results,
                 "format_duration": format_duration,
+                "build_info": build_info,
             }
             
             output_file = checker_dir / "index.html"

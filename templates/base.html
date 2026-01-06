@@ -21,7 +21,15 @@
         </main>
 
         <footer class="is-center text-grey">
-            <p>Lean Kernel Arena</p>
+            <p style="font-size: 0.8em; margin-top: 0.5rem;">
+                Generated {{ build_info.timestamp }}
+                {% if build_info.git_revision_short %}
+                · <a href="{{ build_info.github_url or '#' }}" style="color: #6c757d;">{{ build_info.git_revision_short }}</a>
+                {% endif %}
+                {% if build_info.github_action_url %}
+                · <a href="{{ build_info.github_action_url }}" style="color: #6c757d;">GitHub Action Log</a>
+                {% endif %}
+            </p>
         </footer>
     </div>
 </body>
