@@ -2,5 +2,15 @@ version: "0.1"
 url: https://github.com/ammkrn/nanoda_lib/
 ref: json_string
 rev: 2747659518c0d5debe1d05cb02ba9232cafa4897
-build: cargo build --release
-run: "target/release/nanoda_bin \"$IN\""
+build: |
+  cargo build --release
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false
+   }
+  __END__
+run: |
+  target/release/nanoda_bin config.json < "$IN"
