@@ -1,3 +1,15 @@
+description: |
+  The `Init.Prelude` module export from Lean 4 core.
+  
+  This test contains the absolute minimal set of definitions needed to
+  bootstrap Lean 4, including:
+  - Core types (Bool, Nat, Prop, Type)
+  - Basic logical operations
+  - Primitive tactics (rfl, apply, etc.)
+  - Essential syntax declarations
+  
+  This is the smallest possible meaningful test case, perfect for testing
+  checker correctness on fundamental constructs.
 url: https://github.com/ammkrn/lean4export
 ref: json_output
 rev: c840756

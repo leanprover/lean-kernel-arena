@@ -1,4 +1,16 @@
 version: "0.1"
+description: |
+  **Nanoda** - An alternative Lean 4 kernel implementation in Rust.
+  
+  This is an independent proof checker that validates Lean 4 exports
+  using a different implementation approach. Features:
+  - Written in Rust for performance
+  - Supports standard Lean 4 axioms (propext, choice, etc.)
+  - Configurable axiom checking policy
+  - Native JSON parsing with string optimizations
+  
+  Useful for cross-validation against the official kernel and
+  testing implementation diversity in the Lean ecosystem.
 url: https://github.com/ammkrn/nanoda_lib/
 ref: json_string
 rev: 2747659518c0d5debe1d05cb02ba9232cafa4897

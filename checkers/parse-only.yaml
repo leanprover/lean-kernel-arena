@@ -1,4 +1,14 @@
 version: v4.27.0-rc1
+description: |
+  The official Lean 4 kernel in **parse-only mode**.
+  
+  This checker only validates that the exported data can be parsed correctly
+  without performing full kernel checking. It's useful for:
+  - Testing export format compatibility
+  - Measuring parsing performance separately from verification
+  - Debugging export data corruption issues
+  
+  Uses the same official kernel as the main checker but with `--parse-only` flag.
 dir: official
 build: lake build
 run: .lake/build/bin/kernel --parse-only "$IN"

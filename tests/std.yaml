@@ -1,3 +1,15 @@
+description: |
+  The complete `Std` library export from Lean 4.
+  
+  This test contains the standard library extensions beyond core Lean 4,
+  including:
+  - Enhanced data structures (HashMap, RBTree, etc.)
+  - Additional mathematical operations
+  - Extended list and array operations
+  - Utility functions and theorems
+  
+  This represents a medium-sized test case, larger than core modules
+  but smaller than Mathlib, making it useful for performance testing.
 url: https://github.com/ammkrn/lean4export
 ref: json_output
 rev: c840756

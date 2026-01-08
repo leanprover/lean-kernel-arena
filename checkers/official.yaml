@@ -3,7 +3,7 @@ description: |
   The official Lean 4 kernel checker implementation.
   
   This is the reference implementation from the Lean 4 repository,
-  built with the exact same version of Lean used to generate the test data.
+  wrapped in a program that reads the exported proofs and replays them in the kernel.
 dir: official
 build: lake build
 run: .lake/build/bin/kernel "$IN"

@@ -1,2 +1,12 @@
 version: "1.0"
+description: |
+  A **trivial checker** that always declines any input.
+  
+  This checker simply runs `exit 2` and is useful for:
+  - Testing framework handling of declined tests
+  - Measuring parsing and setup overhead
+  - Establishing baseline timing for non-checking operations
+  
+  Exit code 2 indicates the checker declined to process the input,
+  different from rejection (exit 1) which indicates an invalid proof.
 run: "exit 2"

@@ -1,3 +1,14 @@
+description: |
+  The `Init` module export from Lean 4 core.
+  
+  This test contains the fundamental building blocks of Lean 4, including:
+  - Basic data types (Nat, List, Array, String, etc.)
+  - Core tactics and syntax
+  - Foundational mathematical structures
+  - Essential metaprogramming infrastructure
+  
+  This is one of the smallest meaningful test cases, making it ideal for 
+  initial checker validation and debugging.
 url: https://github.com/ammkrn/lean4export
 ref: json_output
 rev: c840756

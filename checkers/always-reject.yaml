@@ -1,2 +1,12 @@
 version: "1.0"
+description: |
+  A **trivial checker** that always rejects any input.
+  
+  This checker simply runs `exit 1` and is useful for:
+  - Testing framework handling of rejected proofs
+  - Validating error reporting and status tracking
+  - Establishing baseline performance for failed checks
+  
+  Exit code 1 indicates the checker found the proof invalid,
+  simulating what would happen with malformed or incorrect proofs.
 run: "exit 1"
