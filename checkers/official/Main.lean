@@ -3,7 +3,6 @@ import Lean4Checker.Replay
 import Lean
 
 def runKernel (solution : Export.ExportedEnv) : IO Unit := do
-  IO.println "Running Lean default kernel"
   let mut env ← Lean.mkEmptyEnvironment
   let mut constMap := solution.constMap
   -- Lean's kernel interprets just the addition of `Quot as adding all of these so adding them
