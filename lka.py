@@ -15,6 +15,7 @@ from pathlib import Path
 
 import yaml
 import jsonschema
+import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 # Global verbose flag
@@ -84,6 +85,16 @@ def format_memory(bytes_value: float) -> str:
         return f"{bytes_value / 1024:.1f} KB"
     else:
         return f"{bytes_value:.0f} B"
+
+
+def render_markdown(text: str) -> str:
+    """Render markdown text to HTML."""
+    if not text:
+        return ""
+    
+    # Configure markdown with extensions for better HTML output
+    md = markdown.Markdown(extensions=['extra', 'codehilite', 'toc'])
+    return md.convert(text.strip())
 
 
 def measure_perf_with_fallback(
@@ -1129,12 +1140,16 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                         result["test_stats"] = test_stats[test["name"]]
                     # Add test links
                     result["test_links"] = generate_source_links(test, "tests", build_info.get("git_revision"))
-                    # Add test description
-                    result["test_description"] = test.get("description")
+                    # Add test description (rendered from markdown)
+                    result["test_description"] = render_markdown(test.get("description", ""))
                     checker_results.append(result)
             
+            # Create a copy of checker data with rendered description
+            checker_with_rendered_desc = checker.copy()
+            checker_with_rendered_desc["description"] = render_markdown(checker.get("description", ""))
+            
             checker_data = {
-                "checker": checker,
+                "checker": checker_with_rendered_desc,
                 "checker_links": checker_links,
                 "results": checker_results,
                 "format_duration": format_duration,

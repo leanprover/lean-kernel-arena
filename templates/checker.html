@@ -47,7 +47,12 @@ section pre, details pre {
     background-color: #f8f9fa;
     border-radius: 4px;
     border-left: 4px solid #007bff;
-    white-space: pre-line;
+}
+.description p {
+    margin: 0 0 0.5rem 0;
+}
+.description p:last-child {
+    margin-bottom: 0;
 }
 {% endblock %}
 
@@ -70,7 +75,7 @@ section pre, details pre {
 
     {% if checker.description %}
     <div class="description">
-        {{ checker.description }}
+        {{ checker.description | safe }}
     </div>
     {% endif %}
 
@@ -165,7 +170,7 @@ section pre, details pre {
     </p>
     {% if result.test_description %}
     <div class="description">
-        {{ result.test_description }}
+        {{ result.test_description | safe }}
     </div>
     {% endif %}
     

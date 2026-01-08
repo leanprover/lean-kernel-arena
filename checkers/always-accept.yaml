@@ -1,2 +1,9 @@
 version: "1.0"
+description: |
+  A **trivial checker** that always accepts any input.
+  
+  This checker simply runs `exit 0` and is useful for:
+  - Testing the framework
+  - Establishing baseline performance metrics
+  - Debugging test generation issues
 run: "exit 0"
