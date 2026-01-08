@@ -9,7 +9,7 @@ def runKernel (solution : Export.ExportedEnv) : IO Unit := do
   -- multiple times leads to errors.
   constMap := constMap.erase `Quot.mk |>.erase `Quot.lift |>.erase `Quot.ind
   discard <| env.replay' constMap
-  IO.println "Accepted {constMap.size} declarations."
+  IO.println s!"Accepted {constMap.size} declarations."
 
 
 def main (args : List String) : IO Unit := do
