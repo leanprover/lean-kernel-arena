@@ -1096,6 +1096,24 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     for checker in checkers:
         checker["stats"] = compute_checker_stats(checker, tests, results)
 
+    # Sort checkers by the specified criteria:
+    # 1. Number of correctly rejected tests, descending
+    # 2. Number of correctly accepted tests, descending  
+    # 3. Wall time for processing mathlib, ascending (None values last)
+    def sort_key(checker):
+        stats = checker["stats"]
+        reject_correct = stats["reject_correct"]
+        accept_correct = stats["accept_correct"]
+        mathlib_time = stats["mathlib_time"]
+        
+        # For mathlib_time: None values should be treated as infinity (sort last)
+        # We use a tuple where None becomes a very large number for ascending sort
+        time_sort_key = mathlib_time if mathlib_time is not None else float('inf')
+        
+        return (-reject_correct, -accept_correct, time_sort_key)
+    
+    checkers.sort(key=sort_key)
+
     # Get build metadata
     build_info = get_build_metadata()
 
