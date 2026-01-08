@@ -384,23 +384,23 @@ def setup_source_directory(
         clone_cmd = ["git", "clone"]
         if ref:
             clone_cmd.extend(["--branch", ref])
-        clone_cmd.extend([url, str(work_dir / "repo")])
+        clone_cmd.extend([url, str(work_dir / "src")])
 
         result = run_cmd(clone_cmd)
         if result.returncode != 0:
             print(f"  Error cloning: {result.stderr}")
             return None
 
-        repo_dir = work_dir / "repo"
+        src_dir = work_dir / "src"
 
         # Checkout specific revision if specified
         if rev:
-            result = run_cmd(["git", "checkout", rev], cwd=repo_dir)
+            result = run_cmd(["git", "checkout", rev], cwd=src_dir)
             if result.returncode != 0:
                 print(f"  Error checking out {rev}: {result.stderr}")
                 return None
 
-        return repo_dir
+        return src_dir
 
     elif local_dir:
         # Use a local directory (copy it to work dir)
@@ -409,16 +409,16 @@ def setup_source_directory(
             print(f"  Source directory not found: {source_dir}")
             return None
         
-        repo_dir = work_dir / "repo"
-        shutil.copytree(source_dir, repo_dir)
-        print(f"  Copied {source_dir} to {repo_dir}")
-        return repo_dir
+        src_dir = work_dir / "src"
+        shutil.copytree(source_dir, src_dir)
+        print(f"  Copied {source_dir} to {src_dir}")
+        return src_dir
 
     else:
         # Empty directory
-        repo_dir = work_dir / "repo"
-        repo_dir.mkdir(parents=True, exist_ok=True)
-        return repo_dir
+        src_dir = work_dir / "src"
+        src_dir.mkdir(parents=True, exist_ok=True)
+        return src_dir
 
 
 # =============================================================================
@@ -632,7 +632,7 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
 
     # Determine the actual working directory for build commands
     if checker.get("url") or checker.get("dir"):
-        # Git repos and local dirs are copied to repo/ subdirectory
+        # Git repos and local dirs are copied to src/ subdirectory
         actual_work_dir = work_dir
     else:
         # Empty directory case - use the checker directory directly
@@ -714,7 +714,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     # Determine working directory
     checker_dir = build_dir / checker_name
     if checker.get("url") or checker.get("dir"):
-        work_dir = checker_dir / "repo"
+        work_dir = checker_dir / "src"
     else:
         work_dir = checker_dir
 
@@ -1001,10 +1001,20 @@ def generate_source_links(config: dict, config_type: str, git_revision: str | No
     # Generate source URL
     url = config.get("url")
     local_dir = config.get("dir")
+    rev = config.get("rev")
     
     if url:
-        # External repository
-        links["source_url"] = url
+        # External repository - check if it's a GitHub URL and we have a rev
+        if rev and "github.com" in url:
+            # Convert repository URL to tree/commit URL
+            if url.endswith(".git"):
+                repo_url = url[:-4]  # Remove .git suffix
+            else:
+                repo_url = url
+            links["source_url"] = f"{repo_url}/tree/{rev}"
+        else:
+            # Use the repository URL as-is
+            links["source_url"] = url
     elif local_dir:
         # Local directory in this repository
         if config_type == "checkers":
