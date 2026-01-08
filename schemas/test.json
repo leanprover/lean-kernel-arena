@@ -5,6 +5,10 @@
   "description": "Schema for test YAML configuration files",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "description": "Multi-line description of the test (supports Pandoc Markdown)"
+    },
     "url": {
       "type": "string",
       "format": "uri",

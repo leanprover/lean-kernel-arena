@@ -41,21 +41,37 @@ section pre, details pre {
     max-height: 300px;
     overflow-y: auto;
 }
+.description {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
+    white-space: pre-line;
+}
 {% endblock %}
 
 {% block content %}
 <section>
     <header>
-        <h3>Checker Information</h3>
+        <h3>Checker "{{ checker.name }}"</h3>
     </header>
-    <div class="link-group">
+    <p>
+        {% if checker.version %}<strong>Version:</strong> {{ checker.version }}{% endif %}
+        {% if checker.version and (checker_links.declaration_url or checker_links.source_url) %} · {% endif %}
         {% if checker_links.declaration_url %}
         <a href="{{ checker_links.declaration_url }}" target="_blank">📄 Declaration</a>
         {% endif %}
+        {% if checker_links.declaration_url and checker_links.source_url %} · {% endif %}
         {% if checker_links.source_url %}
         <a href="{{ checker_links.source_url }}" target="_blank">🔗 Source</a>
         {% endif %}
+    </p>
+    {% if checker.description %}
+    <div class="description">
+        {{ checker.description }}
     </div>
+    {% endif %}
 </section>
 
 <section>
@@ -135,23 +151,27 @@ section pre, details pre {
     </table>
 
     {% for result in results %}
-    <h4 id="test-{{ result.test }}">{{ result.test }}</h4>
+    <h4 id="test-{{ result.test }}">Test "{{ result.test }}"</h4>
     
-    <p><b>Test details:</b>
-        <span class="{% if result.expected == 'accept' %}bg-success{% elif result.expected == 'reject' %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">{{ result.expected }}</span>
-        · {% if result.test_stats %}
-          {{ result.test_stats.size_str }}
-        · {{ result.test_stats.lines_str }} lines
-          {% endif %}
-    </p>
-    <div class="link-group">
+    <p>
+        <strong>Expected:</strong> <span class="{% if result.expected == 'accept' %}bg-success{% elif result.expected == 'reject' %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">{{ result.expected }}</span>
+        {% if result.test_stats %}
+        · <strong>Size:</strong> {{ result.test_stats.size_str }} ({{ result.test_stats.lines_str }} lines)
+        {% endif %}
+        {% if result.test_links.declaration_url or result.test_links.source_url %} · {% endif %}
         {% if result.test_links.declaration_url %}
         <a href="{{ result.test_links.declaration_url }}" target="_blank">📄 Declaration</a>
         {% endif %}
+        {% if result.test_links.declaration_url and result.test_links.source_url %} · {% endif %}
         {% if result.test_links.source_url %}
         <a href="{{ result.test_links.source_url }}" target="_blank">🔗 Source</a>
         {% endif %}
+    </p>
+    {% if result.test_description %}
+    <div class="description">
+        {{ result.test_description }}
     </div>
+    {% endif %}
     
     <p>
       <b>Test result:</b>

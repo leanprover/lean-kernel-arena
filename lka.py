@@ -1129,6 +1129,8 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                         result["test_stats"] = test_stats[test["name"]]
                     # Add test links
                     result["test_links"] = generate_source_links(test, "tests", build_info.get("git_revision"))
+                    # Add test description
+                    result["test_description"] = test.get("description")
                     checker_results.append(result)
             
             checker_data = {

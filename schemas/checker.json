@@ -9,6 +9,10 @@
       "type": "string",
       "description": "Version identifier for the checker"
     },
+    "description": {
+      "type": "string",
+      "description": "Multi-line description of the checker (supports Pandoc Markdown)"
+    },
     "url": {
       "type": "string",
       "format": "uri", 

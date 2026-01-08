@@ -1,4 +1,9 @@
 version: v4.27.0-rc1
+description: |
+  The official Lean 4 kernel checker implementation.
+  
+  This is the reference implementation from the Lean 4 repository,
+  built with the exact same version of Lean used to generate the test data.
 dir: official
 build: lake build
 run: .lake/build/bin/kernel "$IN"

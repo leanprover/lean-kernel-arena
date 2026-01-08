@@ -1,3 +1,9 @@
+description: |
+  The complete Mathlib library export.
+  
+  This test contains all the mathematical definitions, theorems, and proofs
+  from Mathlib, representing the largest and most comprehensive test case
+  in the Lean kernel arena.
 url: https://github.com/leanprover-community/mathlib4
 ref: v4.27.0-rc1
 rev: 32d24245c7a12ded17325299fd41d412022cd3fe

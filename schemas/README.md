@@ -47,6 +47,7 @@ Validates checker configuration files in the `checkers/` directory.
 ## Field Definitions
 
 ### Common Fields
+- `description`: Multi-line description (supports Pandoc Markdown, optional)
 - `url`: Git repository URL (must be valid URI)
 - `ref`: Git branch or tag name
 - `rev`: Git commit hash (7-40 hex characters)
