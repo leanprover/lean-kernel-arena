@@ -13,6 +13,8 @@
           python3Packages.jinja2
           python3Packages.pyyaml
           elan
+          rustc 
+          cargo
         ];
       };
     };

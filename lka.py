@@ -498,9 +498,12 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # Run the checker and track time
-    full_cmd = f"{checker_run_cmd} {test_file}"
+    # Set up environment with IN variable pointing to test file
+    env = os.environ.copy()
+    env["IN"] = str(test_file)
+    
     start_time = time.time()
-    result = run_cmd(full_cmd, cwd=work_dir, shell=True)
+    result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env)
     duration = time.time() - start_time
 
     exit_code = result.returncode
