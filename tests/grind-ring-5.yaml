@@ -3,4 +3,5 @@ description: |
 
   This produces a theorem with a rather large proof term that needs fast reduction.
 leanfile: tests/grind-ring-5.lean
+export-decls: ["thm"]
 outcome: accept

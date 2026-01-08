@@ -47,6 +47,11 @@
       "type": "string", 
       "description": "Command to run before building (e.g., cache setup)"
     },
+    "export-decls": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of declaration names passed to lean4export after '--' (only valid with module or leanfile)"
+    },
     "outcome": {
       "type": "string",
       "enum": ["accept", "reject"],
@@ -63,7 +68,8 @@
           { "required": ["module"] },
           { "required": ["file"] },
           { "required": ["leanfile"] },
-          { "required": ["dir"] }
+          { "required": ["dir"] },
+          { "required": ["export-decls"] }
         ]
       }
     },
@@ -91,7 +97,8 @@
           { "required": ["leanfile"] },
           { "required": ["ref"] },
           { "required": ["rev"] },
-          { "required": ["pre-build"] }
+          { "required": ["pre-build"] },
+          { "required": ["export-decls"] }
         ]
       }
     },
@@ -121,7 +128,8 @@
           { "required": ["leanfile"] },
           { "required": ["module"] },
           { "required": ["ref"] },
-          { "required": ["rev"] }
+          { "required": ["rev"] },
+          { "required": ["export-decls"] }
         ]
       }
     },

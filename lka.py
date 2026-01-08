@@ -17,6 +17,7 @@ import yaml
 import jsonschema
 import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+import shlex
 
 # Global verbose flag
 VERBOSE = False
@@ -339,6 +340,35 @@ def run_cmd(
     return result
 
 
+def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list | None, cwd: Path, out_file: Path) -> bool:
+    """Run lean4export (via lake env) to export a module.
+
+    lean4export_dir: path to the checked-out/build lean4export repo
+    module_name: module name to export
+    export_decls: optional list of declaration names to pass after --
+    cwd: working directory to run lake env from
+    out_file: output path for NDJSON
+    """
+    lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
+    if not lean4export_bin.exists():
+        print(f"  Error: lean4export binary not found at {lean4export_bin}")
+        return False
+
+    # Build command
+    cmd = f"lake env {lean4export_bin} {module_name}"
+    if export_decls:
+        # Quote each decl for shell safety
+        decls = " ".join(shlex.quote(str(d)) for d in export_decls)
+        cmd += f" -- {decls}"
+    cmd += f" > {out_file}"
+
+    result = run_cmd(cmd, cwd=cwd, shell=True)
+    if result.returncode != 0:
+        print(f"  Export failed: {result.stderr}")
+        return False
+    return True
+
+
 def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
     """Load all YAML files from a directory with schema validation."""
     items = []
@@ -492,6 +522,7 @@ def create_test(test: dict, output_dir: Path) -> bool:
     run_cmd_str = test.get("run")
     file_path = test.get("file")
     lean_file_path = test.get("leanfile")
+    export_decls = test.get("export-decls")
     pre_build = test.get("pre-build")
 
     # Determine test type based on fields present
@@ -565,14 +596,11 @@ def create_test(test: dict, output_dir: Path) -> bool:
             return False
 
         # Export using lean4export
+        if export_decls and not isinstance(export_decls, list):
+            print(f"  Error: export-decls must be a list of strings")
+            return False
         print(f"  Exporting module {module}...")
-        lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
-        export_cmd = f"lake env {lean4export_bin} {module} > {tmp_file}"
-
-        
-        result = run_cmd(export_cmd, cwd=actual_work_dir, shell=True)
-        if result.returncode != 0:
-            print(f"  Export failed: {result.stderr}")
+        if not run_lean4export(lean4export_dir, module, export_decls, cwd=work_dir, out_file=tmp_file):
             return False
 
     elif lean_file_path:
@@ -633,13 +661,11 @@ name = "Test"'''
             return False
 
         # Export using lean4export with lake env (same as module variant)
+        if export_decls and not isinstance(export_decls, list):
+            print(f"  Error: export-decls must be a list of strings")
+            return False
         print(f"  Exporting Test module...")
-        lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
-        export_cmd = f"lake env {lean4export_bin} Test > {tmp_file}"
-
-        result = run_cmd(export_cmd, cwd=actual_work_dir, shell=True)
-        if result.returncode != 0:
-            print(f"  Export failed: {result.stderr}")
+        if not run_lean4export(lean4export_dir, "Test", export_decls, cwd=actual_work_dir, out_file=tmp_file):
             return False
 
     elif run_cmd_str:
