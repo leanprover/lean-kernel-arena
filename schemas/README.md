@@ -33,20 +33,16 @@ Validates checker configuration files in the `checkers/` directory.
 
 **Supported checker patterns:**
 1. **Git repository checker** - Clone a repo and build/run checker
-   - Required: `url`, `build`, `run`
-   - Optional: `version`, `ref`, `rev`
+   - Required: `url`, `run`
+   - Optional: `version`, `ref`, `rev`, `build`
    
 2. **Local directory checker** - Use local directory source
    - Required: `dir`, `run`
    - Optional: `version`, `build`
    
-3. **Simple checker with build** - No external source but has build step
-   - Required: `build`, `run`
-   - Optional: `version`
-   
-4. **Simple checker** - Just a run command, no source or build
+3. **Simple checker** - Just a run command, optionally with build step
    - Required: `run`
-   - Optional: `version`
+   - Optional: `version`, `build`
 
 ## Field Definitions
 
@@ -65,7 +61,7 @@ Validates checker configuration files in the `checkers/` directory.
 - `outcome`: Expected test result (`"accept"` or `"reject"`)
 
 ### Checker-Specific Fields
-- `build`: Shell command to build the checker
+- `build`: Shell command to build the checker (optional - only needed if compilation is required)
 - `run`: Shell command to run the checker (`$IN` variable points to input file)
 
 ## Validation

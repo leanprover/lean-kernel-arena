@@ -41,7 +41,7 @@
   "oneOf": [
     {
       "title": "Git repository checker",
-      "required": ["url", "build", "run"],
+      "required": ["url", "run"],
       "not": {
         "required": ["dir"]
       }
@@ -58,27 +58,14 @@
       }
     },
     {
-      "title": "Simple checker with build (no source)",
-      "required": ["build", "run"],
-      "not": {
-        "anyOf": [
-          { "required": ["url"] },
-          { "required": ["dir"] },
-          { "required": ["ref"] },
-          { "required": ["rev"] }
-        ]
-      }
-    },
-    {
-      "title": "Simple checker (no source, no build)",
+      "title": "Simple checker",
       "required": ["run"],
       "not": {
         "anyOf": [
           { "required": ["url"] },
           { "required": ["dir"] },
           { "required": ["ref"] },
-          { "required": ["rev"] },
-          { "required": ["build"] }
+          { "required": ["rev"] }
         ]
       }
     }
