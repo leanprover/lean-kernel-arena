@@ -9,6 +9,7 @@ description: |
   - Supports standard Lean 4 axioms (propext, choice, etc.)
   - Configurable axiom checking policy
   - Native JSON parsing with string optimizations
+  - Parallel checking using multiple threads (set to 4 threads in the kernel arena)
   
   Useful for cross-validation against the official kernel and
   testing implementation diversity in the Lean ecosystem.
@@ -23,7 +24,8 @@ build: |
      "nat_extension": true,
      "string_extension": true,
      "unpermitted_axiom_hard_error": false,
-     "permitted_axioms": ["propext", "Classical.choice", "Quot.sound", "Lean.trustCompiler"]
+     "permitted_axioms": ["propext", "Classical.choice", "Quot.sound", "Lean.trustCompiler"],
+     "num_threads": 4
    }
   __END__
 run: |
