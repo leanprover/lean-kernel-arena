@@ -380,6 +380,7 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
     name = checker["name"]
     version = checker.get("version", "unknown")
     url = checker.get("url")
+    local_dir = checker.get("dir")
     ref = checker.get("ref")
     rev = checker.get("rev")
     build_cmd = checker.get("build")
@@ -413,6 +414,19 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
                 print(f"  Error checking out {rev}: {result.stderr}")
                 return False
 
+        work_dir = repo_dir
+    elif local_dir:
+        # Use a local directory (copy it to work dir)
+        source_dir = get_project_root() / "checkers" / local_dir
+        if not source_dir.exists():
+            print(f"  Source directory not found: {source_dir}")
+            return False
+        
+        repo_dir = checker_dir / "repo"
+        if repo_dir.exists():
+            shutil.rmtree(repo_dir)
+        shutil.copytree(source_dir, repo_dir)
+        print(f"  Copied {source_dir} to {repo_dir}")
         work_dir = repo_dir
     else:
         work_dir = checker_dir
@@ -490,7 +504,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
 
     # Determine working directory
     checker_dir = build_dir / checker_name
-    if checker.get("url"):
+    if checker.get("url") or checker.get("dir"):
         work_dir = checker_dir / "repo"
     else:
         work_dir = checker_dir
