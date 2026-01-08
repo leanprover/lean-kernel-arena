@@ -22,12 +22,12 @@
 
         <footer class="is-center text-grey">
             <p style="font-size: 0.8em; margin-top: 0.5rem;">
-                Generated {{ build_info.timestamp }}
+                Generated on {{ build_info.timestamp }}
                 {% if build_info.git_revision_short %}
-                · <a href="{{ build_info.github_url or '#' }}" style="color: #6c757d;">{{ build_info.git_revision_short }}</a>
+                · <a href="{{ build_info.github_url or '#' }}" style="color: #6c757d;">revision {{ build_info.git_revision_short }}</a>
                 {% endif %}
                 {% if build_info.github_action_url %}
-                · <a href="{{ build_info.github_action_url }}" style="color: #6c757d;">GitHub Action Log</a>
+                · <a href="{{ build_info.github_action_url }}" style="color: #6c757d;">workflow run {{ build_info.github_run_id }}</a>
                 {% endif %}
             </p>
         </footer>

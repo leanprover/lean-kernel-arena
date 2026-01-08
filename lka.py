@@ -1111,6 +1111,7 @@ def get_build_metadata() -> dict:
     github_run_id = os.environ.get("GITHUB_RUN_ID")
     
     if github_server and github_repo and github_run_id:
+        metadata["github_run_id"] = github_run_id
         metadata["github_action_url"] = f"{github_server}/{github_repo}/actions/runs/{github_run_id}"
     
     return metadata
