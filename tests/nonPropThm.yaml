@@ -1,0 +1,5 @@
+description: |
+  A theorem declaration with a non-propositional (polymorphic) type.
+leanfile: tests/nonPropThm.lean
+export-decls: ["thm", "def"]
+outcome: reject
