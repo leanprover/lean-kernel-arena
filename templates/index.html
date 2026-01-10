@@ -37,6 +37,7 @@
                 <th>Version</th>
                 <th class="text-center" title="Correctly accepted valid proofs">✅</th>
                 <th class="text-center" title="Correctly rejected invalid proofs">❌</th>
+                <th class="text-center" title="Tests declined to process">🚫</th>
                 <th class="text-right" title="Wall time to process mathlib test">⏱️ Wall</th>
                 <th class="text-right" title="CPU time to process mathlib test">⏱️ CPU</th>
                 <th class="text-right" title="Peak memory usage for mathlib test">🧠 RSS</th>
@@ -52,6 +53,9 @@
                 </td>
                 <td class="text-center {% if checker.stats.reject_correct == checker.stats.reject_total and checker.stats.reject_total > 0 %}bg-success{% elif checker.stats.reject_correct < checker.stats.reject_total %}bg-error{% endif %}">
                     {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
+                </td>
+                <td class="text-center">
+                    {{ checker.stats.declined_count }}
                 </td>
                 <td class="text-right">
                     {% if checker.stats.mathlib_time is not none %}
@@ -97,7 +101,7 @@
     </p>
 
     <p>
-        Checkers that do not implement all features may decline to process certain tests. These tests are not taken into account.
+        Checkers that do not implement all features may decline to process certain tests (column 🚫). These tests are not taken into account for correctness scoring.
     </p>
 
     <p>
