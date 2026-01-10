@@ -1,0 +1,13 @@
+version: "-"
+description: |
+  [**Lean4Lean**](https://github.com/digama0/lean4lean/) s an implementation of the Lean 4 kernel written in (mostly) pure Lean 4. It is derived directly from the C++ kernel implementation, and as such likely shares some implementation bugs with it (it's not really an independent implementation), although it also benefits from the same algorithmic performance improvements existing in the C++ Lean kernel.
+
+  The project also houses some metatheory regarding the Lean system, in the same general direction as the MetaCoq project.
+
+  (The integration into the arena was created by Joachim and may have to be blamed for bad results below.)
+
+url: https://github.com/nomeata/lean4lean
+ref: joachim/parse-json
+rev: d2d5b337dae12b03cd7e3e0f6b52097dc1d2ee67
+build: lake build lean4lean
+run: .lake/build/bin/lean4lean --import "$IN"
