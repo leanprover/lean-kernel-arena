@@ -108,8 +108,8 @@ section pre, details pre {
         <thead>
             <tr>
                 <th>Test</th>
-                <th>Expected</th>
-                <th>Result</th>
+                <th class="text-center">Expected</th>
+                <th class="text-center">Result</th>
                 <th class="text-right">Wall Time</th>
                 <th class="text-right">CPU Time</th>
                 <th class="text-right">Max RSS</th>
@@ -119,11 +119,11 @@ section pre, details pre {
             {% for result in results %}
             <tr>
                 <td><a href="#test-{{ result.test }}">{{ result.test }}</a></td>
-                <td>
-                    {% if result.expected == 'accept' %}✅ accept{% elif result.expected == 'reject' %}❌ reject{% else %}⚠️ {{ result.expected }}{% endif %}
+                <td class="text-center">
+                    {% if result.expected == 'accept' %}✅{% elif result.expected == 'reject' %}❌{% else %}⚠️ {{ result.expected }}{% endif %}
                 </td>
-                <td class="{% if (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif (result.expected == 'accept' and result.status != 'accepted' and result.status != 'declined') or (result.expected == 'reject' and result.status != 'rejected' and result.status != 'declined') %}bg-error{% else %}bg-warning{% endif %}">
-                    {% if result.status == 'accepted' %}✅ accepted{% elif result.status == 'rejected' %}❌ rejected{% elif result.status == 'declined' %}⚠️ declined{% else %}💥 {{ result.status }}{% endif %}
+                <td class="text-center {% if (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' %}bg-warning{% else %}bg-error{% endif %}">
+                    {% if result.status == 'accepted' %}✅{% elif result.status == 'rejected' %}❌{% elif result.status == 'declined' %}⚠️{% else %}💥{% endif %}
                 </td>
                 <td class="text-right">{{ format_duration(result.wall_time or 0) }}</td>
                 <td class="text-right">
