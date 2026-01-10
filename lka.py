@@ -62,25 +62,25 @@ def validate_yaml_data(data: dict, schema_name: str, file_path: Path) -> None:
 def format_duration(seconds: float) -> str:
     """Format a duration in seconds to a human-readable string."""
     if seconds >= 3600:
-        return f"{seconds / 3600:.1f}h"
+        return f"{seconds / 3600:.1f}\u202fh"
     elif seconds >= 60:
-        return f"{seconds / 60:.1f}m"
+        return f"{seconds / 60:.1f}\u202fm"
     elif seconds >= 1:
-        return f"{seconds:.1f}s"
+        return f"{seconds:.1f}\u202fs"
     else:
-        return f"{seconds * 1000:.0f}ms"
+        return f"{seconds * 1000:.0f}\u202fms"
 
 
 def format_memory(bytes_value: float) -> str:
     """Format memory usage in bytes to a human-readable string."""
     if bytes_value >= 1024 * 1024 * 1024:
-        return f"{bytes_value / (1024 * 1024 * 1024):.1f} GB"
+        return f"{bytes_value / (1024 * 1024 * 1024):.1f}\u202fGB"
     elif bytes_value >= 1024 * 1024:
-        return f"{bytes_value / (1024 * 1024):.1f} MB"
+        return f"{bytes_value / (1024 * 1024):.1f}\u202fMB"
     elif bytes_value >= 1024:
-        return f"{bytes_value / 1024:.1f} KB"
+        return f"{bytes_value / 1024:.1f}\u202fKB"
     else:
-        return f"{bytes_value:.0f} B"
+        return f"{bytes_value:.0f}\u202fB"
 
 
 def render_markdown(text: str) -> str:
