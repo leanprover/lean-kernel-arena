@@ -725,7 +725,16 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
 
     # Run build command if specified
     if build_cmd:
-        print(f"  Building: {build_cmd}")
+        # Format the build command for display
+        if '\n' in build_cmd:
+            # Multi-line command: indent each line
+            lines = build_cmd.strip().split('\n')
+            formatted_cmd = '\n    '.join(lines)
+            print(f"  Building:\n    {formatted_cmd}")
+        else:
+            # Single-line command
+            print(f"  Building: {build_cmd}")
+        
         result = run_cmd(build_cmd, cwd=actual_work_dir, shell=True)
         if result.returncode != 0:
             print(f"  Build failed: {result.stderr}")
