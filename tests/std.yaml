@@ -11,8 +11,5 @@ description: |
   
   This represents a medium-sized test case, larger than core modules
   but smaller than Mathlib, making it useful for performance testing.
-url: https://github.com/leanprover/lean4export
-ref: arena_json_output
-rev: c840756
-run: lake build && lake exe lean4export Std > $OUT
+leanfile: tests/std_module.lean
 outcome: accept

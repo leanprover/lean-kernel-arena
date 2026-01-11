@@ -11,8 +11,5 @@ description: |
   
   This is the smallest possible meaningful test case, perfect for testing
   checker correctness on fundamental constructs.
-url: https://github.com/leanprover/lean4export
-ref: arena_json_output
-rev: c840756
-run: lake build && lake exe lean4export Init.Prelude > $OUT
+leanfile: tests/init_prelude_module.lean
 outcome: accept

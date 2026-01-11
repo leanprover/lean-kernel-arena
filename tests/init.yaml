@@ -10,8 +10,5 @@ description: |
   
   This is one of the smallest meaningful test cases, making it ideal for 
   initial checker validation and debugging.
-url: https://github.com/leanprover/lean4export
-ref: arena_json_output
-rev: c840756
-run: lake build && lake exe lean4export Init > $OUT
+leanfile: tests/init_module.lean
 outcome: accept
