@@ -64,12 +64,13 @@ Results stored as `_results/{checker}_{test}.json`:
 ## Critical Integration Points
 
 ### Lean4Export Dependency
-Tests using `module` field auto-clone and build `lean4export` tool from GitHub. Built executable cached in `_build/tests/work/lean4export/`.
+Tests using `module` or `leanfile` fields auto-clone and build `lean4export` tool from GitHub. Multiple lean4export builds are cached per toolchain in `_build/lean4export/{toolchain}/` directories, allowing tests with different Lean versions to coexist.
 
 ### File System Layout
 ```
 _build/tests/{name}.ndjson        # Generated test data
 _build/tests/{name}.stats.json    # File size/line count metadata  
+_build/lean4export/{toolchain}/   # Per-toolchain lean4export builds
 _build/checkers/{name}/           # Checker build directories
 _results/{checker}_{test}.json    # Individual run results
 _out/                             # Generated website
