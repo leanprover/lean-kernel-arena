@@ -11,7 +11,7 @@ A benchmarking framework for Lean kernel implementations that tests proof checke
 The Lean Kernel Arena provides a systematic way to:
 
 - **Advertise** different Lean kernel implementations
-- **Test** them for correctnessa and completenes
+- **Test** them for completeness and soundness
 - **Benchmark** their performance on real-world proofs
 - **Identify** edge cases and potential bugs in proof checkers
 - **Facilitate** new kernel development, by providing a sequence of more interesting test cases
