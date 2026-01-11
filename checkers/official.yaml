@@ -1,9 +1,13 @@
-version: v4.27.0-rc1
+version: "2026-01-10"
 description: |
   The official Lean 4 kernel checker implementation.
   
   This is the reference implementation from the Lean 4 repository,
   wrapped in a program that reads the exported proofs and replays them in the kernel.
+
+  Nightly release
 dir: official
-build: lake build
+build: |
+  echo leanprover/lean4:nightly-2026-01-10 > lean-toolchain
+  lake build
 run: .lake/build/bin/kernel "$IN"
