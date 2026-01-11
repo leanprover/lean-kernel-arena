@@ -648,7 +648,13 @@ def create_test(test: dict, output_dir: Path) -> bool:
         if export_decls and not isinstance(export_decls, list):
             print(f"  Error: export-decls must be a list of strings")
             return False
-        print(f"  Exporting module {module_name}...")
+        
+        if export_decls:
+            decls_str = ", ".join(export_decls)
+            print(f"  Exporting module {module_name} (declarations: {decls_str})...")
+        else:
+            print(f"  Exporting module {module_name} (all declarations)...")
+        
         if not run_lean4export(lean4export_dir, module_name, export_decls, cwd=build_dir, out_file=tmp_file):
             return False
 
