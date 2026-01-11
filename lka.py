@@ -298,6 +298,25 @@ def run_cmd(
     return result
 
 
+def get_lean_toolchain(directory: Path) -> str | None:
+    """Read the lean-toolchain file from a directory and return the toolchain string.
+    
+    Args:
+        directory: Directory to look for lean-toolchain file
+        
+    Returns:
+        Toolchain string (e.g., 'leanprover/lean4:v4.27.0-rc1'), or None if not found
+    """
+    toolchain_file = directory / "lean-toolchain"
+    if toolchain_file.exists():
+        try:
+            with open(toolchain_file, "r") as f:
+                return f.read().strip()
+        except Exception as e:
+            print(f"  Warning: Could not read {toolchain_file}: {e}")
+    return None
+
+
 def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list | None, cwd: Path, out_file: Path) -> bool:
     """Run lean4export (via lake env) to export a module.
 
@@ -327,8 +346,51 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
     return True
 
 
+def setup_lean4export_for_toolchain(build_base_dir: Path, toolchain: str) -> Path | None:
+    """Clone and build lean4export for a specific Lean toolchain.
+    
+    Args:
+        build_base_dir: Base directory where lean4export builds are stored
+        toolchain: Lean toolchain string (e.g., 'leanprover/lean4:v4.27.0-rc1')
+        
+    Returns:
+        Path to lean4export directory for this toolchain, or None on failure
+    """
+    # Sanitize toolchain string for use in file paths
+    toolchain_dir_name = toolchain.replace("/", "_").replace(":", "_")
+    lean4export_dir = build_base_dir / "lean4export" / toolchain_dir_name
+    
+    if not lean4export_dir.exists():
+        print(f"  Cloning lean4export for toolchain {toolchain}...")
+        lean4export_dir.mkdir(parents=True, exist_ok=True)
+        
+        clone_cmd = ["git", "clone", "--branch", "arena_json_output",
+                    "https://github.com/leanprover/lean4export",
+                    str(lean4export_dir)]
+        result = run_cmd(clone_cmd)
+        if result.returncode != 0:
+            print(f"  Error cloning lean4export: {result.stderr}")
+            return None
+
+        # Set the specific toolchain
+        toolchain_file = lean4export_dir / "lean-toolchain"
+        with open(toolchain_file, "w") as f:
+            f.write(toolchain + "\n")
+        print(f"  Set lean-toolchain to {toolchain}")
+
+        print(f"  Building lean4export with toolchain {toolchain}...")
+        result = run_cmd("lake build", cwd=lean4export_dir, shell=True)
+        if result.returncode != 0:
+            print(f"  Error building lean4export: {result.stderr}")
+            return None
+    
+    return lean4export_dir
+
+
 def setup_lean4export(work_dir_parent: Path) -> Path | None:
     """Clone and build lean4export in a sibling directory if not already present.
+    
+    DEPRECATED: Use setup_lean4export_for_toolchain instead for better toolchain support.
     
     Args:
         work_dir_parent: Parent directory where lean4export should be cloned
@@ -410,7 +472,6 @@ def setup_source_directory(
     config: dict, 
     base_dir: Path, 
     local_base_path: Path | None = None,
-    lean4export_dir: Path | None = None,
 ) -> Path | None:
     """Set up a source directory for tests or checkers.
     
@@ -424,7 +485,6 @@ def setup_source_directory(
         config: Test or checker configuration dict with name, url, dir, ref, rev, leanfile
         base_dir: Base directory where the work/build directory should be created
         local_base_path: Base path for local directories (defaults to project root)
-        lean4export_dir: Path to lean4export directory (if needed for leanfile case)
     
     Returns the working directory path, or None on failure.
     """
@@ -493,12 +553,14 @@ def setup_source_directory(
         shutil.copy(source_file, dest_file)
         print(f"  Copied {source_file} to {dest_file}")
         
-        # Copy lean-toolchain from lean4export to work directory
-        toolchain_file = lean4export_dir / "lean-toolchain"
+        # Copy lean-toolchain from tests/ directory to work directory
+        tests_toolchain = get_project_root() / "tests" / "lean-toolchain"
         dest_toolchain = work_dir / "lean-toolchain"
-        if toolchain_file.exists():
-            shutil.copy(toolchain_file, dest_toolchain)
-            print(f"  Copied lean-toolchain to work directory")
+        if tests_toolchain.exists():
+            shutil.copy(tests_toolchain, dest_toolchain)
+            print(f"  Copied lean-toolchain from tests/ to work directory")
+        else:
+            print(f"  Warning: No lean-toolchain file found in tests/ directory")
 
         # Create a trivial lakefile in the work directory
         lakefile_content = '''name = "test"
@@ -565,15 +627,33 @@ def create_test(test: dict, output_dir: Path) -> bool:
     # These test types require lean4export
     lean4export_dir = None
     if module or lean_file_path:
-        # TODO: Check out a tag based on the lean-toolchain of the test repository
-        lean4export_dir = setup_lean4export(output_dir / "work")
+        # First set up the work directory to get access to toolchain information
+        work_dir = setup_source_directory(test, output_dir / "work")
+        if work_dir is None:
+            return False
+        
+        # Get the toolchain from the appropriate directory
+        if lean_file_path:
+            # For leanfile tests, toolchain is in the work_dir (parent of src)
+            toolchain = get_lean_toolchain(work_dir.parent)
+        else:
+            # For module tests, toolchain is in the src directory (cloned repo)
+            toolchain = get_lean_toolchain(work_dir)
+        
+        if not toolchain:
+            toolchain_location = work_dir.parent if lean_file_path else work_dir
+            print(f"  Error: No lean-toolchain found in {toolchain_location}")
+            return False
+        
+        # Set up lean4export for this specific toolchain
+        lean4export_dir = setup_lean4export_for_toolchain(get_project_root() / "_build", toolchain)
         if lean4export_dir is None:
             return False
-
-    # Set up work directory (url, dir, or empty)
-    work_dir = setup_source_directory(test, output_dir / "work", lean4export_dir=lean4export_dir)
-    if work_dir is None:
-        return False
+    else:
+        # Set up work directory (url, dir, or empty) for non-lean4export tests
+        work_dir = setup_source_directory(test, output_dir / "work")
+        if work_dir is None:
+            return False
 
     # Run pre-build command if specified
     if pre_build:
