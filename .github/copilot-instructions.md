@@ -19,7 +19,10 @@ This is a **benchmarking framework for Lean kernel implementations** that tests 
 
 ## Essential Workflows
 
-### Development Commands (use `nix develop` shell)
+### Development Commands
+
+If `direnv` is not active, prepend commands with `nix develop -c`.
+
 ```bash
 ./lka.py build-test [name]      # Generate test files from YAML definitions
 ./lka.py build-checker [name]   # Build checker executables
