@@ -354,6 +354,8 @@ def setup_lean4export(toolchain: str) -> Path | None:
         
     Returns:
         Path to lean4export directory for this toolchain, or None on failure
+        
+    Note: Failed temporary directories are left in place for debugging purposes.
     """
     # Sanitize toolchain string for use in file paths
     toolchain_dir_name = toolchain.replace("/", "_").replace(":", "_")
@@ -362,25 +364,44 @@ def setup_lean4export(toolchain: str) -> Path | None:
     
     if not lean4export_dir.exists():
         print(f"  Cloning lean4export for toolchain {toolchain}...")
-        lean4export_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Work in temporary directory first
+        lean4export_tmp_dir = Path(str(lean4export_dir) + ".tmp")
+        
+        # Clean up any existing temporary directory
+        if lean4export_tmp_dir.exists():
+            shutil.rmtree(lean4export_tmp_dir)
+        
+        lean4export_tmp_dir.mkdir(parents=True, exist_ok=True)
         
         clone_cmd = ["git", "clone", "--branch", "arena_json_output",
                     "https://github.com/leanprover/lean4export",
-                    str(lean4export_dir)]
+                    str(lean4export_tmp_dir)]
         result = run_cmd(clone_cmd)
         if result.returncode != 0:
             print(f"  Error cloning lean4export: {result.stderr}")
             return None
 
         # Set the specific toolchain
-        toolchain_file = lean4export_dir / "lean-toolchain"
-        with open(toolchain_file, "w") as f:
-            f.write(toolchain + "\n")
+        toolchain_file = lean4export_tmp_dir / "lean-toolchain"
+        try:
+            with open(toolchain_file, "w") as f:
+                f.write(toolchain + "\n")
+        except Exception as e:
+            print(f"  Error writing lean-toolchain file: {e}")
+            return None
 
         print(f"  Building lean4export with toolchain {toolchain}...")
-        result = run_cmd("lake build", cwd=lean4export_dir, shell=True)
+        result = run_cmd("lake build", cwd=lean4export_tmp_dir, shell=True)
         if result.returncode != 0:
             print(f"  Error building lean4export: {result.stderr}")
+            return None
+        
+        # Move temporary directory to final location atomically
+        try:
+            lean4export_tmp_dir.rename(lean4export_dir)
+        except Exception as e:
+            print(f"  Error moving lean4export directory to final location: {e}")
             return None
     
     return lean4export_dir
