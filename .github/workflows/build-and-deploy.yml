@@ -1,7 +1,8 @@
 name: Build and Deploy Site
 
 on:
-  workflow_dispatch: # Manual trigger only
+  workflow_dispatch: # Manual trigger
+  push: # Trigger on all pushes
 
 jobs:
   build-and-deploy:
@@ -22,10 +23,11 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Pages
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/configure-pages@v4
 
       - name: Setup nix shell
-        run:  true
+        run: "true"
         shell: 'nix develop -c bash -euxo pipefail {0}'
       
       - name: Check timing support
@@ -49,7 +51,7 @@ jobs:
         continue-on-error: true
       
       - name: Generate tests
-        run: ./lka.py build-test
+        run: ./lka.py build-test ${{ github.event_name == 'push' && '--no-large' || '' }}
         shell: 'nix develop -c bash -euxo pipefail {0}'
       
       - name: Build checkers
@@ -70,5 +72,6 @@ jobs:
           path: '_out'
       
       - name: Deploy to GitHub Pages
+        if: github.event_name == 'workflow_dispatch'
         id: deployment
         uses: actions/deploy-pages@v4

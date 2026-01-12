@@ -749,6 +749,14 @@ def cmd_build_test(args: argparse.Namespace) -> int:
     else:
         tests = load_tests()
 
+    # Filter out large tests if --no-large flag is set
+    if args.no_large:
+        original_count = len(tests)
+        tests = [test for test in tests if not test.get("large", False)]
+        skipped_count = original_count - len(tests)
+        if skipped_count > 0:
+            print(f"Skipping {skipped_count} large test(s) due to --no-large flag")
+
     if not tests:
         print("No tests found.")
         return 0
@@ -1340,6 +1348,11 @@ def main() -> int:
         "name",
         nargs="?",
         help="Name of the test to build (default: all tests)",
+    )
+    build_test_parser.add_argument(
+        "--no-large",
+        action="store_true",
+        help="Skip large tests (marked with 'large: true' in YAML)",
     )
 
     # build-checker command

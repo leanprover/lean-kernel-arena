@@ -56,6 +56,10 @@
       "type": "string",
       "enum": ["accept", "reject"],
       "description": "Expected test outcome for correctness checking"
+    },
+    "large": {
+      "type": "boolean",
+      "description": "Mark test as large (resource-intensive). Can be skipped with --no-large flag"
     }
   },
   "additionalProperties": false,
