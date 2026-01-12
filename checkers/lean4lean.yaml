@@ -8,6 +8,6 @@ description: |
 
 url: https://github.com/nomeata/lean4lean
 ref: joachim/parse-json
-rev: d2d5b337dae12b03cd7e3e0f6b52097dc1d2ee67
+rev: 35a18d5407f7e6de632644906a754f2081a1f53c
 build: lake build lean4lean
 run: .lake/build/bin/lean4lean --import "$IN"
