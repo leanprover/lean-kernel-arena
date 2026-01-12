@@ -987,6 +987,10 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
         print("No built tests found.")
         return 0
 
+    # Sort tests by line count for consistent processing order
+    test_stats = load_test_stats()
+    tests = sort_tests_by_line_count(tests, test_stats)
+
     results = []
     for checker in checkers:
         for test in tests:
@@ -1051,6 +1055,25 @@ def load_test_stats() -> dict:
             stats[data["name"]] = data
     
     return stats
+
+
+def sort_tests_by_line_count(tests: list[dict], test_stats: dict) -> list[dict]:
+    """Sort tests by line count in ascending order.
+    
+    Args:
+        tests: List of test dictionaries
+        test_stats: Dictionary of test stats keyed by test name
+        
+    Returns:
+        Sorted list of tests (ascending by line count)
+    """
+    def get_line_count(test):
+        test_name = test["name"]
+        if test_name in test_stats:
+            return test_stats[test_name].get("lines", 0)
+        return 0
+    
+    return sorted(tests, key=get_line_count)
 
 
 def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> dict:
@@ -1312,6 +1335,13 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                     # Add test description (rendered from markdown)
                     result["test_description"] = render_markdown(test.get("description", ""))
                     checker_results.append(result)
+            
+            # Sort checker results by line count (ascending order)
+            def get_result_line_count(result):
+                test_stats_data = result.get("test_stats", {})
+                return test_stats_data.get("lines", 0)
+            
+            checker_results.sort(key=get_result_line_count)
             
             # Create a copy of checker data with rendered description
             checker_with_rendered_desc = checker.copy()
