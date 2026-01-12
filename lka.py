@@ -672,9 +672,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
         
         if export_decls:
             decls_str = ", ".join(export_decls)
-            print(f"  Exporting module {module_name} (declarations: {decls_str})...")
+            print(f"  Exporting module {module_name} ({decls_str})...")
         else:
-            print(f"  Exporting module {module_name} (all declarations)...")
+            print(f"  Exporting module {module_name} ...")
         
         if not run_lean4export(lean4export_dir, module_name, export_decls, cwd=build_dir, out_file=tmp_file):
             return False
