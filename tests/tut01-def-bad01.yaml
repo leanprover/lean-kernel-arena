@@ -1,0 +1,4 @@
+description: Tests the simplest form of definition declaration.
+leanfile: tests/tutorial.lean
+export-decls: ["tut01_bad01"]
+outcome: reject
