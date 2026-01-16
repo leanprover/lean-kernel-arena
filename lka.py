@@ -1112,8 +1112,8 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
         
         status = result.get("status")
         
-        # Track mathlib performance metrics
-        if test_name == "mathlib":
+        # Track mathlib performance metrics only if the test was accepted
+        if test_name == "mathlib" and status == "accepted":
             mathlib_time = result.get("wall_time")
             mathlib_cpu_time = result.get("cpu_time")
             mathlib_max_rss = result.get("max_rss")
