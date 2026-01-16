@@ -424,7 +424,8 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
     items = []
     if not directory.exists():
         return items
-    for file in directory.glob("*.yaml"):
+    # Sort files alphabetically to avoid dependency on filesystem order
+    for file in sorted(directory.glob("*.yaml")):
         with open(file, "r") as f:
             data = yaml.safe_load(f)
             
@@ -738,12 +739,14 @@ def create_test(test: dict, output_dir: Path) -> bool:
         
         subtests_found = []
         if good_dir.exists():
-            for ndjson_file in good_dir.glob("*.ndjson"):
+            # Sort files alphabetically to avoid dependency on filesystem order
+            for ndjson_file in sorted(good_dir.glob("*.ndjson")):
                 subtest_name = ndjson_file.stem
                 subtests_found.append((subtest_name, "good"))
         
         if bad_dir.exists():
-            for ndjson_file in bad_dir.glob("*.ndjson"):
+            # Sort files alphabetically to avoid dependency on filesystem order
+            for ndjson_file in sorted(bad_dir.glob("*.ndjson")):
                 subtest_name = ndjson_file.stem
                 subtests_found.append((subtest_name, "bad"))
         
@@ -1141,7 +1144,8 @@ def load_results() -> dict:
     if not results_dir.exists():
         return results
     
-    for file in results_dir.glob("*.json"):
+    # Sort files alphabetically to avoid dependency on filesystem order
+    for file in sorted(results_dir.glob("*.json")):
         with open(file, "r") as f:
             data = json.load(f)
             key = (data["checker"], data["test"])
@@ -1162,8 +1166,8 @@ def load_tests() -> list[dict]:
     if not build_tests_dir.exists():
         return tests
     
-    # Recursively find all .stats.json files
-    for stats_file in build_tests_dir.rglob("*.stats.json"):
+    # Recursively find all .stats.json files, sorted alphabetically
+    for stats_file in sorted(build_tests_dir.rglob("*.stats.json")):
         try:
             with open(stats_file, "r") as f:
                 test_data = json.load(f)
