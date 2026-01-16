@@ -431,14 +431,63 @@ def load_tests() -> list[dict]:
     return load_yaml_files(get_project_root() / "tests", "test")
 
 
+def expand_tests() -> list[dict]:
+    """Load test definitions and expand multiple tests into individual test entries."""
+    base_tests = load_tests()
+    expanded_tests = []
+    
+    build_tests_dir = get_project_root() / "_build" / "tests"
+    
+    for test in base_tests:
+        if test.get("multiple", False):
+            # This is a multiple test - check if it has been built
+            test_dir = build_tests_dir / test["name"]
+            if test_dir.exists():
+                # Enumerate subtests from good/ and bad/ directories
+                good_dir = test_dir / "good"
+                bad_dir = test_dir / "bad"
+                
+                # Process good subtests (expected outcome: accept)
+                if good_dir.exists():
+                    for ndjson_file in good_dir.glob("*.ndjson"):
+                        subtest_name = ndjson_file.stem
+                        expanded_test = test.copy()
+                        expanded_test["name"] = f"{test['name']}/{subtest_name}"
+                        expanded_test["outcome"] = "accept"
+                        expanded_test["_is_subtest"] = True
+                        expanded_test["_parent_test"] = test["name"]
+                        expanded_test["_subtest_name"] = subtest_name
+                        expanded_test["_subtest_category"] = "good"
+                        expanded_tests.append(expanded_test)
+                
+                # Process bad subtests (expected outcome: reject)
+                if bad_dir.exists():
+                    for ndjson_file in bad_dir.glob("*.ndjson"):
+                        subtest_name = ndjson_file.stem
+                        expanded_test = test.copy()
+                        expanded_test["name"] = f"{test['name']}/{subtest_name}"
+                        expanded_test["outcome"] = "reject"
+                        expanded_test["_is_subtest"] = True
+                        expanded_test["_parent_test"] = test["name"]
+                        expanded_test["_subtest_name"] = subtest_name
+                        expanded_test["_subtest_category"] = "bad"
+                        expanded_tests.append(expanded_test)
+            # If multiple test directory doesn't exist, skip it (not built yet)
+        else:
+            # Regular single test
+            expanded_tests.append(test)
+    
+    return expanded_tests
+
+
 def load_checkers() -> list[dict]:
     """Load all checker definitions."""
     return load_yaml_files(get_project_root() / "checkers", "checker")
 
 
 def find_test_by_name(name: str) -> dict | None:
-    """Find a test by name."""
-    for test in load_tests():
+    """Find a test by name (including expanded subtests)."""
+    for test in expand_tests():
         if test["name"] == name:
             return test
     return None
@@ -583,6 +632,7 @@ def create_test(test: dict, output_dir: Path) -> bool:
     lean_file_path = test.get("leanfile")
     export_decls = test.get("export-decls")
     pre_build = test.get("pre-build")
+    multiple = test.get("multiple", False)
 
     # Determine test type based on fields present
     if module:
@@ -597,13 +647,28 @@ def create_test(test: dict, output_dir: Path) -> bool:
         print(f"  Error: Test {name} must have 'module', 'run', 'leanfile', or 'file' field")
         return False
 
-    print(f"Creating test: {name} (type: {test_type})")
+    # Validate multiple flag
+    if multiple and test_type != "run":
+        print(f"  Error: Test {name} uses 'multiple' flag but this is only valid with 'run' field")
+        return False
+
+    print(f"Creating test: {name} (type: {test_type}{'multiple' if multiple else ''})")
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_file = output_dir / f"{name}.ndjson"
-    tmp_file = output_dir / f"{name}.ndjson.tmp"
+
+    if multiple:
+        # For multiple tests, output directory is testname/ instead of testname.ndjson
+        final_output_dir = output_dir / name
+        tmp_output_dir = output_dir / f"{name}.tmp"
+    else:
+        # Regular single test
+        output_file = output_dir / f"{name}.ndjson"
+        tmp_file = output_dir / f"{name}.ndjson.tmp"
 
     # Handle static file case (no work directory needed)
     if file_path:
+        if multiple:
+            print(f"  Error: Test {name} cannot use 'multiple' flag with static file")
+            return False
         source_file = get_project_root() / file_path
         if not source_file.exists():
             print(f"  Source file not found: {source_file}")
@@ -683,57 +748,135 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Run the script with $OUT environment variable
         print(f"  Running: {run_cmd_str}")
         env = os.environ.copy()
-        env["OUT"] = str(tmp_file)
+        
+        if multiple:
+            # For multiple tests, $OUT points to a temporary directory
+            tmp_output_dir.mkdir(parents=True, exist_ok=True)
+            env["OUT"] = str(tmp_output_dir)
+        else:
+            # For single tests, $OUT points to the output file
+            env["OUT"] = str(tmp_file)
 
         result = run_cmd(run_cmd_str, cwd=work_dir, shell=True, env=env)
         if result.returncode != 0:
             print(f"  Script failed: {result.stderr}")
             return False
 
-    # Move tmp file to final location upon success
-    tmp_file.rename(output_file)
-
-    # Gather stats about the created file
-    file_size = output_file.stat().st_size
-    with open(output_file, "r") as f:
-        line_count = sum(1 for _ in f)
+    if multiple:
+        # For multiple tests, validate directory structure and move to final location
+        if not tmp_output_dir.exists():
+            print(f"  Error: Script did not create output directory {tmp_output_dir}")
+            return False
+            
+        # Check that we have good/ and/or bad/ subdirectories with .ndjson files
+        good_dir = tmp_output_dir / "good"
+        bad_dir = tmp_output_dir / "bad"
+        
+        subtests_found = []
+        if good_dir.exists():
+            for ndjson_file in good_dir.glob("*.ndjson"):
+                subtest_name = ndjson_file.stem
+                subtests_found.append((subtest_name, "good"))
+        
+        if bad_dir.exists():
+            for ndjson_file in bad_dir.glob("*.ndjson"):
+                subtest_name = ndjson_file.stem
+                subtests_found.append((subtest_name, "bad"))
+        
+        if not subtests_found:
+            print(f"  Error: No .ndjson files found in {tmp_output_dir}/good/ or {tmp_output_dir}/bad/")
+            return False
+        
+        # Move to final location
+        if final_output_dir.exists():
+            shutil.rmtree(final_output_dir)
+        tmp_output_dir.rename(final_output_dir)
+        
+        # Generate stats for each subtest
+        for subtest_name, outcome in subtests_found:
+            subtest_file = final_output_dir / outcome / f"{subtest_name}.ndjson"
+            
+            # Gather stats about the subtest file
+            file_size = subtest_file.stat().st_size
+            with open(subtest_file, "r") as f:
+                line_count = sum(1 for _ in f)
+            
+            # Format file size and line count
+            size_str = format_memory(file_size)
+            
+            if line_count >= 1_000_000_000:
+                lines_str = f"{line_count / 1_000_000_000:.1f}G"
+            elif line_count >= 1_000_000:
+                lines_str = f"{line_count / 1_000_000:.1f}M"
+            elif line_count >= 1_000:
+                lines_str = f"{line_count / 1_000:.1f}k"
+            else:
+                lines_str = str(line_count)
+                
+            # Write stats JSON file
+            stats_file = final_output_dir / outcome / f"{subtest_name}.stats.json"
+            stats = {
+                "name": f"{name}/{subtest_name}",
+                "parent_test": name,
+                "subtest_name": subtest_name,
+                "outcome": "accept" if outcome == "good" else "reject",
+                "size": file_size,
+                "size_str": size_str,
+                "lines": line_count,
+                "lines_str": lines_str,
+                "yaml_file": f"tests/{name}.yaml",
+            }
+            with open(stats_file, "w") as f:
+                json.dump(stats, f, indent=2)
+        
+        print(f"  Created {len(subtests_found)} subtests in {final_output_dir}")
+        return True
     
-    # Format file size in human-readable format
-    if file_size >= 1024 * 1024 * 1024:
-        size_str = f"{file_size / (1024 * 1024 * 1024):.1f} GB"
-    elif file_size >= 1024 * 1024:
-        size_str = f"{file_size / (1024 * 1024):.1f} MB"
-    elif file_size >= 1024:
-        size_str = f"{file_size / 1024:.1f} KB"
     else:
-        size_str = f"{file_size} B"
+        # Single test: move tmp file to final location and gather stats
+        tmp_file.rename(output_file)
 
-    # Format line count with SI prefixes
-    if line_count >= 1_000_000_000:
-        lines_str = f"{line_count / 1_000_000_000:.1f}G"
-    elif line_count >= 1_000_000:
-        lines_str = f"{line_count / 1_000_000:.1f}M"
-    elif line_count >= 1_000:
-        lines_str = f"{line_count / 1_000:.1f}k"
-    else:
-        lines_str = str(line_count)
+        # Gather stats about the created file
+        file_size = output_file.stat().st_size
+        with open(output_file, "r") as f:
+            line_count = sum(1 for _ in f)
+        
+        # Format file size in human-readable format
+        if file_size >= 1024 * 1024 * 1024:
+            size_str = f"{file_size / (1024 * 1024 * 1024):.1f} GB"
+        elif file_size >= 1024 * 1024:
+            size_str = f"{file_size / (1024 * 1024):.1f} MB"
+        elif file_size >= 1024:
+            size_str = f"{file_size / 1024:.1f} KB"
+        else:
+            size_str = f"{file_size} B"
 
-    print(f"  Created {output_file} ({size_str}, {lines_str} lines)")
+        # Format line count with SI prefixes
+        if line_count >= 1_000_000_000:
+            lines_str = f"{line_count / 1_000_000_000:.1f}G"
+        elif line_count >= 1_000_000:
+            lines_str = f"{line_count / 1_000_000:.1f}M"
+        elif line_count >= 1_000:
+            lines_str = f"{line_count / 1_000:.1f}k"
+        else:
+            lines_str = str(line_count)
 
-    # Write stats JSON file
-    stats_file = output_dir / f"{name}.stats.json"
-    stats = {
-        "name": name,
-        "size": file_size,
-        "size_str": size_str,
-        "lines": line_count,
-        "lines_str": lines_str,
-        "yaml_file": f"tests/{name}.yaml",
-    }
-    with open(stats_file, "w") as f:
-        json.dump(stats, f, indent=2)
+        print(f"  Created {output_file} ({size_str}, {lines_str} lines)")
 
-    return True
+        # Write stats JSON file
+        stats_file = output_dir / f"{name}.stats.json"
+        stats = {
+            "name": name,
+            "size": file_size,
+            "size_str": size_str,
+            "lines": line_count,
+            "lines_str": lines_str,
+            "yaml_file": f"tests/{name}.yaml",
+        }
+        with open(stats_file, "w") as f:
+            json.dump(stats, f, indent=2)
+
+        return True
 
 
 def cmd_build_test(args: argparse.Namespace) -> int:
@@ -861,7 +1004,15 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     test_name = test["name"]
     checker_run_cmd = checker["run"]
 
-    test_file = tests_dir / f"{test_name}.ndjson"
+    # Handle subtest vs regular test file paths
+    if test.get("_is_subtest"):
+        parent_test = test["_parent_test"]
+        subtest_name = test["_subtest_name"]
+        category = test["_subtest_category"]
+        test_file = tests_dir / parent_test / category / f"{subtest_name}.ndjson"
+    else:
+        test_file = tests_dir / f"{test_name}.ndjson"
+        
     if not test_file.exists():
         result_data = {
             "checker": checker_name,
@@ -875,9 +1026,10 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
             "stdout": "",
             "stderr": "",
         }
-        # Write result to JSON file
+        # Write result to JSON file (replace "/" with "_" for valid filename)
         results_dir.mkdir(parents=True, exist_ok=True)
-        result_file = results_dir / f"{checker_name}_{test_name}.json"
+        safe_test_name = test_name.replace("/", "_")
+        result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
         with open(result_file, "w") as f:
             json.dump(result_data, f, indent=2)
         return result_data
@@ -920,9 +1072,10 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
         "stderr": result.stderr,
     }
 
-    # Write result to JSON file
+    # Write result to JSON file (replace "/" with "_" for valid filename)
     results_dir.mkdir(parents=True, exist_ok=True)
-    result_file = results_dir / f"{checker_name}_{test_name}.json"
+    safe_test_name = test_name.replace("/", "_")
+    result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
     with open(result_file, "w") as f:
         json.dump(result_data, f, indent=2)
 
@@ -965,12 +1118,21 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
             return 1
         tests = [test]
     else:
-        tests = load_tests()
+        tests = expand_tests()
         # Filter out tests that weren't built (no .ndjson file exists)
         built_tests = []
         skipped_test_names = []
         for test in tests:
-            test_file = tests_dir / f"{test['name']}.ndjson"
+            if test.get("_is_subtest"):
+                # For subtests, check the specific subtest file
+                parent_test = test["_parent_test"]
+                subtest_name = test["_subtest_name"]
+                category = test["_subtest_category"]
+                test_file = tests_dir / parent_test / category / f"{subtest_name}.ndjson"
+            else:
+                # For regular tests, check the regular file
+                test_file = tests_dir / f"{test['name']}.ndjson"
+            
             if test_file.exists():
                 built_tests.append(test)
             else:
@@ -1042,17 +1204,30 @@ def load_results() -> dict:
 def load_test_stats() -> dict:
     """Load all test stats JSON files from _build/tests directory.
     
-    Returns a dict keyed by test name.
+    Returns a dict keyed by test name (including subtests like "parent/subtest").
     """
     stats = {}
     stats_dir = get_project_root() / "_build" / "tests"
     if not stats_dir.exists():
         return stats
     
+    # Load regular test stats
     for file in stats_dir.glob("*.stats.json"):
         with open(file, "r") as f:
             data = json.load(f)
             stats[data["name"]] = data
+    
+    # Load multiple test stats (from subdirectories)
+    for test_dir in stats_dir.iterdir():
+        if test_dir.is_dir():
+            # Check for good/ and bad/ subdirectories
+            for category in ["good", "bad"]:
+                category_dir = test_dir / category
+                if category_dir.exists():
+                    for stats_file in category_dir.glob("*.stats.json"):
+                        with open(stats_file, "r") as f:
+                            data = json.load(f)
+                            stats[data["name"]] = data
     
     return stats
 
@@ -1268,22 +1443,43 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
             # Skip large tests
             if test.get("large", False):
                 continue
-                
-            test_file = build_tests_dir / f"{test['name']}.ndjson"
-            if not test_file.exists():
-                continue
-                
-            outcome = test.get("outcome", "unknown")
-            if outcome == "accept":
-                subdir = "good"
-                good_count += 1
-            else:
-                subdir = "bad"
-                bad_count += 1
             
-            # Add file to tarball with appropriate subdirectory
-            arcname = f"{subdir}/{test['name']}.ndjson"
-            tar.add(test_file, arcname=arcname)
+            if test.get("_is_subtest"):
+                # Handle subtests
+                parent_test = test["_parent_test"]
+                subtest_name = test["_subtest_name"]
+                category = test["_subtest_category"]
+                test_file = build_tests_dir / parent_test / category / f"{subtest_name}.ndjson"
+                
+                if test_file.exists():
+                    outcome = test.get("outcome", "unknown")
+                    if outcome == "accept":
+                        subdir = "good"
+                        good_count += 1
+                    else:
+                        subdir = "bad"
+                        bad_count += 1
+                    
+                    # Use the full test name (parent/subtest) for the archive name
+                    arcname = f"{subdir}/{test['name']}.ndjson"
+                    tar.add(test_file, arcname=arcname)
+            else:
+                # Handle regular tests
+                test_file = build_tests_dir / f"{test['name']}.ndjson"
+                if not test_file.exists():
+                    continue
+                    
+                outcome = test.get("outcome", "unknown")
+                if outcome == "accept":
+                    subdir = "good"
+                    good_count += 1
+                else:
+                    subdir = "bad"
+                    bad_count += 1
+                
+                # Add file to tarball with appropriate subdirectory
+                arcname = f"{subdir}/{test['name']}.ndjson"
+                tar.add(test_file, arcname=arcname)
     
     # Get tarball size
     tarball_size = tarball_path.stat().st_size if tarball_path.exists() else 0
@@ -1310,7 +1506,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         autoescape=select_autoescape(),
     )
 
-    tests = load_tests()
+    tests = expand_tests()
     checkers = load_checkers()
     results = load_results()
     test_stats = load_test_stats()

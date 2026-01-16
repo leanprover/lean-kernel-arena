@@ -60,6 +60,10 @@
     "large": {
       "type": "boolean",
       "description": "Mark test as large (resource-intensive). Can be skipped with --no-large flag"
+    },
+    "multiple": {
+      "type": "boolean", 
+      "description": "Generate multiple tests from single test description. Only valid with 'run' field. Output directory contains good/ and bad/ subdirectories with .ndjson files"
     }
   },
   "additionalProperties": false,
@@ -85,7 +89,8 @@
           { "required": ["run"] },
           { "required": ["file"] },
           { "required": ["leanfile"] },
-          { "required": ["dir"] }
+          { "required": ["dir"] },
+          { "required": ["multiple"] }
         ]
       }
     },
@@ -102,7 +107,8 @@
           { "required": ["ref"] },
           { "required": ["rev"] },
           { "required": ["pre-build"] },
-          { "required": ["export-decls"] }
+          { "required": ["export-decls"] },
+          { "required": ["multiple"] }
         ]
       }
     },
@@ -118,7 +124,8 @@
           { "required": ["file"] },
           { "required": ["ref"] },
           { "required": ["rev"] },
-          { "required": ["pre-build"] }
+          { "required": ["pre-build"] },
+          { "required": ["multiple"] }
         ]
       }
     },
@@ -147,7 +154,8 @@
           { "required": ["leanfile"] },
           { "required": ["run"] },
           { "required": ["ref"] },
-          { "required": ["rev"] }
+          { "required": ["rev"] },
+          { "required": ["multiple"] }
         ]
       }
     }

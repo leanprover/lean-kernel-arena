@@ -1,0 +1,15 @@
+description: Multiple tutorial tests generated from a single script.
+dir: tests
+multiple: true
+run: |
+  mkdir -p "$OUT/good" "$OUT/bad"
+  
+  # Create some good tests (should be accepted)
+  echo '{"type": "const", "name": "Nat", "literal": "Type"}' > "$OUT/good/simple-type.ndjson"
+  echo '{"type": "const", "name": "zero", "literal": "Nat"}' >> "$OUT/good/simple-type.ndjson"
+  
+  echo '{"type": "const", "name": "Bool", "literal": "Type"}' > "$OUT/good/bool-type.ndjson"
+  echo '{"type": "const", "name": "true", "literal": "Bool"}' >> "$OUT/good/bool-type.ndjson"
+  
+  # Create a bad test (should be rejected)  
+  echo '{"type": "const", "name": "invalid", "literal": "BadType"}' > "$OUT/bad/invalid-type.ndjson"
