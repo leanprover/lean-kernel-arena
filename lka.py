@@ -774,7 +774,6 @@ def create_test(test: dict, output_dir: Path) -> bool:
                 "lines": line_count,
                 "lines_str": lines_str,
                 "yaml_file": f"tests/{name}.yaml",
-                "_is_subtest": True,
             }
             
             # Generate and store source links from parent test
@@ -829,7 +828,6 @@ def create_test(test: dict, output_dir: Path) -> bool:
             "lines_str": lines_str,
             "yaml_file": f"tests/{name}.yaml",
             "outcome": test.get("outcome"),
-            "_is_subtest": False,
         }
         # Add description from YAML if present
         if test.get("description"):
@@ -981,8 +979,8 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     test_name = test["name"]
     checker_run_cmd = checker["run"]
 
-    # Use the _test_file path stored in the test dict
-    test_file = test["_test_file"]
+    # Use the file path stored in the test dict
+    test_file = test["file"]
         
     if not test_file.exists():
         result_data = {
@@ -1173,9 +1171,8 @@ def load_tests() -> list[dict]:
             # Determine the corresponding .ndjson file path based on stats file location
             ndjson_file = stats_file.parent / (stats_file.stem.replace('.stats', '') + '.ndjson')
             if ndjson_file.exists():
-                # Add the file paths that callers expect
+                # Add the file path that callers expect
                 test_data["file"] = ndjson_file
-                test_data["_test_file"] = ndjson_file
                 tests.append(test_data)
             else:
                 print(f"Warning: No corresponding .ndjson file for {stats_file}")
@@ -1393,8 +1390,8 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
             if test.get("large", False) or test.get("size", 0) > 1024*1024*1024:
                 continue
             
-            # Use the _test_file path from test data
-            test_file = test["_test_file"]
+            # Use the file path from test data
+            test_file = test["file"]
             if not test_file.exists():
                 continue
                 
@@ -1509,7 +1506,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                     result = results[key].copy()
                     result["expected"] = test.get("outcome")
                     # Add test stats (test object contains all stats data)
-                    result["test_stats"] = {k: v for k, v in test.items() if k not in ["name", "file", "_test_file"]}
+                    result["test_stats"] = {k: v for k, v in test.items() if k not in ["name", "file"]}
                     # Add test description from stats (rendered from markdown)
                     stats_description = test.get("description", "")
                     result["test_description"] = render_markdown(stats_description)
