@@ -821,6 +821,18 @@ def create_test(test: dict, output_dir: Path) -> bool:
                 "lines_str": lines_str,
                 "yaml_file": f"tests/{name}.yaml",
             }
+            
+            # Check for subtest-name.info.json file with description
+            info_file = tmp_output_dir / outcome / f"{subtest_name}.info.json"
+            if info_file.exists():
+                try:
+                    with open(info_file, "r") as f:
+                        info_data = json.load(f)
+                    if "description" in info_data:
+                        stats["description"] = info_data["description"]
+                except Exception as e:
+                    print(f"  Warning: Could not read {info_file}: {e}")
+            
             with open(stats_file, "w") as f:
                 json.dump(stats, f, indent=2)
         
@@ -857,6 +869,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
             "lines_str": lines_str,
             "yaml_file": f"tests/{name}.yaml",
         }
+        # Add description from YAML if present
+        if test.get("description"):
+            stats["description"] = test["description"]
         with open(stats_file, "w") as f:
             json.dump(stats, f, indent=2)
 
@@ -1537,10 +1552,13 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                     # Add test stats
                     if test["name"] in test_stats:
                         result["test_stats"] = test_stats[test["name"]]
+                        # Add test description from stats (rendered from markdown)
+                        stats_description = test_stats[test["name"]].get("description", "")
+                        result["test_description"] = render_markdown(stats_description)
+                    else:
+                        result["test_description"] = ""
                     # Add test links
                     result["test_links"] = generate_source_links(test, "tests", build_info.get("git_revision"))
-                    # Add test description (rendered from markdown)
-                    result["test_description"] = render_markdown(test.get("description", ""))
                     checker_results.append(result)
             
             # Sort checker results by line count (ascending order)

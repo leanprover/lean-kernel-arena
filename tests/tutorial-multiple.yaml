@@ -7,9 +7,12 @@ run: |
   # Create some good tests (should be accepted)
   echo '{"type": "const", "name": "Nat", "literal": "Type"}' > "$OUT/good/simple-type.ndjson"
   echo '{"type": "const", "name": "zero", "literal": "Nat"}' >> "$OUT/good/simple-type.ndjson"
+  echo '{"description": "Basic type and constant declarations for natural numbers."}' > "$OUT/good/simple-type.info.json"
   
   echo '{"type": "const", "name": "Bool", "literal": "Type"}' > "$OUT/good/bool-type.ndjson"
   echo '{"type": "const", "name": "true", "literal": "Bool"}' >> "$OUT/good/bool-type.ndjson"
+  echo '{"description": "Boolean type and true constant declaration."}' > "$OUT/good/bool-type.info.json"
   
   # Create a bad test (should be rejected)  
   echo '{"type": "const", "name": "invalid", "literal": "BadType"}' > "$OUT/bad/invalid-type.ndjson"
+  echo '{"description": "Invalid test with non-existent type **BadType** - should be rejected."}' > "$OUT/bad/invalid-type.info.json"
