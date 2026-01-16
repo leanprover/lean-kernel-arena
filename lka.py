@@ -1408,7 +1408,6 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
     import os
     
     tarball_path = output_dir / "lean-arena-tests.tar.gz"
-    build_tests_dir = get_project_root() / "_build" / "tests"
     
     good_count = 0
     bad_count = 0
@@ -1419,39 +1418,22 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
             if test.get("large", False):
                 continue
             
-            if test.get("_is_subtest"):
-                # Handle subtests
-                test_file = test["_test_file"]
+            # Use the unified _test_file path for all tests
+            test_file = test["_test_file"]
+            if not test_file.exists():
+                continue
                 
-                if test_file.exists():
-                    outcome = test.get("outcome", "unknown")
-                    if outcome == "accept":
-                        subdir = "good"
-                        good_count += 1
-                    else:
-                        subdir = "bad"
-                        bad_count += 1
-                    
-                    # Use the full test name (parent/subtest) for the archive name
-                    arcname = f"{subdir}/{test['name']}.ndjson"
-                    tar.add(test_file, arcname=arcname)
+            outcome = test.get("outcome", "unknown")
+            if outcome == "accept":
+                subdir = "good"
+                good_count += 1
             else:
-                # Handle regular tests
-                test_file = build_tests_dir / f"{test['name']}.ndjson"
-                if not test_file.exists():
-                    continue
-                    
-                outcome = test.get("outcome", "unknown")
-                if outcome == "accept":
-                    subdir = "good"
-                    good_count += 1
-                else:
-                    subdir = "bad"
-                    bad_count += 1
-                
-                # Add file to tarball with appropriate subdirectory
-                arcname = f"{subdir}/{test['name']}.ndjson"
-                tar.add(test_file, arcname=arcname)
+                subdir = "bad"
+                bad_count += 1
+            
+            # Add file to tarball with appropriate subdirectory
+            arcname = f"{subdir}/{test['name']}.ndjson"
+            tar.add(test_file, arcname=arcname)
     
     # Get tarball size
     tarball_size = tarball_path.stat().st_size if tarball_path.exists() else 0
