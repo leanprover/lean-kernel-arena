@@ -3,6 +3,7 @@
 
 import argparse
 import datetime
+import fnmatch
 import json
 import os
 import shutil
@@ -451,19 +452,39 @@ def load_checkers() -> list[dict]:
 
 def find_test_by_name(name: str) -> dict | None:
     """Find a test by name (including expanded subtests)."""
-    tests = load_tests()
-    for test in tests:
-        if test["name"] == name:
-            return test
-    return None
+    results = find_items_by_pattern(name, "tests")
+    return results[0] if results else None
 
 
 def find_checker_by_name(name: str) -> dict | None:
     """Find a checker by name."""
-    for checker in load_checkers():
-        if checker["name"] == name:
-            return checker
-    return None
+    results = find_items_by_pattern(name, "checkers")
+    return results[0] if results else None
+
+
+def find_items_by_pattern(pattern: str, item_type: str) -> list[dict]:
+    """Find tests or checkers by glob pattern.
+    
+    Args:
+        pattern: Name or glob pattern to match against
+        item_type: "tests" or "checkers"
+    
+    Returns:
+        List of matching items (tests or checkers)
+    """
+    if item_type == "tests":
+        items = load_tests()
+    elif item_type == "checkers":
+        items = load_checkers()
+    else:
+        raise ValueError(f"Invalid item_type: {item_type}")
+    
+    # If pattern contains glob characters, use glob matching
+    if any(char in pattern for char in ['*', '?', '[', ']']):
+        return [item for item in items if fnmatch.fnmatch(item["name"], pattern)]
+    else:
+        # Exact match
+        return [item for item in items if item["name"] == pattern]
 
 
 # =============================================================================
@@ -858,15 +879,15 @@ def cmd_build_test(args: argparse.Namespace) -> int:
     if args.name:
         # For building, we need to find from base tests, not expanded tests
         base_tests = load_test_descriptions()
-        test = None
-        for t in base_tests:
-            if t["name"] == args.name:
-                test = t
-                break
-        if test is None:
-            print(f"Test not found: {args.name}")
+        # Use pattern matching on test descriptions
+        if any(char in args.name for char in ['*', '?', '[', ']']):
+            tests = [test for test in base_tests if fnmatch.fnmatch(test["name"], args.name)]
+        else:
+            tests = [test for test in base_tests if test["name"] == args.name]
+        
+        if not tests:
+            print(f"No tests found matching pattern: {args.name}")
             return 1
-        tests = [test]
     else:
         tests = load_test_descriptions()
 
@@ -947,11 +968,10 @@ def cmd_build_checker(args: argparse.Namespace) -> int:
     build_dir = get_project_root() / "_build" / "checkers"
 
     if args.name:
-        checker = find_checker_by_name(args.name)
-        if checker is None:
-            print(f"Checker not found: {args.name}")
+        checkers = find_items_by_pattern(args.name, "checkers")
+        if not checkers:
+            print(f"No checkers found matching pattern: {args.name}")
             return 1
-        checkers = [checker]
     else:
         checkers = load_checkers()
 
@@ -1062,11 +1082,10 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
 
     # Determine which checkers to run
     if args.checker:
-        checker = find_checker_by_name(args.checker)
-        if checker is None:
-            print(f"Checker not found: {args.checker}")
+        checkers = find_items_by_pattern(args.checker, "checkers")
+        if not checkers:
+            print(f"No checkers found matching pattern: {args.checker}")
             return 1
-        checkers = [checker]
     else:
         checkers = load_checkers()
         # Filter out checkers that weren't built (no build directory exists)
@@ -1084,12 +1103,10 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
 
     # Determine which tests to run
     if args.test:
-        test = find_test_by_name(args.test)
-        if test is None:
-            print(f"Test not found: {args.test}")
+        tests = find_items_by_pattern(args.test, "tests")
+        if not tests:
+            print(f"No tests found matching pattern: {args.test}")
             return 1
-        tests = [test]
-        tests = [test]
     else:
         # Load all built tests
         tests = load_tests()
@@ -1586,7 +1603,7 @@ def main() -> int:
     build_test_parser.add_argument(
         "name",
         nargs="?",
-        help="Name of the test to build (default: all tests)",
+        help="Name or glob pattern of the test to build (default: all tests)",
     )
     build_test_parser.add_argument(
         "--no-large",
@@ -1602,7 +1619,7 @@ def main() -> int:
     build_checker_parser.add_argument(
         "name",
         nargs="?",
-        help="Name of the checker to build (default: all checkers)",
+        help="Name or glob pattern of the checker to build (default: all checkers)",
     )
 
     # run-checker command
@@ -1612,11 +1629,11 @@ def main() -> int:
     )
     run_checker_parser.add_argument(
         "--checker",
-        help="Name of the checker to run (default: all checkers)",
+        help="Name or glob pattern of the checker to run (default: all checkers)",
     )
     run_checker_parser.add_argument(
         "--test",
-        help="Name of the test to run (default: all tests)",
+        help="Name or glob pattern of the test to run (default: all tests)",
     )
 
     # build-site command
