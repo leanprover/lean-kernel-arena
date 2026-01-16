@@ -774,8 +774,6 @@ def create_test(test: dict, output_dir: Path) -> bool:
                 "lines": line_count,
                 "lines_str": lines_str,
                 "yaml_file": f"tests/{name}.yaml",
-                "file": str(output_file),
-                "_test_file": str(output_file),
                 "_is_subtest": True,
             }
             
@@ -831,8 +829,6 @@ def create_test(test: dict, output_dir: Path) -> bool:
             "lines_str": lines_str,
             "yaml_file": f"tests/{name}.yaml",
             "outcome": test.get("outcome"),
-            "file": str(output_file),
-            "_test_file": str(output_file),
             "_is_subtest": False,
         }
         # Add description from YAML if present
@@ -1157,7 +1153,7 @@ def load_results() -> dict:
 
 
 def load_tests() -> list[dict]:
-    """Load all built tests by reading .ndjson files and their corresponding stats.
+    """Load all built tests by recursively finding .stats.json files.
     
     Returns a list of test dictionaries with all data from the stats files.
     Only returns tests that have been successfully built.
@@ -1168,45 +1164,24 @@ def load_tests() -> list[dict]:
     if not build_tests_dir.exists():
         return tests
     
-    # Load regular test files (.ndjson files directly in _build/tests/)
-    for ndjson_file in build_tests_dir.glob("*.ndjson"):
-        test_name = ndjson_file.stem
-        
-        # Load corresponding stats file
-        stats_file = build_tests_dir / f"{test_name}.stats.json"
-        if stats_file.exists():
-            try:
-                with open(stats_file, "r") as f:
-                    test_data = json.load(f)
-                    # Update file path to the actual current location
-                    test_data["file"] = ndjson_file
-                    test_data["_test_file"] = ndjson_file
-                    tests.append(test_data)
-            except Exception as e:
-                print(f"Warning: Could not read stats file {stats_file}: {e}")
-    
-    # Load multiple test files (from subdirectories with good/ and bad/ structure)
-    for test_dir in build_tests_dir.iterdir():
-        if test_dir.is_dir():
-            # Check for good/ and bad/ subdirectories
-            for category in ["good", "bad"]:
-                category_dir = test_dir / category
-                if category_dir.exists():
-                    for ndjson_file in category_dir.glob("*.ndjson"):
-                        subtest_name = ndjson_file.stem
-                        
-                        # Load corresponding stats file
-                        stats_file = category_dir / f"{subtest_name}.stats.json"
-                        if stats_file.exists():
-                            try:
-                                with open(stats_file, "r") as f:
-                                    test_data = json.load(f)
-                                    # Update file path to the actual current location
-                                    test_data["file"] = ndjson_file
-                                    test_data["_test_file"] = ndjson_file
-                                    tests.append(test_data)
-                            except Exception as e:
-                                print(f"Warning: Could not read stats file {stats_file}: {e}")
+    # Recursively find all .stats.json files
+    for stats_file in build_tests_dir.rglob("*.stats.json"):
+        try:
+            with open(stats_file, "r") as f:
+                test_data = json.load(f)
+                
+            # Determine the corresponding .ndjson file path based on stats file location
+            ndjson_file = stats_file.parent / (stats_file.stem.replace('.stats', '') + '.ndjson')
+            if ndjson_file.exists():
+                # Add the file paths that callers expect
+                test_data["file"] = ndjson_file
+                test_data["_test_file"] = ndjson_file
+                tests.append(test_data)
+            else:
+                print(f"Warning: No corresponding .ndjson file for {stats_file}")
+                
+        except Exception as e:
+            print(f"Warning: Could not read stats file {stats_file}: {e}")
     
     return tests
 
