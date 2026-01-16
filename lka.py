@@ -438,8 +438,8 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
     return items
 
 
-def load_tests() -> list[dict]:
-    """Load all test definitions."""
+def load_test_descriptions() -> list[dict]:
+    """Load test YAML definitions for accessing descriptions and configuration."""
     return load_yaml_files(get_project_root() / "tests", "test")
 
 
@@ -450,15 +450,10 @@ def load_checkers() -> list[dict]:
 
 def find_test_by_name(name: str) -> dict | None:
     """Find a test by name (including expanded subtests)."""
-    test_stats = load_test_stats_and_enumerate()
-    if name in test_stats:
-        test_info = test_stats[name]
-        return {
-            "name": name,
-            "file": test_info["file"],
-            "_test_file": test_info["file"],
-            **test_info
-        }
+    tests = load_tests()
+    for test in tests:
+        if test["name"] == name:
+            return test
     return None
 
 
@@ -779,12 +774,15 @@ def create_test(test: dict, output_dir: Path) -> bool:
                 "lines": line_count,
                 "lines_str": lines_str,
                 "yaml_file": f"tests/{name}.yaml",
+                "file": str(output_file),
+                "_test_file": str(output_file),
+                "_is_subtest": True,
             }
             
-            # Add source link fields from parent test for generate_source_links
-            for field in ["url", "dir", "leanfile", "rev"]:
-                if test.get(field):
-                    stats[field] = test[field]
+            # Generate and store source links from parent test
+            build_info = get_build_metadata()
+            source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
+            stats.update(source_links)
             
             # Check for subtest-name.info.json file with description
             info_file = tmp_output_dir / outcome / f"{subtest_name}.info.json"
@@ -833,15 +831,22 @@ def create_test(test: dict, output_dir: Path) -> bool:
             "lines_str": lines_str,
             "yaml_file": f"tests/{name}.yaml",
             "outcome": test.get("outcome"),
+            "file": str(output_file),
+            "_test_file": str(output_file),
+            "_is_subtest": False,
         }
         # Add description from YAML if present
         if test.get("description"):
             stats["description"] = test["description"]
         
-        # Add source link fields for generate_source_links
-        for field in ["url", "dir", "leanfile", "rev", "large"]:
-            if test.get(field):
-                stats[field] = test[field]
+        # Add large field if present
+        if test.get("large"):
+            stats["large"] = test["large"]
+            
+        # Generate and store source links
+        build_info = get_build_metadata()
+        source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
+        stats.update(source_links)
         
         with open(stats_file, "w") as f:
             json.dump(stats, f, indent=2)
@@ -855,7 +860,7 @@ def cmd_build_test(args: argparse.Namespace) -> int:
 
     if args.name:
         # For building, we need to find from base tests, not expanded tests
-        base_tests = load_tests()
+        base_tests = load_test_descriptions()
         test = None
         for t in base_tests:
             if t["name"] == args.name:
@@ -866,7 +871,7 @@ def cmd_build_test(args: argparse.Namespace) -> int:
             return 1
         tests = [test]
     else:
-        tests = load_tests()
+        tests = load_test_descriptions()
 
     # Filter out large tests if --no-large flag is set
     if args.no_large:
@@ -1087,20 +1092,10 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
             print(f"Test not found: {args.test}")
             return 1
         tests = [test]
-        # Create a minimal test_stats dict for sorting
-        test_stats = {test["name"]: test}
+        tests = [test]
     else:
-        # Use unified enumeration - this gives us all built tests with stats
-        test_stats = load_test_stats_and_enumerate()
-        tests = []
-        for test_name, test_info in test_stats.items():
-            test = {
-                "name": test_name,
-                "file": test_info["file"],
-                "_test_file": test_info["file"],
-                **test_info
-            }
-            tests.append(test)
+        # Load all built tests
+        tests = load_tests()
 
     if not checkers:
         print("No built checkers found.")
@@ -1111,7 +1106,7 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
         return 0
 
     # Sort tests by line count for consistent processing order
-    tests = sort_tests_by_line_count(tests, test_stats)
+    tests = sort_tests_by_line_count(tests)
 
     results = []
     for checker in checkers:
@@ -1161,23 +1156,17 @@ def load_results() -> dict:
     return results
 
 
-def load_tests_and_stats() -> tuple[list[dict], dict]:
-    """Load all built tests by enumerating .ndjson files and their corresponding stats.
+def load_tests() -> list[dict]:
+    """Load all built tests by reading .ndjson files and their corresponding stats.
     
-    Returns:
-        Tuple of (tests_list, stats_dict) where:
-        - tests_list: List of test dicts with name, outcome, _test_file, and _is_subtest fields
-        - stats_dict: Dictionary of stats keyed by test name
-        
-    This function replaces the old expand_tests() + load_test_stats() pattern by
-    directly enumerating built test files instead of loading YAML and checking existence.
+    Returns a list of test dictionaries with all data from the stats files.
+    Only returns tests that have been successfully built.
     """
     tests = []
-    stats = {}
     build_tests_dir = get_project_root() / "_build" / "tests"
     
     if not build_tests_dir.exists():
-        return tests, stats
+        return tests
     
     # Load regular test files (.ndjson files directly in _build/tests/)
     for ndjson_file in build_tests_dir.glob("*.ndjson"):
@@ -1188,24 +1177,11 @@ def load_tests_and_stats() -> tuple[list[dict], dict]:
         if stats_file.exists():
             try:
                 with open(stats_file, "r") as f:
-                    test_stats = json.load(f)
-                    # Add file path to stats
-                    test_stats["file"] = ndjson_file
-                    stats[test_name] = test_stats
-                    
-                    # Create test dict from stats
-                    test = {
-                        "name": test_name,
-                        "outcome": test_stats.get("outcome"),
-                        "_test_file": ndjson_file,
-                        "_is_subtest": False,
-                    }
-                    # Copy source link fields for generate_source_links
-                    for field in ["url", "dir", "leanfile", "rev", "description", "yaml_file"]:
-                        if field in test_stats:
-                            test[field] = test_stats[field]
-                    
-                    tests.append(test)
+                    test_data = json.load(f)
+                    # Update file path to the actual current location
+                    test_data["file"] = ndjson_file
+                    test_data["_test_file"] = ndjson_file
+                    tests.append(test_data)
             except Exception as e:
                 print(f"Warning: Could not read stats file {stats_file}: {e}")
     
@@ -1218,62 +1194,34 @@ def load_tests_and_stats() -> tuple[list[dict], dict]:
                 if category_dir.exists():
                     for ndjson_file in category_dir.glob("*.ndjson"):
                         subtest_name = ndjson_file.stem
-                        full_test_name = f"{test_dir.name}/{subtest_name}"
                         
                         # Load corresponding stats file
                         stats_file = category_dir / f"{subtest_name}.stats.json"
                         if stats_file.exists():
                             try:
                                 with open(stats_file, "r") as f:
-                                    test_stats = json.load(f)
-                                    # Add file path to stats
-                                    test_stats["file"] = ndjson_file
-                                    stats[full_test_name] = test_stats
-                                    
-                                    # Create test dict from stats
-                                    test = {
-                                        "name": full_test_name,
-                                        "outcome": test_stats.get("outcome"),
-                                        "_test_file": ndjson_file,
-                                        "_is_subtest": True,
-                                    }
-                                    # Copy source link fields for generate_source_links
-                                    for field in ["url", "dir", "leanfile", "rev", "description", "yaml_file"]:
-                                        if field in test_stats:
-                                            test[field] = test_stats[field]
-                                    
-                                    tests.append(test)
+                                    test_data = json.load(f)
+                                    # Update file path to the actual current location
+                                    test_data["file"] = ndjson_file
+                                    test_data["_test_file"] = ndjson_file
+                                    tests.append(test_data)
                             except Exception as e:
                                 print(f"Warning: Could not read stats file {stats_file}: {e}")
     
-    return tests, stats
+    return tests
 
 
-def load_test_stats_and_enumerate() -> dict:
-    """Load test stats for all built tests by enumerating .ndjson files.
-    
-    This is a convenience wrapper around load_tests_and_stats() that returns
-    only the stats dictionary, for use cases that only need the stats.
-    """
-    _, stats = load_tests_and_stats()
-    return stats
-
-
-def sort_tests_by_line_count(tests: list[dict], test_stats: dict) -> list[dict]:
+def sort_tests_by_line_count(tests: list[dict]) -> list[dict]:
     """Sort tests by line count in ascending order.
     
     Args:
-        tests: List of test dictionaries
-        test_stats: Dictionary of test stats keyed by test name
+        tests: List of test dictionaries with line count data
         
     Returns:
         Sorted list of tests (ascending by line count)
     """
     def get_line_count(test):
-        test_name = test["name"]
-        if test_name in test_stats:
-            return test_stats[test_name].get("lines", 0)
-        return 0
+        return test.get("lines", 0)
     
     return sorted(tests, key=get_line_count)
 
@@ -1470,7 +1418,7 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
             if test.get("large", False) or test.get("size", 0) > 1024*1024*1024:
                 continue
             
-            # Use the unified _test_file path for all tests
+            # Use the _test_file path from test data
             test_file = test["_test_file"]
             if not test_file.exists():
                 continue
@@ -1514,19 +1462,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
     checkers = load_checkers()
     results = load_results()
-    test_stats = load_test_stats_and_enumerate()
-    
-    # Convert test_stats to list of test objects for compatibility
-    test_objects = []
-    for test_name, test_info in test_stats.items():
-        test_obj = {
-            "name": test_name,
-            "file": test_info["file"],
-            "_test_file": test_info["file"],  # Add this field for compatibility
-            **test_info
-        }
-        test_objects.append(test_obj)
-    tests = test_objects
+    tests = load_tests()
     
     # Compute stats for each checker
     for checker in checkers:
@@ -1597,16 +1533,16 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 if key in results:
                     result = results[key].copy()
                     result["expected"] = test.get("outcome")
-                    # Add test stats (already available in test object)
-                    if "lines" in test:  # Test stats already merged into test object
-                        result["test_stats"] = {k: v for k, v in test.items() if k not in ["name", "file"]}
-                        # Add test description from stats (rendered from markdown)
-                        stats_description = test.get("description", "")
-                        result["test_description"] = render_markdown(stats_description)
-                    else:
-                        result["test_description"] = ""
-                    # Add test links
-                    result["test_links"] = generate_source_links(test, "tests", build_info.get("git_revision"))
+                    # Add test stats (test object contains all stats data)
+                    result["test_stats"] = {k: v for k, v in test.items() if k not in ["name", "file", "_test_file"]}
+                    # Add test description from stats (rendered from markdown)
+                    stats_description = test.get("description", "")
+                    result["test_description"] = render_markdown(stats_description)
+                    # Test links are already stored in test object
+                    result["test_links"] = {
+                        "declaration_url": test.get("declaration_url"),
+                        "source_url": test.get("source_url")
+                    }
                     checker_results.append(result)
             
             # Sort checker results by line count (ascending order)
