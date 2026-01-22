@@ -1,11 +1,11 @@
 description: |
   The complete [Mathlib](https://github.com/leanprover-community/mathlib4) library export.
-  
+
   This test contains all the mathematical definitions, theorems, and proofs
   from Mathlib, representing the largest and most comprehensive test case
   in the Lean kernel arena.
 
-  This test ist based on a commit that include
+  This test is based on a commit that includes
   <https://github.com/leanprover-community/mathlib4/pull/33794> to include the performance fix
   therein.
 url: https://github.com/leanprover-community/mathlib4
