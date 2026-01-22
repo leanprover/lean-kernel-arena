@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# /// script
+# dependencies = [
+#     "jinja2>=3.1.6",
+#     "jsonschema>=4.26.0",
+#     "markdown>=3.10",
+#     "pyyaml>=6.0.3",
+# ]
+# ///
 """Lean Kernel Arena - Tool for managing Lean kernel tests and checkers."""
 
 import argparse
