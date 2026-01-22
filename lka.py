@@ -6,7 +6,6 @@ import datetime
 import fnmatch
 import json
 import os
-import resource
 import shutil
 import subprocess
 import sys
@@ -155,7 +154,7 @@ def extract_ndjson_metadata(ndjson_file: Path) -> dict:
                             metadata["lean_version"] = lean_info["version"]
                         if "githash" in lean_info:
                             metadata["lean_githash"] = lean_info["githash"]
-    except Exception as e:
+    except Exception:
         # Silently ignore metadata extraction errors
         pass
 
@@ -290,7 +289,7 @@ def measure_perf_with_fallback(
             try:
                 os.unlink(perf_tmp_path)
                 os.unlink(time_tmp_path)
-            except:
+            except Exception:
                 pass
 
             # Extract metrics with fallbacks
@@ -688,9 +687,9 @@ def setup_source_directory(
         dest_toolchain = src_dir / "lean-toolchain"
         if tests_toolchain.exists():
             shutil.copy(tests_toolchain, dest_toolchain)
-            print(f"  Copied lean-toolchain from tests/ to src directory")
+            print("  Copied lean-toolchain from tests/ to src directory")
         else:
-            print(f"  Warning: No lean-toolchain file found in tests/ directory")
+            print("  Warning: No lean-toolchain file found in tests/ directory")
 
         # Create a trivial lakefile in the src directory
         lakefile_content = '''name = "test"
@@ -700,7 +699,7 @@ name = "Test"'''
         lakefile_path = src_dir / "lakefile.toml"
         with open(lakefile_path, "w") as f:
             f.write(lakefile_content)
-        print(f"  Created trivial lakefile")
+        print("  Created trivial lakefile")
 
         return src_dir
 
@@ -824,7 +823,7 @@ def create_test(test: dict, output_dir: Path) -> bool:
 
         # Export using lean4export
         if export_decls and not isinstance(export_decls, list):
-            print(f"  Error: export-decls must be a list of strings")
+            print("  Error: export-decls must be a list of strings")
             return False
 
         if export_decls:
@@ -1443,9 +1442,9 @@ def get_build_metadata() -> dict:
                         elif remote_url.startswith("https://"):
                             repo_path = remote_url.replace("https://github.com/", "").replace(".git", "")
                             metadata["github_url"] = f"https://github.com/{repo_path}/commit/{git_revision}"
-            except:
+            except Exception:
                 pass
-    except:
+    except Exception:
         pass
 
     # Get GitHub Action info from environment variables
@@ -1523,7 +1522,6 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
     Returns dict with tarball_size (in bytes), good_count, and bad_count.
     """
     import tarfile
-    import os
 
     tarball_path = output_dir / "lean-arena-tests.tar.gz"
 
