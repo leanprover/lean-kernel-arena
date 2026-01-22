@@ -28,14 +28,46 @@ The framework consists of:
 
 ### Development Environment
 
-Using Nix, use `nix develop` obtain a shell that provides the necessary dependencies, which are:
+The arena tool (`lka.py`) has a number of dependencies, which include:
 
-* `python3` with dependencies (`jinja2`, `pyyaml`, `jsonschema`, `markdown`)
-* GNU `time`
 * `elan` to build Lean code
 * `rustc` and `cargo` to build Rust code
+* GNU `time`
+
+as well as a Python installation with a number of Python dependencies.
+
+Using Nix, you can use `nix develop` to obtain a shell that provides all of the necessary dependencies.
 
 ### Running Locally
+
+#### Via `uv`
+
+After [installing `uv`](https://docs.astral.sh/uv/#installation) and the 3 non-Python dependencies above, you can use:
+
+```bash
+# Build all tests
+uv run lka.py build-test
+
+# Build all checkers
+uv run lka.py build-checker
+
+# Run all checkers on all tests
+uv run lka.py run
+
+# Generate the website
+uv run lka.py build-site
+
+# View results
+python3 -m http.server 8880 --directory _out
+```
+
+where all commands will automatically install any requisite Python dependencies.
+
+The `build-test`, `build-checker` and `run` commands can be instructed to build or run specific checkers or tests only.
+
+#### Via a Virtual Environment With Python Dependencies Installed
+
+If you have installed the Python dependencies yourself, or via `nix`:
 
 ```bash
 # Build all tests
@@ -53,8 +85,6 @@ Using Nix, use `nix develop` obtain a shell that provides the necessary dependen
 # View results
 python3 -m http.server 8880 --directory _out
 ```
-
-The `build-test`, `build-checker` and `run` commands can be instructed to build or run specific checkers or tests only.
 
 ## Contributing
 
