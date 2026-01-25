@@ -16,6 +16,21 @@ good_def arrowType : Type := Prop → Prop
 /-- Dependent type (forall) -/
 good_def dependentType : Prop := ∀ (p: Prop), p
 
+/-- String -/
+good_def someString : String := "Hello!"
+
+/-- Non-ASCII String -/
+good_def someNonASCIIString : String := "🎉 Goals Accomplished"
+
+/-- Not a String -/
+bad_def notAString : String := Prop
+
+/-- Nat -/
+good_def importantNumber : Nat := 37
+
+/-- Not a Nat -/
+bad_def notANat : Nat := Nat
+
 /-- Lambda expression -/
 good_def simpleLambda : Type → Type → Type := fun x y => x
 
