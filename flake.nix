@@ -14,6 +14,10 @@
           rustc 
           cargo
           perf
+          libffi
+          libffi.dev
+          just
+          pypy
         ];
       };
     };
