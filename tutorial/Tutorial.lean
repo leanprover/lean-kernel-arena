@@ -92,7 +92,7 @@ def levelParamF.{u} : Sort u → Sort u → Sort u := fun α β => α
 /-- Level parameters -/
 good_def levelParams : levelParamF Prop (Prop → Prop) := ∀ p : Prop, p
 
-/-- Duplicate universe paramers -/
+/-- Duplicate universe parameters -/
 bad_decl .defnDecl {
   name := `tut06_bad01
   levelParams := [`u, `u]
@@ -121,7 +121,7 @@ good_def inferVar : ∀ (f : Prop) (g : f), f := fun f g => g
 good_def defEqLambda : ∀ (f : (Prop → Prop) → Prop) (g : (a : Prop → Prop) → f a), f (fun p => p → p) :=
   fun f g => g (fun p => p → p)
 
-/-! Let's build peano arithmetic -/
+/-! Let's build Peano arithmetic -/
 
 def PN := ∀ α, (α → α) → (α → α)
 def PN.zero : PN := fun α s z => z
@@ -157,7 +157,7 @@ Let declarations
 /--
 Type checking a non-dependent let
 -/
--- Use `good_decl` to avoid the elabortor turning lets into haves
+-- Use `good_decl` to avoid the elaborator turning lets into haves
 good_decl (.defnDecl {
     name := `letType
     levelParams := []
@@ -170,7 +170,7 @@ good_decl (.defnDecl {
 /--
 Type checking a dependent let
 -/
--- Use `good_decl` to avoid the elabortor turning lets into haves
+-- Use `good_decl` to avoid the elaborator turning lets into haves
 good_decl (.defnDecl {
     name := `letTypeDep
     levelParams := []
@@ -239,7 +239,7 @@ inductive RBTree (α : Type u) : Color → N → Type u where
 /-- A recursive indexed data type -/
 good_def rbTreeDef.{u} : Type u → Color → N → Type u := RBTree
 
-/-! Now a bunch of illformed inductive types. -/
+/-! Now a bunch of ill-formed inductive types. -/
 
 /-- An inductive type with a non-sort type -/
 bad_raw_consts
@@ -324,7 +324,7 @@ bad_raw_consts
       numFields := 0
       isUnsafe := false
   },
-  -- The exporter insists on some recursor to exist
+  -- The exporter insists on some recursor existing
   dummyRecInfo n,
   .inductInfo {
       name := n
@@ -651,10 +651,10 @@ inductive BoolProp : Prop where
   | a : BoolProp
   | b : BoolProp
 
-/-- Inductive predicates eliminiate into Prop if they have more than one construtor. -/
+/-- Inductive predicates eliminate into Prop if they have more than one constructor. -/
 good_def boolPropRec : ∀ {motive : BoolProp → Prop} (a : motive BoolProp.a) (b : motive BoolProp.b) (x : BoolProp), motive x := @BoolProp.rec
 
-/-- Inductive predicates eliminiate into Prop if they have one constructors and it carries data. -/
+/-- Inductive predicates eliminate into Prop if they have one constructors and it carries data. -/
 good_def existsRec.{u} : ∀ {α : Sort u} {p : α → Prop} {motive : Exists p → Prop} (intro : ∀ (w : α) (h : p w), motive ⟨w,h⟩)
   (t : Exists p), motive t := @Exists.rec
 
@@ -663,7 +663,7 @@ inductive SortElimProp (b : Bool) : Bool → Bool → Prop
   | mk (b1 b2 : Bool) : SortElimProp b b2 b1
 
 /--
-Inductive predicates eliminiate into Sort if they have one constructors and it carries data, but the data is
+Inductive predicates eliminate into Sort if they have one constructors and it carries data, but the data is
 known from the type, e.g. a parameter or an index
 -/
 good_def sortElimPropRec.{u} : ∀ {b : Bool} {motive : ∀ b1 b2, SortElimProp b b1 b2 → Sort u}
@@ -673,8 +673,8 @@ inductive SortElimProp2 (b : Bool) : Bool → Bool → Prop
   | mk (b1 b2 : Bool) : SortElimProp2 b b2 (id b1)
 
 /--
-Inductive predicates eliminiate into Sort if they have one constructors and it carries data, but the data is
-known from the type, e.g. a parameter or an index. However, it must occur directliy in the result type,
+Inductive predicates eliminate into Sort if they have one constructors and it carries data, but the data is
+known from the type, e.g. a parameter or an index. However, it must occur directly in the result type,
 with no intervening reduction.
 -/
 good_def sortElimProp2Rec : ∀ {b : Bool} {motive : ∀ b1 b2, SortElimProp2 b b1 b2 → Prop}
@@ -722,7 +722,7 @@ good_thm listRecReduction : ∀ {α : Type} (xs ys : List α),
   (∀ x xs, myListApped (x :: xs) ys = x :: myListApped xs ys) := by
   intros; unfold myListApped; constructor <;> intros <;> rfl
 
-noncomputable def RBTree.id {α : Type} {c : Color} {n : N} (t :RBTree α c n) : RBTree α c n :=
+noncomputable def RBTree.id {α : Type} {c : Color} {n : N} (t : RBTree α c n) : RBTree α c n :=
   RBTree.rec .leaf
     (fun _t1 a _t2 ih1 ih2 => RBTree.red ih1 a ih2)
     (fun _t1 a _t2 ih1 ih2 => RBTree.black ih1 a ih2)
@@ -740,16 +740,16 @@ good_thm RBTree.id_spec : ∀ {α : Type} {c : Color} {n : N} (t : RBTree α c n
 
 /-! Projections -/
 
-/-- Typechecking simple projection functions -/
+/-- Type-checking simple projection functions -/
 good_consts #[``And.left, ``And.right]
 
-/-- Typechecking projection functions with parameters -/
+/-- Type-checking projection functions with parameters -/
 good_consts #[``Prod.fst, ``Prod.snd]
 
-/-- Typechecking projection functions  -/
+/-- Type-checking projection functions  -/
 good_consts #[``PProd.fst, ``PProd.snd]
 
-/-- Typechecking dependent projection functions  -/
+/-- Type-checking dependent projection functions  -/
 good_consts #[``PSigma.fst, ``PSigma.snd]
 
 /-- Out of range projection -/
@@ -803,7 +803,7 @@ meta def mkPropStructureTest (n : Lean.Name) (resType : Lean.Expr) (idx : Nat) :
 
 /-- Projecting out of a proposition
 
-The lean kernel allows projections out of propositions if they preceed
+The lean kernel allows projections out of propositions if they precede
 all dependent data fields.
 -/
 good_raw_consts mkPropStructureTest `projProp1 (Lean.mkConst ``PUnit [0]) 0
@@ -816,7 +816,7 @@ bad_raw_consts mkPropStructureTest `projProp2 (Lean.mkConst ``PUnit [1]) 1
 
 /-- Projecting out of a proposition
 
-The lean kernel allows projections out of propositions if they preceed
+The lean kernel allows projections out of propositions if they precede
 all dependent data fields. Non-dependent data fields are not relevant.
 -/
 good_raw_consts mkPropStructureTest `projProp3 (Lean.mkConst ``PUnit [0]) 2
@@ -837,8 +837,8 @@ bad_raw_consts mkPropStructureTest `projProp5
 /--
 Projecting out of a proposition.
 
-The lean kernel rejects any projections out of a propositoin that
-come after a dependent data field, even if that is not used by the the present projection.
+The lean kernel rejects any projections out of a proposition that
+come after a dependent data field, even if that is not used by the present projection.
 -/
 bad_raw_consts mkPropStructureTest `projProp6 (Lean.mkConst ``PUnit [0]) 5
 
@@ -876,7 +876,7 @@ bad_raw_consts
 Projecting out data is not allowed, even if this data appears as an index
 and the recursor would allow it.
 
-This also forbits projecting out proofs that follow such fields.
+This also forbids projecting out proofs that follow such fields.
 -/
 bad_raw_consts
   #[ .defnInfo {
@@ -899,7 +899,7 @@ good_def projRed : (Prod.mk true false).2 = false := rfl
 
 
 /--
-Rule k for Eq:
+Rule k for `Eq`:
 The recursor reduces even if the major argument is not a constructor,
 as long replacing the major argument with a constructor is type correct.
 -/
@@ -908,7 +908,7 @@ good_thm ruleK : ∀ (h : true = true) (a : Bool),
   fun _ a => Eq.refl a
 
 /--
-Rule k for Eq should not fire if the types of the major argument
+Rule k for `Eq` should not fire if the types of the major argument
 do not match that of the constructor.
 -/
 bad_thm ruleKbad : ∀ (h : true = false) (a : Bool),
@@ -964,7 +964,7 @@ good_def structEta.{u} : ∀ (α β : Type u) (x : α × β), x = ⟨x.1, x.2⟩
 
 /--
 Corner case for function eta:
-Does a defeq between a partially applied recursor with rule k an a free
+Does a defeq between a partially applied recursor with rule k and a free
 variable trigger eta expansion?
 
 Taking the official kernel as the specification, the answer is no.
