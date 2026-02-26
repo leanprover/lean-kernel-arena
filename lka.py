@@ -774,6 +774,21 @@ name = "Test"'''
 # =============================================================================
 
 
+def _gather_ndjson_stats(ndjson_file: Path) -> dict:
+    """Gather size, line count, and metadata from an NDJSON file."""
+    file_size = ndjson_file.stat().st_size
+    with open(ndjson_file, "r") as f:
+        line_count = sum(1 for _ in f)
+    metadata = extract_ndjson_metadata(ndjson_file)
+    return {
+        "size": file_size,
+        "size_str": format_memory(file_size),
+        "lines": line_count,
+        "lines_str": format_unitless(line_count),
+        **metadata,
+    }
+
+
 def create_test(test: dict, output_dir: Path) -> bool:
     """Create a single test."""
     name = test["name"]
@@ -815,8 +830,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
         output_file = output_dir / f"{name}.ndjson"
         tmp_file = output_dir / f"{name}.ndjson.tmp"
 
-    # Handle static file case (no work directory needed)
+    # Produce .ndjson file(s) based on test type
     if file_path:
+        # Static file case (no work directory needed)
         if multiple:
             print(f"  Error: Test {name} cannot use 'multiple' flag with static file")
             return False
@@ -825,46 +841,11 @@ def create_test(test: dict, output_dir: Path) -> bool:
             print(f"  Source file not found: {source_file}")
             return False
         shutil.copy(source_file, tmp_file)
-        tmp_file.rename(output_file)
-        print(f"  Copied {source_file} to {output_file}")
+        print(f"  Copied {source_file}")
 
-        # Gather stats about the copied file
-        file_size = output_file.stat().st_size
-        with open(output_file, "r") as f:
-            line_count = sum(1 for _ in f)
-
-        test_metadata = extract_ndjson_metadata(output_file)
-        size_str = format_memory(file_size)
-        lines_str = format_unitless(line_count)
-        print(f"  {size_str}, {lines_str} lines")
-
-        stats_file = output_dir / f"{name}.stats.json"
-        stats = {
-            "name": name,
-            "size": file_size,
-            "size_str": size_str,
-            "lines": line_count,
-            "lines_str": lines_str,
-            "yaml_file": f"tests/{name}.yaml",
-            "outcome": test.get("outcome"),
-        }
-        stats.update(test_metadata)
-        if test.get("description"):
-            stats["description"] = test["description"]
-        if test.get("large"):
-            stats["large"] = test["large"]
-        build_info = get_build_metadata()
-        source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
-        stats.update(source_links)
-        with open(stats_file, "w") as f:
-            json.dump(stats, f, indent=2)
-
-        return True
-
-    # These test types require lean4export
-    lean4export_dir = None
-    if module or lean_file_path:
-        # First set up the work directory to get access to toolchain information
+    elif module or lean_file_path:
+        # Both module and leanfile variants use lean4export workflow
+        # leanfile is treated like module with hardcoded module name "Test"
         work_dir = setup_source_directory(test, output_dir / "work")
         if work_dir is None:
             return False
@@ -880,24 +861,15 @@ def create_test(test: dict, output_dir: Path) -> bool:
         lean4export_dir = setup_lean4export(toolchain)
         if lean4export_dir is None:
             return False
-    else:
-        # Set up work directory (url, dir, or empty) for non-lean4export tests
-        work_dir = setup_source_directory(test, output_dir / "work")
-        if work_dir is None:
-            return False
 
-    # Run pre-build command if specified
-    if pre_build:
-        print(f"  Running pre-build: {pre_build}")
-        result = run_cmd(pre_build, cwd=work_dir, shell=True)
-        if result.returncode != 0:
-            print(f"  Pre-build failed:\n{result.stdout}\n{result.stderr}")
-            return False
+        # Run pre-build command if specified
+        if pre_build:
+            print(f"  Running pre-build: {pre_build}")
+            result = run_cmd(pre_build, cwd=work_dir, shell=True)
+            if result.returncode != 0:
+                print(f"  Pre-build failed:\n{result.stdout}\n{result.stderr}")
+                return False
 
-    # Execute based on test type
-    if module or lean_file_path:
-        # Both module and leanfile variants use lean4export workflow
-        # leanfile is treated like module with hardcoded module name "Test"
         build_dir = work_dir
 
         # Determine module name
@@ -928,6 +900,19 @@ def create_test(test: dict, output_dir: Path) -> bool:
             return False
 
     elif run_cmd_str:
+        # Set up work directory (url, dir, or empty)
+        work_dir = setup_source_directory(test, output_dir / "work")
+        if work_dir is None:
+            return False
+
+        # Run pre-build command if specified
+        if pre_build:
+            print(f"  Running pre-build: {pre_build}")
+            result = run_cmd(pre_build, cwd=work_dir, shell=True)
+            if result.returncode != 0:
+                print(f"  Pre-build failed:\n{result.stdout}\n{result.stderr}")
+                return False
+
         # Run the script with $OUT environment variable
         print(f"  Running: {run_cmd_str}")
         env = os.environ.copy()
@@ -977,40 +962,17 @@ def create_test(test: dict, output_dir: Path) -> bool:
             return False
 
         # Generate stats for each subtest
+        build_info = get_build_metadata()
         for subtest_name, outcome in subtests_found:
             subtest_file = tmp_output_dir / outcome / f"{subtest_name}.ndjson"
 
-            # Gather stats about the subtest file
-            file_size = subtest_file.stat().st_size
-            with open(subtest_file, "r") as f:
-                line_count = sum(1 for _ in f)
-
-            # Extract metadata from the NDJSON file
-            subtest_metadata = extract_ndjson_metadata(subtest_file)
-
-            # Format file size and line count
-            size_str = format_memory(file_size)
-            lines_str = format_unitless(line_count)
-
-            # Write stats JSON file
-            stats_file = tmp_output_dir / outcome / f"{subtest_name}.stats.json"
-            stats = {
-                "name": f"{name}/{subtest_name}",
-                "outcome": "accept" if outcome == "good" else "reject",
-                "size": file_size,
-                "size_str": size_str,
-                "lines": line_count,
-                "lines_str": lines_str,
-                "yaml_file": f"tests/{name}.yaml",
-            }
-
-            # Add metadata from NDJSON file
-            stats.update(subtest_metadata)
+            stats = _gather_ndjson_stats(subtest_file)
+            stats["name"] = f"{name}/{subtest_name}"
+            stats["outcome"] = "accept" if outcome == "good" else "reject"
+            stats["yaml_file"] = f"tests/{name}.yaml"
 
             # Generate and store source links from parent test
-            build_info = get_build_metadata()
-            source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
-            stats.update(source_links)
+            stats.update(generate_source_links(test, "tests", build_info.get("git_revision")))
 
             # Check for subtest-name.info.json file with description
             info_file = tmp_output_dir / outcome / f"{subtest_name}.info.json"
@@ -1023,6 +985,7 @@ def create_test(test: dict, output_dir: Path) -> bool:
                 except Exception as e:
                     print(f"  Warning: Could not read {info_file}: {e}")
 
+            stats_file = tmp_output_dir / outcome / f"{subtest_name}.stats.json"
             with open(stats_file, "w") as f:
                 json.dump(stats, f, indent=2)
 
@@ -1038,34 +1001,12 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Single test: move tmp file to final location and gather stats
         tmp_file.rename(output_file)
 
-        # Gather stats about the created file
-        file_size = output_file.stat().st_size
-        with open(output_file, "r") as f:
-            line_count = sum(1 for _ in f)
+        stats = _gather_ndjson_stats(output_file)
+        stats["name"] = name
+        stats["yaml_file"] = f"tests/{name}.yaml"
+        stats["outcome"] = test.get("outcome")
 
-        # Extract metadata from the NDJSON file
-        test_metadata = extract_ndjson_metadata(output_file)
-
-        # Format file size and line count
-        size_str = format_memory(file_size)
-        lines_str = format_unitless(line_count)
-
-        print(f"  Created {output_file} ({size_str}, {lines_str} lines)")
-
-        # Write stats JSON file
-        stats_file = output_dir / f"{name}.stats.json"
-        stats = {
-            "name": name,
-            "size": file_size,
-            "size_str": size_str,
-            "lines": line_count,
-            "lines_str": lines_str,
-            "yaml_file": f"tests/{name}.yaml",
-            "outcome": test.get("outcome"),
-        }
-
-        # Add metadata from NDJSON file
-        stats.update(test_metadata)
+        print(f"  Created {output_file} ({stats['size_str']}, {stats['lines_str']} lines)")
 
         # Add description from YAML if present
         if test.get("description"):
@@ -1077,9 +1018,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
 
         # Generate and store source links
         build_info = get_build_metadata()
-        source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
-        stats.update(source_links)
+        stats.update(generate_source_links(test, "tests", build_info.get("git_revision")))
 
+        stats_file = output_dir / f"{name}.stats.json"
         with open(stats_file, "w") as f:
             json.dump(stats, f, indent=2)
 
