@@ -1,0 +1,4 @@
+description: |
+  Incorrect number of level variables for constant
+file: tests/constlevels.ndjson
+outcome: reject
