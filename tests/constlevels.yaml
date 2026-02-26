@@ -1,4 +1,13 @@
 description: |
-  Incorrect number of level variables for constant
+  Regression test for undefined behavior in `lazy_delta_reduction_step` in the official kernel
+
+  In the function `lazy_delta_reduction_step`, the official kernel expects `unfold_definition`
+  to always succeed. However, if the constant has an incorrect number of level parameters, it
+  actually fails, which leads to memory corruption in `lazy_delta_reduction_step`.
+
+  This test is to check that the official kernel and also other kernels that closely follow the
+  logic of the official kernel correctly handle this unfolding failure.
+
+  The issue in the official kernel was originally reported as https://github.com/leanprover/lean4/issues/10577.
 file: tests/constlevels.ndjson
 outcome: reject
