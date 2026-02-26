@@ -827,6 +827,38 @@ def create_test(test: dict, output_dir: Path) -> bool:
         shutil.copy(source_file, tmp_file)
         tmp_file.rename(output_file)
         print(f"  Copied {source_file} to {output_file}")
+
+        # Gather stats about the copied file
+        file_size = output_file.stat().st_size
+        with open(output_file, "r") as f:
+            line_count = sum(1 for _ in f)
+
+        test_metadata = extract_ndjson_metadata(output_file)
+        size_str = format_memory(file_size)
+        lines_str = format_unitless(line_count)
+        print(f"  {size_str}, {lines_str} lines")
+
+        stats_file = output_dir / f"{name}.stats.json"
+        stats = {
+            "name": name,
+            "size": file_size,
+            "size_str": size_str,
+            "lines": line_count,
+            "lines_str": lines_str,
+            "yaml_file": f"tests/{name}.yaml",
+            "outcome": test.get("outcome"),
+        }
+        stats.update(test_metadata)
+        if test.get("description"):
+            stats["description"] = test["description"]
+        if test.get("large"):
+            stats["large"] = test["large"]
+        build_info = get_build_metadata()
+        source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
+        stats.update(source_links)
+        with open(stats_file, "w") as f:
+            json.dump(stats, f, indent=2)
+
         return True
 
     # These test types require lean4export
