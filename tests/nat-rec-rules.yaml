@@ -1,0 +1,17 @@
+description: |
+  Proof of False via incorrect recursor rule validation.
+
+  When processing an inductive type declaration, a correct kernel must verify that the generated
+  recursor rules match the ones provided in the export data. A checker that accidentally compares
+  the imported rules against themselves (instead of against independently constructed rules) will
+  accept arbitrary recursor reduction behavior.
+
+  This test defines `Nat` with a wrong `Nat.rec` succ rule that always returns `hzero` (ignoring
+  the induction hypothesis). Combined with a nat literal extension that hardcodes correct
+  arithmetic for concrete nat literals but falls back to the wrong `Nat.rec` rules for symbolic
+  arguments, this creates an inconsistency that yields a proof of False.
+
+  At the time of writing, nanoda_lib (https://github.com/ammkrn/nanoda_lib) incorrectly
+  accepts this proof.
+file: tests/nat-rec-rules.ndjson
+outcome: reject

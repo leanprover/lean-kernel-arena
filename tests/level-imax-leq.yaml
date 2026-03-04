@@ -1,0 +1,15 @@
+description: |
+  Proof of False via incorrect universe level comparison for `imax`.
+
+  A correct kernel must reject `leq(imax(u,v)+1, imax(u,v))`, since at `u=0, v=0` this becomes
+  `leq(1, 0)` which is false. However, a checker that only compares the `imax` arguments
+  structurally (without accounting for an accumulated successor offset) will incorrectly accept it.
+
+  This allows defining a universe-collapsing identity function
+  `down.{u,v} : Sort (succ (imax u v)) → Sort (imax u v)`, which is used to cast between
+  `True` and `False` via `Bool.rec` at `Sort (imax 0 0) = Prop`.
+
+  At the time of writing, nanoda_lib (https://github.com/ammkrn/nanoda_lib) incorrectly
+  accepts this proof.
+file: tests/level-imax-leq.ndjson
+outcome: reject
