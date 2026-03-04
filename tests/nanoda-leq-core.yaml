@@ -1,0 +1,12 @@
+description: |
+  Proof of False exploiting a missing `diff >= 0` check in nanoda's `leq_core` (level.rs:188).
+
+  The `IMax` reflexivity case in `leq_core` returns `true` for `leq(imax(u,v)+1, imax(u,v))`
+  when `diff = -1`, because it only checks structural equality of the `IMax` arguments without
+  verifying that the accumulated `diff` is non-negative.
+
+  This allows defining a universe-collapsing function
+  `down.{u,v} : Sort (succ (imax u v)) -> Sort (imax u v)` (the identity),
+  which is used to cast between `True` and `False` via `Bool.rec` at `Sort (imax 0 0) = Prop`.
+file: tests/nanoda-leq-core.ndjson
+outcome: reject

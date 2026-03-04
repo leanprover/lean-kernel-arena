@@ -1,0 +1,13 @@
+description: |
+  Proof of False exploiting nanoda's recursor rule self-comparison (inductive.rs:1230-1231).
+
+  The function `assert_nonnested_recursors_def_eq` compares the imported recursor's `rec_rules`
+  against themselves (`rec_rules.iter().zip(rec_rules.iter())`) instead of against the
+  independently constructed rules, so any recursor rules are accepted.
+
+  This defines `Nat` with a wrong `Nat.rec` succ rule that always returns `hzero`.
+  Combined with nanoda's nat literal extension (which hardcodes correct arithmetic for
+  concrete `NatLit` args but falls back to the wrong `Nat.rec` rules for symbolic args),
+  this creates an inconsistency that yields a proof of False.
+file: tests/nanoda-nat-rec-rules.ndjson
+outcome: reject
