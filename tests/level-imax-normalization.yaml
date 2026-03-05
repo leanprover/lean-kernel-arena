@@ -1,0 +1,14 @@
+description: |
+  Proof of False via incorrect universe level normalization for `imax`.
+
+  A correct kernel must distinguish `imax 0 v` from `succ(imax 0 v)`, since at `v=0` these
+  evaluate to `0` and `1` respectively. However, a level normalization algorithm that drops an
+  accumulated successor offset when decomposing `imax u (param v)` will produce identical normal
+  forms for both, causing the equivalence check to incorrectly return true.
+
+  This allows defining a universe-collapsing identity function
+  `down.{v} : Sort (succ (imax 0 v)) → Sort (imax 0 v)`, and then
+  `myProp : Prop := down.{0} Bool` (a Prop that is computationally Bool). Proof irrelevance on
+  `myProp` equates `Bool.true` and `Bool.false`, and `Bool.rec` maps this into `False`.
+file: tests/level-imax-normalization.ndjson
+outcome: reject
