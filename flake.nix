@@ -19,6 +19,7 @@
           pkg-config
           just
           pypy
+          monolith
         ];
       };
     };
