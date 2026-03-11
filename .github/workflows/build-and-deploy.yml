@@ -109,21 +109,21 @@ jobs:
         run: ./lka.py build-site
         shell: 'nix develop -c bash -euxo pipefail {0}'
       
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_out'
+
       - name: Generate self-contained report
-        run: monolith _out/index.html -o _out/report.html -i -F -e -M -q
+        run: monolith _out/index.html -o /tmp/report.html -i -F -e -M -q
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Upload report
         uses: actions/upload-artifact@v7
         with:
           name: report.html
-          path: '_out/report.html'
+          path: '/tmp/report.html'
           archive: false
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '_out'
 
       - name: Deploy to GitHub Pages
         if: github.event_name == 'workflow_dispatch'
