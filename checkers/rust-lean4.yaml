@@ -1,0 +1,12 @@
+description: |
+  **Rust Lean4 Kernel** — A Lean 4 kernel and proof checker in Rust.
+
+  Features:
+  - Full type checker (WHNF, definitional equality, type inference)
+  - lean4export NDJSON format support
+  - Single dependency (bumpalo)
+url: https://github.com/tkxue/unofficial_lean4_rs
+ref: main
+rev: 1b7e2f3259123dc5b02092cbe81f4166719fbd7a
+build: cargo build --release
+run: target/release/lean4_kernel --check-export < "$IN"
