@@ -2,6 +2,6 @@ description: |
   A **grind tactic test** from the Lean 4 test suite.
 
   This produces a theorem with a rather large proof term that needs fast reduction.
-leanfile: tests/grind-ring-5.lean
+leanfile: tests/perf/grind-ring-5.lean
 export-decls: ["thm", "String.ofList", "Char.ofNat"]
 outcome: accept

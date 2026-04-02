@@ -16,7 +16,7 @@ description: |
   substituting into its body (size O(n)) at each of the n levels, giving
   **O(n²) total**. Whether this cost arises depends on the checker's binder
   representation.
-leanfile: tests/app-lam.lean
+leanfile: tests/perf/app-lam.lean
 export-decls: ["dag_app_binder"]
 outcome: accept
 compare-perf: true

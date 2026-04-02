@@ -582,7 +582,8 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
         return None
 
     # Sort files alphabetically to avoid dependency on filesystem order
-    for file in sorted(directory.glob("*.yaml")):
+    # Search recursively so tests can be organized in subdirectories
+    for file in sorted(directory.rglob("*.yaml")):
         with open(file, "r") as f:
             data = yaml.safe_load(f)
 
@@ -590,8 +591,9 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
             validate_yaml_data(data, schema_name, file)
 
             data["_file"] = file.name
-            # Derive name from filename (without .yaml extension)
-            data["name"] = file.stem
+            # Derive name from relative path (without .yaml extension)
+            # e.g. tests/perf/app-lam.yaml -> "perf/app-lam"
+            data["name"] = str(file.relative_to(directory).with_suffix(""))
 
             # Backwards-compatible default: derive checker version from ref+rev.
             if schema_name == "checker" and not data.get("version"):
@@ -829,6 +831,8 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Regular single test
         output_file = output_dir / f"{name}.ndjson"
         tmp_file = output_dir / f"{name}.ndjson.tmp"
+        # Ensure parent directories exist (for tests in subdirectories like perf/)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Produce .ndjson file(s) based on test type
     if file_path:

@@ -21,7 +21,7 @@ description: |
   giving **O(N) total**.
 
   N=1000 in the Lean source. Increase to stress further.
-leanfile: tests/shift-cascade.lean
+leanfile: tests/perf/shift-cascade.lean
 export-decls: ["shift_cascade"]
 outcome: accept
 compare-perf: true
