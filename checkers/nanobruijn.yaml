@@ -1,0 +1,35 @@
+description: |
+  **Nanobruijn** - An experimental Lean 4 kernel using pure de Bruijn indices.
+
+  Forked from [nanoda_lib](https://github.com/ammkrn/nanoda_lib), this variant
+  replaces the locally-nameless binding representation with pure de Bruijn
+  indices and shift-homomorphic caching. Written in Rust.
+
+  Design decisions under evaluation:
+
+  - **Pure de Bruijn indices** instead of locally-nameless: no substitution on
+    binder entry, but variables are shifted when retrieved from the environment.
+  - **Shift nodes**: lazy shifting via `Shift(n, expr)` wrappers that compose
+    and are pushed inward during normalization.
+  - **Shift-homomorphic caching**: whnf cache keys are shift-invariant, so a
+    single cache entry serves all shifted variants of an expression.
+
+  This is an experimental checker, not intended for production use. All code
+  modifications from the original nanoda_lib were written by Claude (Anthropic).
+url: https://github.com/nomeata/nanobruijn
+ref: master
+rev: 083d423d06f71098f1212f637165900810d31133
+build: |
+  cargo build --release
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+run: |
+  target/release/nanobruijn config.json < "$IN" || exit 1
