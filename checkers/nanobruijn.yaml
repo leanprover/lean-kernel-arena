@@ -20,7 +20,7 @@ description: |
   modifications from the original nanoda_lib were written by Claude (Anthropic).
 url: https://github.com/nomeata/nanobruijn
 ref: master
-rev: e6e112a86e0cd499f9050afeeaa3bd2745cadf54
+rev: a5c42486a12b8a03f2fe80147d68998faa680b76
 build: |
   cargo build --release
   cat > config.json <<__END__
