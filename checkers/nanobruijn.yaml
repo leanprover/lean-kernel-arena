@@ -13,12 +13,14 @@ description: |
     and are pushed inward during normalization.
   - **Shift-homomorphic caching**: whnf cache keys are shift-invariant, so a
     single cache entry serves all shifted variants of an expression.
+  - **Parse-time normalization**: expressions that differ only by a uniform
+    shift of free variable indices share a common core in the DAG.
 
   This is an experimental checker, not intended for production use. All code
   modifications from the original nanoda_lib were written by Claude (Anthropic).
 url: https://github.com/nomeata/nanobruijn
 ref: master
-rev: 892be94c9c6aec798ebd9b3bc6804dab1758bb51
+rev: e6e112a50e74a5be8eec43d5b0bcf4b969c24b86
 build: |
   cargo build --release
   cat > config.json <<__END__
