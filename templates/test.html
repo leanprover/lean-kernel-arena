@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% from "macros.html" import detail_styles, result_status_cell, perf_cells, perf_header %}
 
-{% block static_path %}../../{% endblock %}
+{% block static_path %}{{ root_path }}{% endblock %}
 
 {% block title %}{{ test.name }} - Lean Kernel Arena{% endblock %}
 
-{% block h1 %}<a href="../../">Lean Kernel Arena</a> / {{ test.name }}
+{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / {{ test.name }}
 {% endblock %}
 
 {% block style %}
@@ -59,7 +59,7 @@
         <tbody>
             {% for result in results %}
             <tr>
-                <td><a href="../../checker/{{ result.checker }}/#test-{{ test.name }}">{{ result.checker }}</a></td>
+                <td><a href="{{ root_path }}checker/{{ result.checker }}/#test-{{ test.name }}">{{ result.checker }}</a></td>
                 {{ result_status_cell(test.outcome, result.status) }}
                 {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
             </tr>

@@ -1844,11 +1844,17 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
                     test_results.append(result)
 
+            # Compute relative path to site root from test/name/index.html
+            # e.g. "app-lam" -> "../../", "perf/app-lam" -> "../../../"
+            depth = test["name"].count("/") + 2  # +2 for "test/" and trailing "/"
+            root_path = "../" * depth
+
             test_data = {
                 "test": test,
                 "test_links": test_links,
                 "test_description": render_markdown(test.get("description", "")),
                 "results": test_results,
+                "root_path": root_path,
                 "format_duration": format_duration,
                 "format_memory": format_memory,
                 "format_instructions": format_instructions,
