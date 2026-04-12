@@ -1,0 +1,8 @@
+version: "4.28.0"
+description: |
+  The official Lean 4 kernel checker implementation (v4.28.0).
+dir: official
+build: |
+  echo leanprover/lean4:v4.28.0 > lean-toolchain
+  lake build
+run: .lake/build/bin/kernel "$IN"

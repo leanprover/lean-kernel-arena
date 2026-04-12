@@ -1,11 +1,11 @@
-version: "4.28.0-rc1"
+version: "4.29.0"
 description: |
   The official Lean 4 kernel checker implementation.
-  
+
   This is the reference implementation from the Lean 4 repository,
   wrapped in a program that reads the exported proofs and replays them in the kernel.
 dir: official
 build: |
-  echo leanprover/lean4:v4.28.0-rc1 > lean-toolchain
+  echo leanprover/lean4:v4.29.0 > lean-toolchain
   lake build
 run: .lake/build/bin/kernel "$IN"
