@@ -15,8 +15,7 @@ TOOLCHAIN_TO_TAG = {
     "4.27.0-rc1": ("arena/v4.27.0-rc1","481d2a0"),
     "4.28.0-nightly-2026-01-19": ("arena/v4.27.0-rc1","481d2a0"),
     "4.28.0-nightly-2026-01-20": ("arena/v4.27.0-rc1","481d2a0"),
-# not yet supported upstream, it seems
-#   "4.29.0-rc1": ("arena/v4.27.0-rc1","d86be59"),
+    "4.29.0": ("arena/v4.29.0","9001336"),
 }
 
 # Base directory for lean4lean builds
