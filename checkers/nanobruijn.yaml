@@ -3,24 +3,30 @@ description: |
 
   Forked from [nanoda_lib](https://github.com/ammkrn/nanoda_lib), this variant
   replaces the locally-nameless binding representation with pure de Bruijn
-  indices and shift-homomorphic caching. Written in Rust.
+  indices. Written in Rust.
 
-  Design decisions under evaluation:
+  Key ideas:
 
-  - **Pure de Bruijn indices** instead of locally-nameless: no substitution on
-    binder entry, but variables are shifted when retrieved from the environment.
-  - **Shift nodes**: lazy shifting via `Shift(n, expr)` wrappers that compose
-    and are pushed inward during normalization.
-  - **Shift-homomorphic caching**: whnf cache keys are shift-invariant, so a
-    single cache entry serves all shifted variants of an expression.
-  - **Parse-time normalization**: expressions that differ only by a uniform
-    shift of free variable indices share a common core in the DAG.
+  - **Pure de Bruijn indices** instead of locally-nameless: entering a binder
+    requires no substitution — variables are shifted lazily when read from
+    the local context.
+  - **Lazy shifting via pointer+offset pairs**: instead of allocating shifted
+    expression nodes, each pointer carries an integer offset. Shifting is O(1)
+    "pointer arithmetic". Expressions that differ only by a uniform index shift
+    share a single DAG node.
+  - **Depth-stratified caching**: cache entries are bucketed by binding depth,
+    so results at one depth can be reused at another by adjusting the offset.
+    Closed (variable-free) expressions live in a global bucket that survives
+    all context changes.
+  - **Lazy frame invalidation**: when leaving a binder, the cache frame is
+    kept rather than discarded. If the next binder entry has the same type,
+    the frame (with all its cached results) is reused.
 
   This is an experimental checker, not intended for production use. All code
   modifications from the original nanoda_lib were written by Claude (Anthropic).
 url: https://github.com/nomeata/nanobruijn
 ref: master
-rev: a5c42486a12b8a03f2fe80147d68998faa680b76
+rev: 97a206e13f0cf6d20459f03d48c1bac975726130
 build: |
   cargo build --release
   cat > config.json <<__END__
