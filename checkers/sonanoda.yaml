@@ -9,8 +9,8 @@ description: |
   `h` and `h'` both necessarily share the same expected type.
 
   This is an experimental checker, not intended for production use.
-url: https://github.com/datokrat/nanoda_lib
-ref: fast-proof-irrel
+url: https://github.com/datokrat/sonanoda
+ref: master
 rev: 9e4ee399fa8e6d80f7b208e58647937f919a7eed
 build: |
   cargo build --release
