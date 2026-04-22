@@ -1,0 +1,19 @@
+description: |
+  A proof of `False` via a projection from a `Prop`-typed structure whose
+  constructor was applied to an ill-typed argument. The exported term is
+
+      badFalse : False := (Wrapper.mk True.intro).p
+
+  where `Wrapper : Prop` has a single field `p : False`, so `Wrapper.mk`
+  expects a proof of `False` but is given `True.intro : True`.
+
+  A sound checker must reject this. A checker that types a projection by
+  inferring (rather than checking) its structure argument — i.e. that
+  trusts the structure to be well-typed instead of verifying the
+  constructor's argument types against its binders — will accept it,
+  because `Wrapper.mk True.intro` still formally inhabits `Wrapper` at
+  the structural level, and the `p` projection is then read back out at
+  the declared field type `False`.
+leanfile: tests/proj-of-prop.lean
+export-decls: ["badFalse"]
+outcome: reject
