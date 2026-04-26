@@ -2,7 +2,7 @@ description: |
   **Still-nanoda** - A fork of nanoda/sonanoda with experiemental optimization efforts.
 url: https://github.com/SchrodingerZhu/still-nanoda
 ref: cache-study-port
-rev: 289d48daa4085613db016e203f62baca8c81fa0f
+rev: 06a07b74436f8a111df836312ccac3a41b93c7b6
 build: |
   cargo build --release
   cat > config.json <<__END__
