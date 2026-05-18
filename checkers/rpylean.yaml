@@ -1,14 +1,14 @@
-version: "v2026.5.2"
+version: "v2026.5.5"
 description: |
   **rpylean** - A Lean type checker written in (R)Python.
 url: https://github.com/Julian/rpylean
 ref: main
-rev: 4440891c770823725c27795b0c929deb298189af
+rev: 00ed411d47d549a70138fa0d8d9fc19e0830d384
 build: |
   git clone --filter=blob:none https://github.com/pypy/pypy
   cat > .env <<__END__
    PYPY_CHECKOUT=pypy/
   __END__
-  just jit
+  just translate
 run: |
   ./rpylean-c check "$IN" || exit 1
