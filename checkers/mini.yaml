@@ -6,6 +6,6 @@ description: |
   Runs with a 30s timeout.
 url: https://github.com/nomeata/lean-mini-kernel
 ref: master
-rev: 9deb6c1
+rev: d548ebc4f38b9bc007e3a2c0382efd5e42a6b95e
 build: lake build
 run: timeout 30s .lake/build/bin/mini-kernel "$IN"

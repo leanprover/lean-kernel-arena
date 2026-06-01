@@ -1,0 +1,16 @@
+description: |
+  Proof of False via incorrect large elimination restriction.
+
+  If the check for whether a level is surely not zero is implemented wrong, in
+  particular if it incorrectly returns true for params, we can create a
+  universe-polymorphic
+  ```
+  inductive MyBool.{u} : Sort u | tt | ff
+  ```
+  where the recursor `MyBool.rec.{1,0}` can do large elimination of a `Prop`.
+  Because of proof irrelevance we have `tt = ff`, so we can derive a
+  contradiction.
+
+  Found by Anthony Wang using Aristotle.
+file: tests/large-elim-param.ndjson
+outcome: reject
