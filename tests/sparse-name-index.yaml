@@ -1,0 +1,16 @@
+description: |
+  Lean4export will create internalization-table references contiguously in
+  order: `in` references for names, `il` references for levels, and `ie`
+  references for expressions all work this way.
+
+  However, the spec merely requires that these are integers. It's reasonable
+  for an implementation to assume these are approximately dense (and to treat
+  them as array indices instead of hashtable entries), but a kernel should
+  handle skipped indices or out-of-order indices.
+
+  This test checks that a kernel doesn't require internalization-table
+  references to be assigned sequentially starting from 1. If the "2" and "4" 
+  were replaced by "1" and "0", respectively, this would be the expected 
+  encoding of `axiom foo : Prop`. This encoding should be equivalent.
+file: tests/sparse-name-index.ndjson
+outcome: accept

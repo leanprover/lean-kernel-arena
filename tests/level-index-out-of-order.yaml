@@ -1,0 +1,16 @@
+description: |
+  Lean4export will create internalization-table references contiguously in
+  order: `in` references for names, `il` references for levels, and `ie`
+  references for expressions all work this way.
+
+  However, the spec merely requires that these are integers. It's reasonable
+  for an implementation to assume these are approximately dense (and to treat
+  them as array indices instead of hashtable entries), but a kernel should
+  handle skipped indices or out-of-order indices.
+
+  This test checks that the kernel doesn't require internaliation-table
+  references to be presented in ascending order. If the level referenes 2 and
+  1 were swapped, this would be the expected encoding of `axiom foo : Sort 2`.
+  This encoding should be equivalent.
+file: tests/level-index-out-of-order.ndjson
+outcome: accept

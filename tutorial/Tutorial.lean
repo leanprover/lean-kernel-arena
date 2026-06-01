@@ -1252,12 +1252,19 @@ bad_consts #[`dupDef, `DupInd]
   renaming #[(`DupInd, `dup_rec_def), (`DupInd.mk, `dup_rec_def.mk), (`DupInd.rec, `dup_rec_def.rec), (`dupDef, `dup_rec_def.rec)]
 
 /--
-A definition with the name of a recursor, and the recursor named differently.
-This would pass simple checks for duplicate definitions in the parser, but should still
-be rejected by the checker.
+The name of the recursor for `misnamed_rec` must be `misnamed_rec.rec`:
+another name (like `misnamed_rec.invalid_rec`) should be rejected.
+-/
+bad_consts #[`DupInd]
+  renaming #[(`DupInd, `misnamed_rec), (`DupInd.mk, `misnamed_rec.mk), (`DupInd.rec, `misnamed_rec.not_rec)]
+
+/--
+Even if a kernel doesn't catch a recursor for `dup_rec_def2` that is misnamed
+as `dup_rec_def2.not_rec`, it should catch some *other* constant being given
+the name `dup_rec_def2.rec` that is reserved for the recursor.
 -/
 bad_consts #[`dupDef, `DupInd]
-  renaming #[(`DupInd, `dup_rec_def2), (`DupInd.mk, `dup_rec_def2.mk), (`DupInd.rec, `dup_rec_def2.original_rec), (`dupDef, `dup_rec_def2.rec)]
+  renaming #[(`DupInd, `dup_rec_def2), (`DupInd.mk, `dup_rec_def2.mk), (`DupInd.rec, `dup_rec_def2.not_rec), (`dupDef, `dup_rec_def2.rec)]
 
 /-- A constructor and a recursor with the same name -/
 bad_consts #[`DupInd]
