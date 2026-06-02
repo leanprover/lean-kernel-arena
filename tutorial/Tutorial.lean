@@ -662,9 +662,49 @@ inductive BoolProp : Prop where
 /-- Inductive predicates eliminate into Prop if they have more than one constructor. -/
 good_def boolPropRec : ∀ {motive : BoolProp → Prop} (a : motive BoolProp.a) (b : motive BoolProp.b) (x : BoolProp), motive x := @BoolProp.rec
 
+/--
+A kernel must validate the recursors it is handed. If we write
+
+```
+inductive BogusRecursor : Type where
+  | mk : BogusRecursor
+```
+
+then the recursor `BogusRecursor.rec` will be correctly derived with type
+`{motive : BogusRecursor → Sort u} → motive .mk → (t : BogusRecursor) → motive t`.
+
+This test claims the recursor for `BogusRecursor` should be a trivial constant
+of type `Prop`. A correct kernel notices the discrepancy and rejects.
+-/
+bad_raw_consts
+  let n := `BogusRecursor
+  #[ .ctorInfo {
+      name := n ++ `mk, levelParams := [], type := .const n []
+      numParams := 0, induct := n, cidx := 0, numFields := 0, isUnsafe := false
+    },
+    dummyRecInfo n,
+    .inductInfo {
+      name := n, levelParams := [], type := .sort 1
+      numParams := 0, numIndices := 0, all := [n]
+      ctors := [n ++ `mk]
+      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false
+    }
+  ]
+
 /-- Inductive predicates eliminate into Prop if they have one constructors and it carries data. -/
 good_def existsRec.{u} : ∀ {α : Sort u} {p : α → Prop} {motive : Exists p → Prop} (intro : ∀ (w : α) (h : p w), motive ⟨w,h⟩)
   (t : Exists p), motive t := @Exists.rec
+
+
+inductive NewSingleton : Type where
+  | mk : NewSingleton
+
+/--
+Because `NewSingleton` is a singleton, `NewSingleton.rec true x` reduces to
+`true` even though `x` is a variable.
+-/
+good_def typeSingletonRecReduction : ∀ (x : NewSingleton),
+  NewSingleton.rec true x = true := fun _ => rfl
 
 
 inductive SortElimProp (b : Bool) : Bool → Bool → Prop
