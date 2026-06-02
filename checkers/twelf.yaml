@@ -1,0 +1,49 @@
+description: |
+  **Twelf-Lean-Kernel** — an experimental Lean 4 kernel encoded in Twelf LF.
+
+  Tries to use Twelf as an Foundational Proof-Carrying Code-style checker
+  for Lean. It contains a couple moving parts:
+
+   - An encoding of Lean's type theory (tcb.elf) (trusted)
+   - Various Twelf checks on the form of acceptable Lean signatures
+     (frozen.elf, final-checks.elf) (trusted)
+   - A translator from .ndjson exports to .elf files (trusted)
+   - A module that inserts proof obligations, like derivations of
+     definitional equality, that are missing from the .ndjson but
+     that must be witnessed for Twelf to accept the proof (untrusted).
+
+url: https://github.com/isolatedjar/twelf-lean-kernel
+ref: main
+rev: 8168ae6b976ed59c25dcc6d2bf9cac2ad51d3183
+
+build: |
+  set -euo pipefail
+  # nix-shell brings in deltas missing from the arena's flake.nix:
+  #   - mlton:     compiles twelf-server
+  #   - gmp:       Twelf's generated C code links against libgmp
+  #   - gcc:       MLton invokes a C compiler for codegen + linking
+  #   - nodejs_22: parse.ts / generate-twelf.ts use --experimental-strip-types
+  # If `nix-shell` isn't available (non-Nix runner), we assume these are
+  # already on PATH.
+  if command -v nix-shell >/dev/null 2>&1; then
+    nix-shell -p mlton gmp gmp.dev gcc nodejs_22 --run '
+      set -euo pipefail
+      ./scripts/build-twelf.sh "$PWD/.twelf"
+      npm install --omit=dev --no-audit --no-fund
+    '
+  else
+    ./scripts/build-twelf.sh "$PWD/.twelf"
+    npm install --omit=dev --no-audit --no-fund
+  fi
+
+run: |
+  set -euo pipefail
+  export TWELF="$PWD/.twelf/bin/twelf-server"
+  if command -v nix-shell >/dev/null 2>&1; then
+    # Node 22 needs to be on PATH for the parse/generate scripts.
+    # libgmp.so is already in the twelf-server binary's RPATH from the
+    # build (nix store paths persist), so no need for gmp here.
+    nix-shell -p nodejs_22 --run "timeout 600s ./scripts/arena-check.sh \"$IN\""
+  else
+    timeout 600s ./scripts/arena-check.sh "$IN"
+  fi
