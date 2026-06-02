@@ -34,11 +34,18 @@ build: |
   ARCH="$(uname -m)"
   case "$ARCH" in
     x86_64)
-      MLTON_TAG=amd64-linux.ubuntu-24.04_static
+      # _glibc2.39, not _static: the static amd64 build trips gcc-14's stack
+      # protector at runtime (`*** stack smashing detected ***`) when run
+      # against the apt-installed glibc on the arena runner.  The
+      # dynamically-linked glibc2.39 variant has been built against the same
+      # libc the runner uses and runs cleanly.  Pinned to a specific glibc
+      # version because the variant we pick must match the runner's libc;
+      # Ubuntu 24.04 ships glibc 2.39.
+      MLTON_TAG=amd64-linux.ubuntu-24.04_glibc2.39
       NODE_TAG=linux-x64
       ;;
     aarch64)
-      MLTON_TAG=arm64-linux.ubuntu-24.04-arm_static
+      MLTON_TAG=arm64-linux.ubuntu-24.04-arm_glibc2.39
       NODE_TAG=linux-arm64
       ;;
     *)
