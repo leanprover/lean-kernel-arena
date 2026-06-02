@@ -14,36 +14,65 @@ description: |
 
 url: https://github.com/isolatedjar/twelf-lean-kernel
 ref: main
-rev: 8168ae6b976ed59c25dcc6d2bf9cac2ad51d3183
+rev: a82e24094e640840c3bb5d212e746aab5c0dbbca
 
+# Build dependencies that aren't in the arena's flake.nix:
+#   libgmp-dev, gcc, libc6-dev  — Twelf's MLton-generated C links libgmp
+#   MLton (static tarball)      — compiles twelf-server
+#   Node 22 (tarball)           — parse.ts / generate-twelf.ts use
+#                                 --experimental-strip-types (Node 22+)
+#
+# We don't try `nix-shell -p ...`: the arena's CI runs inside `nix develop`
+# but cachix/install-nix-action configures flake registries rather than the
+# legacy `<nixpkgs>` channel, so `nix-shell -p mlton …` aborts with
+# "file 'nixpkgs' was not found in the Nix search path".  Apt + tarballs
+# work fine inside the nix develop shell because `/usr/bin` and
+# `/usr/local/bin` are still on PATH after the flake's entries.
 build: |
   set -euo pipefail
-  # nix-shell brings in deltas missing from the arena's flake.nix:
-  #   - mlton:     compiles twelf-server
-  #   - gmp:       Twelf's generated C code links against libgmp
-  #   - gcc:       MLton invokes a C compiler for codegen + linking
-  #   - nodejs_22: parse.ts / generate-twelf.ts use --experimental-strip-types
-  # If `nix-shell` isn't available (non-Nix runner), we assume these are
-  # already on PATH.
-  if command -v nix-shell >/dev/null 2>&1; then
-    nix-shell -p mlton gmp gmp.dev gcc nodejs_22 --run '
-      set -euo pipefail
-      ./scripts/build-twelf.sh "$PWD/.twelf"
-      npm install --omit=dev --no-audit --no-fund
-    '
-  else
-    ./scripts/build-twelf.sh "$PWD/.twelf"
-    npm install --omit=dev --no-audit --no-fund
-  fi
+
+  ARCH="$(uname -m)"
+  case "$ARCH" in
+    x86_64)
+      MLTON_TAG=amd64-linux.ubuntu-24.04_static
+      NODE_TAG=linux-x64
+      ;;
+    aarch64)
+      MLTON_TAG=arm64-linux.ubuntu-24.04-arm_static
+      NODE_TAG=linux-arm64
+      ;;
+    *)
+      echo "unsupported arch: $ARCH" >&2
+      exit 1
+      ;;
+  esac
+
+  sudo apt-get update -y
+  sudo apt-get install -y --no-install-recommends \
+    libgmp-dev libc6-dev gcc xz-utils ca-certificates curl
+
+  # MLton — official static tarball from the upstream release. Avoids the
+  # arm64 apt-package mlton-compiler issue on newer Ubuntu and works
+  # uniformly across both archs the arena runs on.
+  curl -fsSL -o /tmp/mlton.tgz \
+    "https://github.com/MLton/mlton/releases/download/on-20241230-release/mlton-20241230-1.${MLTON_TAG}.tgz"
+  rm -rf /tmp/mlton && mkdir /tmp/mlton
+  tar -xzf /tmp/mlton.tgz -C /tmp/mlton --strip-components=1
+  (cd /tmp/mlton && sudo make install PREFIX=/usr/local)
+
+  # Node 22 — tarball into /opt; symlink so the `run:` step inherits it.
+  curl -fsSL -o /tmp/node.tar.xz \
+    "https://nodejs.org/dist/v22.20.0/node-v22.20.0-${NODE_TAG}.tar.xz"
+  sudo tar -xJf /tmp/node.tar.xz -C /opt
+  for bin in node npm npx; do
+    sudo ln -sf "/opt/node-v22.20.0-${NODE_TAG}/bin/$bin" "/usr/local/bin/$bin"
+  done
+
+  # Build the limited-thaw twelf-server and install Node deps.
+  ./scripts/build-twelf.sh "$PWD/.twelf"
+  npm install --omit=dev --no-audit --no-fund
 
 run: |
   set -euo pipefail
   export TWELF="$PWD/.twelf/bin/twelf-server"
-  if command -v nix-shell >/dev/null 2>&1; then
-    # Node 22 needs to be on PATH for the parse/generate scripts.
-    # libgmp.so is already in the twelf-server binary's RPATH from the
-    # build (nix store paths persist), so no need for gmp here.
-    nix-shell -p nodejs_22 --run "timeout 600s ./scripts/arena-check.sh \"$IN\""
-  else
-    timeout 600s ./scripts/arena-check.sh "$IN"
-  fi
+  timeout 600s ./scripts/arena-check.sh "$IN"
