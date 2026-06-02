@@ -51,14 +51,22 @@ build: |
   sudo apt-get install -y --no-install-recommends \
     libgmp-dev libc6-dev gcc xz-utils ca-certificates curl
 
-  # MLton — official static tarball from the upstream release. Avoids the
-  # arm64 apt-package mlton-compiler issue on newer Ubuntu and works
-  # uniformly across both archs the arena runs on.
+  # MLton — official static tarball from the upstream release.  Run
+  # `make update WITH_GMP_DIR=/usr CC=/usr/bin/gcc` before install: this
+  # bakes the system gcc and the apt-installed /usr/include/gmp.h path
+  # into the installed MLton's vars file.  Without it, MLton would invoke
+  # whatever `cc` is first on PATH, and inside `nix develop` the flake's
+  # `stdenv` puts a nix-store gcc there whose include search doesn't see
+  # /usr/include — so the apt-installed libgmp-dev would be invisible to
+  # the C codegen (the failure mode of the first attempted CI run was
+  # exactly "gmp.h: No such file or directory").
   curl -fsSL -o /tmp/mlton.tgz \
     "https://github.com/MLton/mlton/releases/download/on-20241230-release/mlton-20241230-1.${MLTON_TAG}.tgz"
   rm -rf /tmp/mlton && mkdir /tmp/mlton
   tar -xzf /tmp/mlton.tgz -C /tmp/mlton --strip-components=1
-  (cd /tmp/mlton && sudo make install PREFIX=/usr/local)
+  (cd /tmp/mlton && \
+     make update WITH_GMP_DIR=/usr CC=/usr/bin/gcc && \
+     sudo make install PREFIX=/usr/local)
 
   # Node 22 — tarball into /opt; symlink so the `run:` step inherits it.
   curl -fsSL -o /tmp/node.tar.xz \
