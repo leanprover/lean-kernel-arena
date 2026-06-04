@@ -1,0 +1,5 @@
+description: |
+  Constructor field universe exceeds the inductive's, disguised behind `imax`.
+leanfile: tests/field-too-high-imax.lean
+export-decls: ["Foo.mk"]
+outcome: reject

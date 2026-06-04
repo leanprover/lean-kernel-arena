@@ -1,0 +1,7 @@
+description: |
+  You can't have a 2-ctor `Sort 0` inductive with a large-elim recursor. This
+  test ensures you can't fool anyone by disguising your `Sort 0` inductive
+  as a `Sort (imax 1 0)` inductive.
+leanfile: tests/large-elim-imax-prop.lean
+export-decls: ["ImaxProp.rec"]
+outcome: reject

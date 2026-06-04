@@ -1,0 +1,20 @@
+description: |
+  Checks that kernels aren't just trusting the recursors they are handed: if
+  they do, this test will admit a proof of False via an invalid recursor.
+
+  This export defines `PropTwo : Prop` with constructors `PropTwo.a`, `PropTwo.b`
+  and supplies a recursor `PropTwo.rec` whose motive targets `Sort u` (large
+  elimination). The recursor is otherwise well-formed — correct rule count and
+  correct reduction rules — so the only defect is the elimination level. From it:
+
+      discriminate : PropTwo → Bool := PropTwo.rec (fun _ => Bool) true false
+      ab_eq        : PropTwo.a = PropTwo.b           -- proof irrelevance
+      discr_eq     : discriminate a = discriminate b -- congrArg
+      falseViaLargeElim : False                      -- transport True.intro along discr_eq
+
+  Because `discriminate a` reduces to `true` and `discriminate b` to `false`,
+  `discr_eq` is a proof of `true = false`, and transporting `True.intro` along it
+  lands in `False`.
+leanfile: tests/large-elim-supplied-rec.lean
+export-decls: ["falseViaLargeElim"]
+outcome: reject
