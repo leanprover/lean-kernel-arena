@@ -1,4 +1,4 @@
-{}
+{"meta":{"format":{"version":"3.1.0"}}}
 {"in": 1, "str": {"pre": 0, "str": "False"}}
 {"in": 2, "str": {"pre": 0, "str": "True"}}
 {"in": 3, "str": {"pre": 2, "str": "intro"}}
