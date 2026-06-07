@@ -17,7 +17,7 @@ description: |
   of failure, so they are all repoted as “rejected”.
 url: https://github.com/ammkrn/nanoda_lib
 ref: master
-rev: 8d68231443e6b5f859697822f4e5915f0a19258f
+rev: f58f2f6d535e189a40fcb02ede8eb95f97a92d37
 build: |
   cargo build --release
   cat > config.json <<__END__
