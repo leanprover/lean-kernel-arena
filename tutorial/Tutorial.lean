@@ -952,8 +952,24 @@ good_decl (.thmDecl {
 
 /-! Proof irrelevance and unit Eta -/
 
-/-- Proof irrelevance -/
+/--
+Proof irrelevance: every `Prop` is a subsingleton, if `p : Prop` then all elements of `p`
+are definitionally equal.
+-/
 good_def proofIrrelevance : ∀ (p : Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
+
+/--
+Proof irrelevance is limited to Prop: if `p : Type`, then all elements of `p` are *not*
+definitionally equal.
+-/
+bad_def proofIrrelevanceBad : ∀ (p : Type) (h1 h2 : p), h1 = h2 :=
+  unchecked (fun (p : Type) (h1 h2 : p) => @rfl p h1)
+
+/--
+Proof irrelevance: if `p : A` and `A` is definitionally equal to `Prop`, then all elements of `p`
+are still definitionally equal. Just applying proof irrelevance at `Sort 0` isn't sufficient.
+-/
+good_def proofIrrelevanceWhnf : ∀ (p : id Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
 
 /-- Unit eta -/
 good_def unitEta1 : ∀ (x y : Unit), x = y := fun _ _ => rfl
