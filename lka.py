@@ -491,7 +491,11 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
 
     result = run_cmd(cmd, cwd=cwd, shell=True)
     if result.returncode != 0:
-        print(f"  Export failed: {result.stderr}")
+        print(f"  Export failed")
+        if result.stdout:
+            print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
+        if result.stderr:
+            print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
         return False
     return True
 
@@ -544,7 +548,11 @@ def setup_lean4export(toolchain: str) -> Path | None:
         print(f"  Building lean4export with toolchain {toolchain}...")
         result = run_cmd("lake build", cwd=lean4export_tmp_dir, shell=True)
         if result.returncode != 0:
-            print(f"  Error building lean4export: {result.stderr}")
+            print(f"  Error building lean4export")
+            if result.stdout:
+                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
+            if result.stderr:
+                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return None
 
         # Move temporary directory to final location atomically
@@ -886,7 +894,11 @@ def create_test(test: dict, output_dir: Path) -> bool:
         print(f"  Building module {module_name}...")
         result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True)
         if result.returncode != 0:
-            print(f"  Build failed: {result.stderr}")
+            print(f"  Build failed")
+            if result.stdout:
+                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
+            if result.stderr:
+                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return False
 
         # Export using lean4export
@@ -1119,7 +1131,11 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
 
         result = run_cmd(build_cmd, cwd=actual_work_dir, shell=True)
         if result.returncode != 0:
-            print(f"  Build failed: {result.stderr}")
+            print(f"  Build failed")
+            if result.stdout:
+                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
+            if result.stderr:
+                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return False
 
     print(f"  Checker {name} built successfully")
