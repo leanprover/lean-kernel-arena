@@ -130,28 +130,26 @@ good_def levelMaxAssoc.{u, v, w} :
 
 /--
 Level equality: `max` is idempotent (`max u u ≈ u`).
-
-Writing this like `levelMaxComm` or `levelMaxAssoc` results in a trivial
-test; Lean will reduce `max u u` to `u` during elaboration rather than
-leaving it to the kernel.
 -/
-good_decl (.defnDecl {
+good_decl 
+  -- elaboration would simplify it if we just wrote
+  -- def levelMaxIdem : Sort (u + 1) := Sort (max u u)
+  (.defnDecl {
     name := `levelMaxIdem
     levelParams := [`u]
     type := .sort (.succ (.param `u))
-    value := .sort (.max (.param `u) (.param `u))
+    value := .sort (.max (.param `u) (.param `u)) 
     hints := .opaque
     safety := .safe
   })
 
 /--
 Level equality: `max` absorption (`max u (max u v) ≈ max u v`).
-
-Writing this like `levelMaxComm` or `levelMaxAssoc` results in a trivial
-test; Lean will reduce `max u (max u v)` to `max u v` during elaboration
-rather than leaving it to the kernel.
 -/
-good_decl (.defnDecl {
+good_decl
+  -- elaboration would simplify it if we just wrote
+  -- def maxLevelAbsorb : Sort (max u v + 1) := Sort (max u (max u v))
+  (.defnDecl {
     name := `levelMaxAbsorb
     levelParams := [`u, `v]
     type := .sort (.succ (.max (.param `u) (.param `v)))
