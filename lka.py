@@ -361,6 +361,7 @@ def run_cmd(
     shell: bool = False,
     capture_output: bool = True,
     measure_perf: bool = False,
+    print_on_failure: bool = False,
 ) -> subprocess.CompletedProcess:
     """Run a command with optional verbose output and performance measurement.
 
@@ -371,6 +372,7 @@ def run_cmd(
         shell: Whether to run as shell command
         capture_output: Whether to capture stdout/stderr
         measure_perf: Whether to measure detailed performance metrics
+        print_on_failure: Whether to print stdout/stderr when the command fails
 
     Returns:
         CompletedProcess instance with additional attributes:
@@ -445,6 +447,12 @@ def run_cmd(
         if result.stderr:
             print(f"      stderr: {result.stderr.replace('\n', '\n               ')}")
 
+    if print_on_failure and result.returncode != 0:
+        if result.stdout:
+            print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
+        if result.stderr:
+            print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
+
     return result
 
 
@@ -489,13 +497,9 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
         cmd += f" -- {decls}"
     cmd += f" > {out_file}"
 
-    result = run_cmd(cmd, cwd=cwd, shell=True)
+    result = run_cmd(cmd, cwd=cwd, shell=True, print_on_failure=True)
     if result.returncode != 0:
         print(f"  Export failed")
-        if result.stdout:
-            print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
-        if result.stderr:
-            print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
         return False
     return True
 
@@ -546,13 +550,9 @@ def setup_lean4export(toolchain: str) -> Path | None:
             return None
 
         print(f"  Building lean4export with toolchain {toolchain}...")
-        result = run_cmd("lake build", cwd=lean4export_tmp_dir, shell=True)
+        result = run_cmd("lake build", cwd=lean4export_tmp_dir, shell=True, print_on_failure=True)
         if result.returncode != 0:
             print(f"  Error building lean4export")
-            if result.stdout:
-                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
-            if result.stderr:
-                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return None
 
         # Move temporary directory to final location atomically
@@ -877,9 +877,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Run pre-build command if specified
         if pre_build:
             print(f"  Running pre-build: {pre_build}")
-            result = run_cmd(pre_build, cwd=work_dir, shell=True)
+            result = run_cmd(pre_build, cwd=work_dir, shell=True, print_on_failure=True)
             if result.returncode != 0:
-                print(f"  Pre-build failed:\n{result.stdout}\n{result.stderr}")
+                print(f"  Pre-build failed")
                 return False
 
         build_dir = work_dir
@@ -892,13 +892,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
 
         # Build the module
         print(f"  Building module {module_name}...")
-        result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True)
+        result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True, print_on_failure=True)
         if result.returncode != 0:
             print(f"  Build failed")
-            if result.stdout:
-                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
-            if result.stderr:
-                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return False
 
         # Export using lean4export
@@ -924,9 +920,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Run pre-build command if specified
         if pre_build:
             print(f"  Running pre-build: {pre_build}")
-            result = run_cmd(pre_build, cwd=work_dir, shell=True)
+            result = run_cmd(pre_build, cwd=work_dir, shell=True, print_on_failure=True)
             if result.returncode != 0:
-                print(f"  Pre-build failed:\n{result.stdout}\n{result.stderr}")
+                print(f"  Pre-build failed")
                 return False
 
         # Run the script with $OUT environment variable
@@ -941,13 +937,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
             # For single tests, $OUT points to the output file
             env["OUT"] = str(tmp_file)
 
-        result = run_cmd(run_cmd_str, cwd=work_dir, shell=True, env=env)
+        result = run_cmd(run_cmd_str, cwd=work_dir, shell=True, env=env, print_on_failure=True)
         if result.returncode != 0:
             print(f"  Script failed")
-            if result.stdout:
-                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
-            if result.stderr:
-                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return False
 
     if multiple:
@@ -1129,13 +1121,9 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
             # Single-line command
             print(f"  Building: {build_cmd}")
 
-        result = run_cmd(build_cmd, cwd=actual_work_dir, shell=True)
+        result = run_cmd(build_cmd, cwd=actual_work_dir, shell=True, print_on_failure=True)
         if result.returncode != 0:
             print(f"  Build failed")
-            if result.stdout:
-                print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
-            if result.stderr:
-                print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
             return False
 
     print(f"  Checker {name} built successfully")
