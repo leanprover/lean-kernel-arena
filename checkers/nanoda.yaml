@@ -31,4 +31,4 @@ build: |
    }
   __END__
 run: |
-  target/release/nanoda_bin config.json < "$IN" || exit 1
+  target/release/nanoda_bin config.json < "$IN"
