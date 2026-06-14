@@ -1,0 +1,10 @@
+description: |
+  Bogus proof that tests for incorrectly implemented K-like reduction.
+
+  `fun x => x` and `fun _ => y` are not convertible, but a checker that does treat them
+  as convertible would accept the resulting theorem `bad`, which is true propositionally, but not definitionally.
+
+  Regression test for sokonanoda.
+leanfile: tests/k-rec-conv.lean
+export-decls: ["bad"]
+outcome: reject
