@@ -32,3 +32,5 @@ build: |
   __END__
 run: |
   target/release/nanoda_bin config.json < "$IN"
+  e=$?
+  exit $(( e==101 ? 1 : e ))
