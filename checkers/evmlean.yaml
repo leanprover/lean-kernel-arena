@@ -1,0 +1,31 @@
+# Draft checker definition for leanprover/lean-kernel-arena (checkers/evmlean.yaml).
+#
+# evmlean checks Lean exports by executing a Lean-kernel fragment implemented
+# as an EVM smart contract (Solidity), run inside an in-process EVM. It
+# explores the "different host language" corner of the design space — the
+# host is a blockchain virtual machine, and acceptance can be replayed by an
+# on-chain transaction.
+#
+# Supported: defs/theorems/axioms/opaques, full universe algebra,
+# beta/delta/zeta/iota reduction, definitional equality with function eta,
+# structure/unit eta and proof irrelevance, inductive families (positivity,
+# elimination restrictions, K validation, recursor minor premises and rules
+# checked against independently reconstructed types), projections, quotients
+# with exact primitive signature checks, Nat literals.
+# Declines (exit 2): nested inductives, multi-type mutual groups, unsafe
+# declarations, String-literal reduction, and anything beyond its gas/step/size
+# budget.
+description: |
+  A Lean 4 kernel implemented in Solidity and executed on the Ethereum
+  Virtual Machine. Accepting a proof is a metered EVM execution; the same
+  call can be replayed on any EVM chain (36.7KB deployed — sized for the
+  EIP-7907 limit). Rejects all five of the Arena's static adversarial
+  exports at the offending declaration. Declines declarations outside its
+  fragment (nested inductives, multi-type mutual groups, unsafe decls,
+  String reduction) and exports beyond its resource budget.
+version: "0.1.0"
+url: https://github.com/FawadHa1der/evm_proof_checker
+ref: main
+rev: 055a6b9cad082f13838a50ba92a937d347690d13
+build: npm install --no-audit --no-fund && node tools/build.js
+run: node bin/evmlean.js $IN
