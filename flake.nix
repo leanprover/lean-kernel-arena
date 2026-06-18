@@ -20,6 +20,7 @@
           just
           pypy
           monolith
+          nodejs
         ];
       };
     };
