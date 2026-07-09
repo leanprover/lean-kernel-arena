@@ -34,6 +34,17 @@ build: |
   git clone https://github.com/vow-lang/vow vow
   git -C vow checkout "$VOW_REF"
 
+  # vow's Rust deps (cranelift 0.133) need rustc >= 1.94, newer than some build
+  # environments provide (e.g. the arena's nixpkgs-pinned rustc 1.91.1). Install
+  # a known-good toolchain via rustup and put it first on PATH for the Rust
+  # build. Only stage 0 needs cargo/rustc; the self-host and kernel builds use
+  # the produced binaries. (curl reaches the host /usr/bin here — the same path
+  # the arena's `nix develop` shell uses for git.)
+  export RUSTUP_HOME="$ROOT/.rustup" CARGO_HOME="$ROOT/.cargo"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o "$ROOT/rustup-init.sh"
+  sh "$ROOT/rustup-init.sh" -y --profile minimal --default-toolchain 1.96.0 --no-modify-path
+  export PATH="$CARGO_HOME/bin:$PATH"
+
   # Stage 0: Rust bootstrap compiler.
   ( cd vow && cargo build --all )
 
