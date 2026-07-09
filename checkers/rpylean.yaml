@@ -1,9 +1,9 @@
-version: "v2026.7.1"
+version: "v2026.7.2"
 description: |
   **rpylean** - A Lean type checker written in (R)Python.
 url: https://github.com/Julian/rpylean
 ref: main
-rev: 68de64fd1bfb4bcb76b51d92c84582e69801443b
+rev: f484d442345849d7090ad41522be95cb9580e1b0
 build: |
   git clone --filter=blob:none https://github.com/pypy/pypy
   cat > .env <<__END__
