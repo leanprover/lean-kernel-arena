@@ -72,8 +72,11 @@ run: |
   # arena host's RAM, so a genuine OOM still surfaces as Vow's graceful
   # allocation failure (which we can detect) rather than an OS OOM-kill
   # (SIGKILL, uncatchable).
+  #
+  # Time cap = 30s: unsupported performance cases should fail promptly instead
+  # of occupying an arena runner until the workflow-wide timeout.
   err="$(mktemp)"
-  ( ulimit -v 12582912 && ./lean_checker "$IN" ) 2>"$err"
+  ( ulimit -v 12582912 && timeout 30s ./lean_checker "$IN" ) 2>"$err"
   rc=$?
   cat "$err" >&2
   if [ "$rc" -ne 0 ] && grep -q '"error":"OutOfMemory"' "$err"; then rc=3; fi
