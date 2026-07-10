@@ -17,8 +17,13 @@ description: |
   fragment are **declined** (exit 2) rather than falsely rejected — the checker
   is sound-by-construction on what it accepts and conservative elsewhere.
 
-  This is the first large program written in Vow and doubles as a proving ground
-  for the language.
+  [Vow](https://vow-lang.com) is a language developed by Paulo Matos
+  ([github.com/pmatos](https://github.com/pmatos)) for agentic use — one of
+  several such languages currently emerging, alongside MoonBit, Vera-lang, and
+  Zerolang. This kernel, the first large program written in Vow, was undertaken
+  as a challenge: to have an agent develop a complete Lean kernel entirely in the
+  new language, and it doubles as a proving ground for it. The work was 100%
+  agentic, carried out with Claude Code.
 url: https://github.com/pmatos/vow-lean-kernel
 ref: main
 rev: 514ab33fc0262c491a0af1846cc3887f48411e36
