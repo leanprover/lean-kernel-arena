@@ -34,18 +34,10 @@ build: |
   git clone https://github.com/vow-lang/vow vow
   git -C vow checkout "$VOW_REF"
 
-  # vow's Rust deps (cranelift 0.133) need rustc >= 1.94, newer than some build
-  # environments provide (e.g. the arena's nixpkgs-pinned rustc 1.91.1). Install
-  # a known-good toolchain via rustup and put it first on PATH for the Rust
-  # build. Only stage 0 needs cargo/rustc; the self-host and kernel builds use
-  # the produced binaries. (curl reaches the host /usr/bin here — the same path
-  # the arena's `nix develop` shell uses for git.)
-  export RUSTUP_HOME="$ROOT/.rustup" CARGO_HOME="$ROOT/.cargo"
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o "$ROOT/rustup-init.sh"
-  sh "$ROOT/rustup-init.sh" -y --profile minimal --default-toolchain 1.96.0 --no-modify-path
-  export PATH="$CARGO_HOME/bin:$PATH"
-
-  # Stage 0: Rust bootstrap compiler.
+  # Stage 0: Rust bootstrap compiler. vow's Rust deps (cranelift 0.133) need
+  # rustc >= 1.94, provided by the arena's flake (nixpkgs nixos-26.05 → rustc
+  # 1.95). Only this stage needs cargo/rustc; the self-host and kernel builds
+  # use the produced binaries.
   ( cd vow && cargo build --all )
 
   # Stage 1: concatenate and self-host the Cranelift-backed `vowc`. The
@@ -64,18 +56,21 @@ run: |
   # lean_checker exits 0 accept / 1 reject / 2 decline. But the Vow runtime
   # exits 1 on OutOfMemory, colliding with "reject" — which the arena would
   # score as a false reject on an accept test. Detect that specific runtime OOM
-  # (a JSON marker on stderr) and report it as a decline (exit 2): an honest
-  # "exceeded my memory budget", not a claim that the proof is invalid. Genuine
-  # rejects (exit 1, no OOM marker) and real crashes are left untouched.
+  # (a JSON marker on stderr) and remap it to exit 3 (error). An OOM is a
+  # resource-exhaustion abort, not a deliberate "outside my fragment" decline,
+  # so the arena's error bucket (crash / OOM / timeout) is its honest home.
+  # Genuine rejects (exit 1, no OOM marker), real declines (exit 2) and real
+  # crashes are left untouched.
   #
   # Cap = 12 GiB: the dry-run showed the `Init` accept run peaks at ~7.6 GB, so
   # 8 GB left almost no headroom; 12 GB is comfortable yet stays below a normal
   # arena host's RAM, so a genuine OOM still surfaces as Vow's graceful
-  # allocation failure (→ decline) rather than an OS OOM-kill (uncatchable).
+  # allocation failure (which we can detect) rather than an OS OOM-kill
+  # (SIGKILL, uncatchable).
   err="$(mktemp)"
   ( ulimit -v 12582912 && ./lean_checker "$IN" ) 2>"$err"
   rc=$?
   cat "$err" >&2
-  if [ "$rc" -ne 0 ] && grep -q '"error":"OutOfMemory"' "$err"; then rc=2; fi
+  if [ "$rc" -ne 0 ] && grep -q '"error":"OutOfMemory"' "$err"; then rc=3; fi
   rm -f "$err"
   exit "$rc"
