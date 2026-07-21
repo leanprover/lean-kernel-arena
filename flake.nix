@@ -24,6 +24,7 @@
           ocaml
           opam
           gmp
+          zig
         ];
       };
     };
