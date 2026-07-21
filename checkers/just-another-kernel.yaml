@@ -1,0 +1,16 @@
+description: |
+  Zig kernel based on [sokonanoda](https://github.com/intgrah/sokonanoda)
+url: https://github.com/intgrah/just-another-kernel
+ref: master
+rev: 8eb0b40781eead83f72549946045ba2bc51c2bff
+build: |
+  zig build -Doptimize=ReleaseFast
+run: |
+  ./zig-out/bin/just_another_kernel \
+    --use-stdin \
+    --nat-extension \
+    --string-extension \
+    --unsafe-permit-all-axioms \
+    --no-unpermitted-axiom-hard-error \
+    -j4 \
+    < "$IN" || exit 1
