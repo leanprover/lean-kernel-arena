@@ -1,12 +1,12 @@
 description: |
   Zig kernel based on [sokonanoda](https://github.com/intgrah/sokonanoda)
-url: https://github.com/intgrah/just-another-kernel
+url: https://github.com/intgrah/zignodamus
 ref: master
 rev: c64d5bfb3d460c38b295ecb318bf551eaec71a65
 build: |
   zig build -Doptimize=ReleaseFast
 run: |
-  ./zig-out/bin/just_another_kernel \
+  ./zig-out/bin/zignodamus \
     --use-stdin \
     --nat-extension \
     --string-extension \
