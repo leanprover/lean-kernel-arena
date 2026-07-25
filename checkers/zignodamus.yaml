@@ -2,9 +2,9 @@ description: |
   Zig kernel based on [sokonanoda](https://github.com/intgrah/sokonanoda)
 url: https://github.com/intgrah/zignodamus
 ref: master
-rev: 22a5795a2715fdf6ce429bfb9adb1cec87b6b0ba
+rev: c43332f043a6fe8f946348d3ce69ef33c26e845d
 build: |
-  zig build -Doptimize=ReleaseFast
+  zig build -Drelease
 run: |
   ./zig-out/bin/zignodamus \
     --use-stdin \
