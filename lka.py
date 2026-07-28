@@ -621,6 +621,10 @@ def load_test_descriptions() -> list[dict]:
 def load_checkers() -> list[dict]:
     """Load all checker definitions, filtering out disabled ones."""
     all_checkers = load_yaml_files(get_project_root() / "checkers", "checker")
+    for checker in all_checkers:
+        # Normalize `declines` (a single test name or a list) to a list
+        declines = checker.get("declines", [])
+        checker["declines"] = [declines] if isinstance(declines, str) else declines
     # Filter out disabled checkers
     return [checker for checker in all_checkers if not checker.get("disable", False)]
 
@@ -1168,6 +1172,28 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     checker_name = checker["name"]
     test_name = test["name"]
     checker_run_cmd = checker["run"]
+
+    # Tests listed in the checker's `declines` are declined without running
+    if test_name in checker.get("declines", []):
+        result_data = {
+            "checker": checker_name,
+            "test": test_name,
+            "status": "declined",
+            "correctness": "declined",
+            "exit_code": 2,
+            "wall_time": 0,
+            "cpu_time": 0,
+            "max_rss": 0,
+            "instructions": 0,
+            "stdout": "",
+            "stderr": "Declined via the `declines` field in the checker configuration; the checker was not run.",
+        }
+        results_dir.mkdir(parents=True, exist_ok=True)
+        safe_test_name = test_name.replace("/", "_")
+        result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
+        with open(result_file, "w") as f:
+            json.dump(result_data, f, indent=2)
+        return result_data
 
     # Use the file path stored in the test dict
     test_file = test["file"]

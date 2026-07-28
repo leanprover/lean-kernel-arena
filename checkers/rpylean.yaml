@@ -12,3 +12,6 @@ build: |
   just translate
 run: |
   ./rpylean-c check "$IN" || exit 1
+# rpylean does not pass on Mathlib yet; running it costs about an hour per
+# arena run for an already-known outcome.
+declines: mathlib
