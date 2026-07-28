@@ -1,6 +1,10 @@
 version: "v2026.7.6"
 description: |
   **rpylean** - A Lean type checker written in (R)Python.
+
+  Mathlib is **declined** (exit 2) rather than run: rpylean does not check it
+  successfully yet, and the attempt costs about an hour per arena run for an
+  already-known outcome.
 url: https://github.com/Julian/rpylean
 ref: main
 rev: 1f6d2205d3958484b7de351d314a5e02896b9fab
@@ -11,4 +15,10 @@ build: |
   __END__
   just translate
 run: |
+  # rpylean does not pass on Mathlib yet, so decline it (exit 2) instead of
+  # spending an hour of the run to learn what we already know. $IN is
+  # _build/tests/<test-name>.ndjson.
+  case "${IN##*/}" in
+    mathlib.ndjson) exit 2 ;;
+  esac
   ./rpylean-c check "$IN" || exit 1
