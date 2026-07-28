@@ -1227,6 +1227,10 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
         correctness = "declined"
     elif status == "error":
         correctness = "error"
+    elif expected_outcome == "either":
+        # Not settled whether a checker should accept or reject this: both
+        # behaviours are acceptable. Excluded from the scoring columns.
+        correctness = "either"
     elif expected_outcome == "accept" and status == "accepted":
         correctness = "correct"
     elif expected_outcome == "reject" and status == "rejected":
@@ -1329,6 +1333,8 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
                 correctness_emoji = '❌'
             elif correctness == 'declined':
                 correctness_emoji = '⊘'
+            elif correctness == 'either':
+                correctness_emoji = '🤷'
             else:  # error
                 correctness_emoji = '⚠️'
             
@@ -1339,19 +1345,21 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
     print("Summary:")
     print("=" * 60)
 
-    correctness_counts = {"correct": 0, "incorrect": 0, "declined": 0, "error": 0}
+    correctness_counts = {"correct": 0, "incorrect": 0, "either": 0, "declined": 0, "error": 0}
     for r in results:
         correctness = r.get("correctness", "error")
         correctness_counts[correctness] = correctness_counts.get(correctness, 0) + 1
 
-    # Print in order: correct, incorrect, declined, error
-    for correctness in ["correct", "incorrect", "declined", "error"]:
+    # Print in order: correct, incorrect, either, declined, error
+    for correctness in ["correct", "incorrect", "either", "declined", "error"]:
         count = correctness_counts.get(correctness, 0)
         if count > 0:
             if correctness == "correct":
                 emoji = "✅"
             elif correctness == "incorrect":
                 emoji = "❌"
+            elif correctness == "either":
+                emoji = "🤷"
             elif correctness == "declined":
                 emoji = "⊘"
             else:  # error
@@ -1484,6 +1492,11 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
         # Errors don't make any assertion about correctness, so treat them like declines
         if status == "declined" or status == "error":
             declined_count += 1
+            continue
+
+        # 'either' tests have no settled expected outcome, so they are excluded
+        # from the completeness and soundness columns (neither behaviour counts).
+        if expected_outcome == "either":
             continue
 
         if expected_outcome == "accept":
@@ -1640,9 +1653,13 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
             if outcome == "accept":
                 subdir = "good"
                 good_count += 1
-            else:
+            elif outcome == "reject":
                 subdir = "bad"
                 bad_count += 1
+            else:
+                # 'either' (and any unclassified) tests have no expected good/bad
+                # bucket, so they are not included in the downloadable tarball.
+                continue
 
             # Add file to tarball with appropriate subdirectory
             arcname = f"{subdir}/{test['name']}.ndjson"

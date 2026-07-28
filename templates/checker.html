@@ -107,7 +107,7 @@ section pre, details pre {
                 <td><a href="#test-{{ result.test }}">{{ result.test }}</a></td>
                 <td class="spacer-col"></td>
                 <td class="text-center">
-                    {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% else %}⚠️ {{ result.expected }}{% endif %}
+                    {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}
                 </td>
                 {{ result_status_cell(result.expected, result.status) }}
                 {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
@@ -127,7 +127,7 @@ section pre, details pre {
 
     <p>
         <strong>Expected:</strong>
-        {% if result.expected == 'accept' %}👍 accept{% elif result.expected == 'reject' %}✋ reject{% else %}⚠️ {{ result.expected }}{% endif %}
+        {% if result.expected == 'accept' %}👍 accept{% elif result.expected == 'reject' %}✋ reject{% elif result.expected == 'either' %}🤷 either{% else %}⚠️ {{ result.expected }}{% endif %}
         {% if result.test_stats %}
         · <strong>Size:</strong> {{ result.test_stats.size_str }}
         · <strong>Lines:</strong> {{ result.test_stats.lines_str }}
@@ -155,7 +155,7 @@ section pre, details pre {
 
     <p>
       <b>Test result:</b>
-        <span class="{% if (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif (result.expected == 'accept' and result.status != 'accepted' and result.status != 'declined' and result.status != 'error') or (result.expected == 'reject' and result.status != 'rejected' and result.status != 'declined' and result.status != 'error') %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
+        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif (result.expected == 'accept' and result.status != 'accepted' and result.status != 'declined' and result.status != 'error') or (result.expected == 'reject' and result.status != 'rejected' and result.status != 'declined' and result.status != 'error') %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
             {% if result.status == 'accepted' %}👍 accepted{% elif result.status == 'rejected' %}✋ rejected{% elif result.status == 'declined' %}🚫 declined{% else %}💥 {{ result.status }}{% endif %}
         </span>
         · exit code {{ result.exit_code }}

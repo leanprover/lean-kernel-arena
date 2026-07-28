@@ -12,17 +12,18 @@ description: |
   nested application (leanprover/lean4#14577); a correct checker must also
   verify that it is the expected parameter.
 
-  Note this particular declaration is not known to yield a proof of `False`:
-  here `L` stores no value of type `α`, so the nested occurrence is phantom and
-  `E w` is isomorphic to `Unit` for every `w`. The variant where `L` actually
-  stores an `α` (so recursion would descend into an `E ⟨false⟩` while the motive
-  is fixed at `E w`) is already rejected by the kernel's positivity check
-  ("non valid occurrence"). This test therefore guards a well-formedness /
-  defense-in-depth condition rather than a demonstrated inconsistency.
+  This particular declaration is not known to yield a proof of `False`: here `L`
+  stores no value of type `α`, so the nested occurrence is phantom and `E w` is
+  isomorphic to `Unit` for every `w`. The variant where `L` actually stores an
+  `α` (so recursion would descend into an `E ⟨false⟩` while the motive is fixed
+  at `E w`) is already rejected by the kernel's positivity check ("non valid
+  occurrence"). Since it is not a demonstrated unsoundness, it is not settled
+  whether a checker should accept or reject it, so the expected outcome is
+  `either` and the test does not count towards completeness or soundness.
 
   Origin: raised by @arthur-adjedj on leanprover/lean4#14577
   (https://github.com/leanprover/lean4/pull/14577#issuecomment-5101819377) as a
   case not covered by that PR's fix; related to leanprover/lean4#14576.
 leanfile: tests/nested-nonuniform-param.lean
 export-decls: ["E"]
-outcome: reject
+outcome: either

@@ -131,7 +131,7 @@ table thead th {
                     {% if checker.get('serious', true) and checker.name == 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center official-column {% if result %}{% if (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -157,7 +157,7 @@ table thead th {
                     {% if checker.get('serious', true) and checker.name != 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center {% if result %}{% if (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -215,6 +215,10 @@ table thead th {
 
     <p>
         Checkers that do not implement all features may choose to explicitly decline to process certain tests (column 🚫). These tests are not taken into account for correctness scoring. Tests that crash the checker (💥) also considered declined.
+    </p>
+
+    <p>
+        Tests can come without an expected outcome (shown as 🤷). These test corner cases that are not known to be soundness relevant and not typically relevant in practice, and where it is acceptable for a checker to accept or to reject. They are excluded from the completeness and soundness scoring.
     </p>
 
     <p>
