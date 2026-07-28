@@ -195,6 +195,8 @@ The `run` command receives the test file path via the `$IN` environment variable
   
 - anything else: an error in the checker
 
+If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names). Such tests are recorded as declined without running the checker at all.
+
 The arena does not automatically update the checkers; please submit new releases manually.
 
 ## Fair Play

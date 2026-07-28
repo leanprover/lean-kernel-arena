@@ -43,6 +43,17 @@
       "type": "boolean",
       "description": "If true, this checker will be ignored and not built or run"
     },
+    "declines": {
+      "description": "Test name or list of test names that this checker declines without running them (recorded as declined, as if the checker had exited with code 2)",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      ]
+    },
     "serious": {
       "type": "boolean",
       "description": "If false, this checker is omitted from the main comparison tables (default: true)"
