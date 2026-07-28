@@ -1,0 +1,24 @@
+description: |
+  As Lean's type theory has undecidable conversion (a.k.a. definitional equality),
+  there are bound to be gaps between so called "algorithmic" conversion (that which is
+  implemented by a typechecker), and the "declarative" conversion.
+
+  In the official kernel, algorithmic conversion fails to be transitive. `f 1 a`
+  is a normal form: `a` is a variable, so `Acc.rec` cannot fire on it. Proof
+  irrelevance admits any other proof of `Acc (· < ·) 1` in its place, and
+  `Acc.intro 1 fun _ => Acc.inv a` carries a constructor at the head, so it
+  reduces. `left` is that substitution, `right` the reduction it unblocks, and
+  `trans` chains the two.
+
+  `acc` asks for the endpoints on their own, which means inventing the middle
+  term: choosing, among the proofs of a proposition, the one that happens to
+  reduce the right way. The kernel has no reason to go looking, the left side
+  being normal already, and unfolding regardless does not terminate here, as
+  each step makes the term larger.
+
+  References:
+
+  - Mario Carneiro, *The Type Theory of Lean*, MSc thesis
+leanfile: tests/undecidability/alg-conv.lean
+export-decls: ["trans"]
+outcome: either

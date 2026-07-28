@@ -1,0 +1,12 @@
+description: |
+  Beta erases the annotation of `undecidability/subject-reduction-redex`, and
+  with it the middle term, leaving the two endpoints to compare: the conversion
+  of `undecidability/alg-conv-trans-acc`. A term the kernel accepts thus
+  reduces to one it rejects.
+
+  References:
+
+  - Mario Carneiro, *The Type Theory of Lean*, MSc thesis
+leanfile: tests/undecidability/alg-conv.lean
+export-decls: ["reduct"]
+outcome: either
