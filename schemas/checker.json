@@ -54,10 +54,6 @@
         }
       ]
     },
-    "serious": {
-      "type": "boolean",
-      "description": "If false, this checker is omitted from the main comparison tables (default: true)"
-    },
     "threads": {
       "type": "integer",
       "minimum": 1,
