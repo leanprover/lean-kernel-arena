@@ -1754,6 +1754,31 @@ def summarize_correctness(result_list: list[dict]) -> dict:
     return counts
 
 
+def collect_results_data() -> dict:
+    """Collect checkers, tests, results and build metadata into a single
+    JSON-serializable structure.
+
+    This is the content of the published results.json file, so it is a
+    complete description of the site's data.
+    """
+    checkers = load_checkers()
+    tests = load_tests()
+    results = load_results()
+    return {
+        "meta": get_build_metadata(),
+        "checkers": [
+            {k: v for k, v in checker.items() if k != "_file"}
+            for checker in checkers
+        ],
+        "tests": [
+            # The local .ndjson path is not meaningful outside this checkout
+            {k: v for k, v in test.items() if k != "file"}
+            for test in tests
+        ],
+        "results": [results[key] for key in sorted(results)],
+    }
+
+
 def cmd_build_site(args: argparse.Namespace) -> int:
     """Handle the build-site command."""
     output_dir = Path(args.outdir)
@@ -1772,6 +1797,13 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     checkers = load_checkers()
     results = load_results()
     tests = load_tests()
+
+    # Publish the raw data alongside the site
+    results_json_file = output_dir / "results.json"
+    with open(results_json_file, "w") as f:
+        json.dump(collect_results_data(), f, indent=2)
+    results_json_info = {"size": results_json_file.stat().st_size}
+    print(f"Generated: {results_json_file}")
 
     # Calculate global instructions per second from results with both cpu_time and instructions
     total_instructions = 0
@@ -1861,6 +1893,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         "instructions_per_second": instructions_per_second,
         "build_info": build_info,
         "tarball_info": tarball_info,
+        "results_json_info": results_json_info,
     }
 
     # Render index.html
