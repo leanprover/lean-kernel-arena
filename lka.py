@@ -52,7 +52,7 @@ _configure_stdout_stderr_unbuffered()
 VERBOSE = False
 
 # Tests with .ndjson files larger than this are excluded from the downloadable
-# test tarball and from the CI artifacts (see ci-pack).
+# test tarball.
 TEST_SIZE_LIMIT = 10 * 1024 * 1024
 
 # Timing/measurement utilities
@@ -1735,6 +1735,39 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
     }
 
 
+def tarball_info_from_file(tarball_path: Path) -> dict:
+    """Derive tarball statistics (as returned by create_test_tarball) from an
+    existing tarball file."""
+    import tarfile
+
+    good_count = 0
+    bad_count = 0
+    with tarfile.open(tarball_path, "r:gz") as tar:
+        for member in tar:
+            if member.name.startswith("good/"):
+                good_count += 1
+            elif member.name.startswith("bad/"):
+                bad_count += 1
+
+    return {
+        "tarball_size": tarball_path.stat().st_size,
+        "good_count": good_count,
+        "bad_count": bad_count
+    }
+
+
+def cmd_build_tarball(args: argparse.Namespace) -> int:
+    """Handle the build-tarball command."""
+    output_dir = Path(args.outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tests = load_tests()
+    tarball_info = create_test_tarball(tests, output_dir)
+    print(f"Created {output_dir / 'lean-arena-tests.tar.gz'} "
+          f"({tarball_info['good_count']} good tests, {tarball_info['bad_count']} bad tests, "
+          f"{format_memory(tarball_info['tarball_size'])})")
+    return 0
+
+
 def collect_results_data() -> dict:
     """Collect checkers, tests, results and build metadata into a single
     JSON-serializable structure.
@@ -1865,8 +1898,15 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
     checkers.sort(key=sort_key)
 
-    # Create test tarball
-    tarball_info = create_test_tarball(tests, output_dir)
+    # Create the test tarball, or take a pre-built one (see build-tarball)
+    tarball_file = output_dir / "lean-arena-tests.tar.gz"
+    if args.tarball:
+        tarball_src = Path(args.tarball)
+        if tarball_src.resolve() != tarball_file.resolve():
+            shutil.copy2(tarball_src, tarball_file)
+        tarball_info = tarball_info_from_file(tarball_file)
+    else:
+        tarball_info = create_test_tarball(tests, output_dir)
 
     # Build context data
     data = {
@@ -2040,27 +2080,27 @@ def cmd_list_checkers(args: argparse.Namespace) -> int:
 def cmd_ci_pack(args: argparse.Namespace) -> int:
     """Handle the ci-pack command.
 
-    Stages, preserving project-relative paths:
-    - all result files from _results/
-    - all test .stats.json files from _build/tests/
-    - test .ndjson files up to the size limit (so that the aggregating CI job
-      can offer the test tarball for download)
+    Stages the selected data, preserving project-relative paths:
+    - --results: all result files from _results/
+    - --test-stats: all test .stats.json files from _build/tests/
     """
+    if not (args.results or args.test_stats):
+        print("Error: nothing to stage; pass --results and/or --test-stats")
+        return 1
+
     root = get_project_root()
     outdir = Path(args.outdir)
 
     files = []
-    results_dir = root / "_results"
-    if results_dir.exists():
-        files.extend(sorted(results_dir.glob("*.json")))
+    if args.results:
+        results_dir = root / "_results"
+        if results_dir.exists():
+            files.extend(sorted(results_dir.glob("*.json")))
 
-    tests_dir = root / "_build" / "tests"
-    if tests_dir.exists():
-        for stats_file in sorted(tests_dir.rglob("*.stats.json")):
-            files.append(stats_file)
-            ndjson_file = stats_file.parent / (stats_file.stem.replace('.stats', '') + '.ndjson')
-            if ndjson_file.exists() and ndjson_file.stat().st_size <= TEST_SIZE_LIMIT:
-                files.append(ndjson_file)
+    if args.test_stats:
+        tests_dir = root / "_build" / "tests"
+        if tests_dir.exists():
+            files.extend(sorted(tests_dir.rglob("*.stats.json")))
 
     for file in files:
         dest = outdir / file.relative_to(root)
@@ -2195,6 +2235,22 @@ def main() -> int:
         metavar="FILE",
         help="Render the site from a previously written results.json instead of collecting the data (see write-results)",
     )
+    build_site_parser.add_argument(
+        "--tarball",
+        metavar="FILE",
+        help="Use a pre-built test tarball instead of creating one (see build-tarball)",
+    )
+
+    # build-tarball command
+    build_tarball_parser = subparsers.add_parser(
+        "build-tarball",
+        help="Create the downloadable test tarball from the built tests",
+    )
+    build_tarball_parser.add_argument(
+        "--outdir",
+        default="_out",
+        help="Output directory for the tarball (default: _out)",
+    )
 
     # write-results command
     write_results_parser = subparsers.add_parser(
@@ -2228,6 +2284,16 @@ def main() -> int:
         required=True,
         help="Directory to stage the files in",
     )
+    ci_pack_parser.add_argument(
+        "--results",
+        action="store_true",
+        help="Stage the result files from _results/",
+    )
+    ci_pack_parser.add_argument(
+        "--test-stats",
+        action="store_true",
+        help="Stage the test .stats.json files from _build/tests/",
+    )
 
     # ci-merge command
     ci_merge_parser = subparsers.add_parser(
@@ -2259,6 +2325,8 @@ def main() -> int:
         return cmd_build_site(args)
     elif args.command == "write-results":
         return cmd_write_results(args)
+    elif args.command == "build-tarball":
+        return cmd_build_tarball(args)
     elif args.command == "list-checkers":
         return cmd_list_checkers(args)
     elif args.command == "ci-pack":

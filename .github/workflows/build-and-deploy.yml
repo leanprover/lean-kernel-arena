@@ -108,7 +108,7 @@ jobs:
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Stage results for upload
-        run: ./lka.py ci-pack --outdir /tmp/artifact
+        run: ./lka.py ci-pack --outdir /tmp/artifact --results
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Upload results
@@ -154,9 +154,53 @@ jobs:
           name: tutorial-page
           path: _out/tutorial
 
+  test-stats:
+    name: Build test stats and tarball
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # On pull requests, check out the PR head instead of the artificial
+          # merge commit (empty ref means default behavior otherwise)
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup nix shell
+        run: "true"
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Generate tests
+        run: ./lka.py build-test ${{ github.event_name != 'workflow_dispatch' && '--skip-ci' || '' }}
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Build test tarball
+        run: ./lka.py build-tarball
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Stage test stats for upload
+        run: ./lka.py ci-pack --outdir /tmp/artifact --test-stats
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Upload test stats
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-stats
+          path: /tmp/artifact
+
+      - name: Upload test tarball
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-tarball
+          path: _out/lean-arena-tests.tar.gz
+
   build-site:
     name: Build and deploy site
-    needs: [check, tutorial]
+    needs: [check, tutorial, test-stats]
     if: ${{ !cancelled() && needs.check.result != 'skipped' }}
     runs-on: ubuntu-latest
 
@@ -192,7 +236,13 @@ jobs:
           pattern: results-*
           path: _artifacts
 
-      - name: Merge checker results
+      - name: Fetch test stats
+        uses: actions/download-artifact@v8
+        with:
+          name: test-stats
+          path: _artifacts/test-stats
+
+      - name: Merge checker results and test stats
         run: ./lka.py ci-merge _artifacts/*
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
@@ -202,8 +252,14 @@ jobs:
           name: tutorial-page
           path: _out/tutorial
 
+      - name: Fetch test tarball
+        uses: actions/download-artifact@v8
+        with:
+          name: test-tarball
+          path: _tarball
+
       - name: Generate website
-        run: ./lka.py build-site
+        run: ./lka.py build-site --tarball _tarball/lean-arena-tests.tar.gz
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Upload artifact
