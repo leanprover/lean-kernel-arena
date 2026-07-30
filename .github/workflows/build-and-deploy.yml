@@ -14,7 +14,7 @@ concurrency:
 jobs:
   select-checkers:
     name: Select checkers
-    runs-on: self-hosted,chonk
+    runs-on: [self-hosted, chonk]
     outputs:
       checkers: ${{ steps.select.outputs.checkers }}
     steps:
@@ -47,7 +47,7 @@ jobs:
   check:
     name: 'Checker: ${{ matrix.checker }}'
     needs: select-checkers
-    runs-on: self-hosted,chonk
+    runs-on: [self-hosted, chonk]
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -119,7 +119,7 @@ jobs:
 
   tutorial:
     name: Build tutorial page
-    runs-on: self-hosted,chonk
+    runs-on: [self-hosted, chonk]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -156,7 +156,7 @@ jobs:
 
   test-stats:
     name: Build test stats and tarball
-    runs-on: self-hosted,chonk
+    runs-on: [self-hosted, chonk]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -202,7 +202,7 @@ jobs:
     name: Build and deploy site
     needs: [check, tutorial, test-stats]
     if: ${{ !cancelled() && needs.check.result != 'skipped' }}
-    runs-on: self-hosted,chonk
+    runs-on: [self-hosted, chonk]
 
     permissions:
       contents: read
