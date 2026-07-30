@@ -6,7 +6,7 @@
 # nothing but checker configurations, only the touched checkers are selected.
 set -euo pipefail
 
-all=$(uv run lka.py list-checkers --json)
+all=$(./lka.py list-checkers --json)
 selected="$all"
 
 if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then

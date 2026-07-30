@@ -27,12 +27,19 @@ jobs:
           # Full history, to compute the merge base of a pull request
           fetch-depth: 0
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v9
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup nix shell
+        run: "true"
+        shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Select checkers to run
         id: select
         run: .github/checker-matrix.sh >> "$GITHUB_OUTPUT"
+        shell: 'nix develop -c bash -euxo pipefail {0}'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
