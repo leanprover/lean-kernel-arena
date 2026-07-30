@@ -704,7 +704,7 @@ inductive BoolProp : Prop where
 good_def boolPropRec : ∀ {motive : BoolProp → Prop} (a : motive BoolProp.a) (b : motive BoolProp.b) (x : BoolProp), motive x := @BoolProp.rec
 
 /--
-A kernel must validate the recursors it is handed. If we write
+A kernel must not blindly trust the recursors it is handed. If we write
 
 ```
 inductive BogusRecursor : Type where
@@ -714,8 +714,12 @@ inductive BogusRecursor : Type where
 then the recursor `BogusRecursor.rec` will be correctly derived with type
 `{motive : BogusRecursor → Sort u} → motive .mk → (t : BogusRecursor) → motive t`.
 
-This test claims the recursor for `BogusRecursor` should be a trivial constant
-of type `Prop`. A correct kernel notices the discrepancy and rejects.
+This test instead claims that the recursor is a constant of type `False`, and
+then uses it to prove `bogusRecursorFalse : False`. A kernel that validates
+the recursors it is handed rejects the bogus recursor itself; a kernel that
+ignores them and derives the recursors anew rejects the proof of `False`
+(the derived recursor neither has type `False` nor zero universe parameters).
+Either way, this test must be rejected.
 -/
 bad_raw_consts
   let n := `BogusRecursor
@@ -723,7 +727,22 @@ bad_raw_consts
       name := n ++ `mk, levelParams := [], type := .const n []
       numParams := 0, induct := n, cidx := 0, numFields := 0, isUnsafe := false
     },
-    dummyRecInfo n,
+    .recInfo {
+      name := n ++ `rec
+      levelParams := []
+      type := .const ``False []
+      all := [n]
+      numParams := 0, numIndices := 0, numMotives := 0, numMinors := 0
+      rules := []
+      k := false
+      isUnsafe := false
+    },
+    .thmInfo {
+      name := `bogusRecursorFalse
+      levelParams := []
+      type := .const ``False []
+      value := .const (n ++ `rec) []
+    },
     .inductInfo {
       name := n, levelParams := [], type := .sort 1
       numParams := 0, numIndices := 0, all := [n]
