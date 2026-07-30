@@ -1,0 +1,9 @@
+description: |
+  The creative half of `undecidability/alg-conv-trans-acc`. `Acc.rec` is stuck
+  on the variable `a`, and proof irrelevance admits any other proof of
+  `Acc (· < ·) 1` in its place, including one with a constructor at the head.
+  Given both sides, a checker verifies this immediately; producing the
+  right-hand side unprompted is the step no algorithm takes.
+leanfile: tests/undecidability/alg-conv.lean
+export-decls: ["left"]
+outcome: accept

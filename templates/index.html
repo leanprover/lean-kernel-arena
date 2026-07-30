@@ -110,12 +110,12 @@ table thead th {
                 <th style="vertical-align: bottom;">Name</th>
                 <th class="spacer-col"></th>
                 {% for checker in checkers %}
-                {% if checker.get('serious', true) and checker.name == 'official' %}
+                {% if checker.name == 'official' %}
                 <th class="text-center official-column" style="vertical-align: bottom;"><a href="checker/{{ checker.name }}/" class="rotated-header">{{ checker.name }}</a></th>
                 {% endif %}
                 {% endfor %}
                 {% for checker in checkers %}
-                {% if checker.get('serious', true) and checker.name != 'official' %}
+                {% if checker.name != 'official' %}
                 <th class="text-center" style="vertical-align: bottom;"><a href="checker/{{ checker.name }}/" class="rotated-header">{{ checker.name }}</a></th>
                 {% endif %}
                 {% endfor %}
@@ -128,10 +128,10 @@ table thead th {
                 <td><a href="test/{{ test.name }}/">{{ test.name }}</a></td>
                 <td class="spacer-col"></td>
                 {% for checker in checkers %}
-                    {% if checker.get('serious', true) and checker.name == 'official' %}
+                    {% if checker.name == 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center official-column {% if result %}{% if (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -154,10 +154,10 @@ table thead th {
                     {% endif %}
                 {% endfor %}
                 {% for checker in checkers %}
-                    {% if checker.get('serious', true) and checker.name != 'official' %}
+                    {% if checker.name != 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center {% if result %}{% if (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -218,12 +218,20 @@ table thead th {
     </p>
 
     <p>
+        Tests can come without an expected outcome (shown as 🤷). These test corner cases that are not known to be soundness relevant and not typically relevant in practice, and where it is acceptable for a checker to accept or to reject. They are excluded from the completeness and soundness scoring.
+    </p>
+
+    <p>
         For more details on the interface for external checks, and how to submit these, see the project's <a href="https://github.com/leanprover/lean-kernel-arena"><tt>README.md</tt> file</a>.
     </p>
 
     <p>
         A tarball of the test suite (excluding tests larger than 10 MB) is available for download: <a href="lean-arena-tests.tar.gz"><tt>lean-arena-tests.tar.gz</tt></a> ({{ tarball_info.good_count }} good tests, {{ tarball_info.bad_count }} bad tests, {{ format_memory(tarball_info.tarball_size) }}). 
         The tarball contains subdirectories <tt>good/</tt> and <tt>bad/</tt> based on expected results, making it easy to test your own checker implementation.
+    </p>
+
+    <p>
+        The raw data behind this page is available as <a href="results.json"><tt>results.json</tt></a> ({{ format_memory(results_json_info.size) }}). It contains the checker metadata (<tt>checkers</tt>), the test metadata (<tt>tests</tt>) and the array of all individual results (<tt>results</tt>), and may be useful for further analysis of the data.
     </p>
 
     <p>

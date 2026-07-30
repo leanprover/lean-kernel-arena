@@ -19,7 +19,7 @@
     </header>
     <p>
         <strong>Expected:</strong>
-        {% if test.outcome == 'accept' %}👍 accept{% elif test.outcome == 'reject' %}✋ reject{% else %}⚠️ {{ test.outcome }}{% endif %}
+        {% if test.outcome == 'accept' %}👍 accept{% elif test.outcome == 'reject' %}✋ reject{% elif test.outcome == 'either' %}🤷 either{% else %}⚠️ {{ test.outcome }}{% endif %}
         · <strong>Size:</strong> {{ test.size_str }}
         · <strong>Lines:</strong> {{ test.lines_str }}
         {% if test.lean4export_version %}

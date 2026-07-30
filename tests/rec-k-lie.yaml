@@ -1,0 +1,13 @@
+description: |
+  False theorem via trusted `k` on a recursor.
+
+  Define `MyBool` with two constructors, and lie by claiming its recursor is K-like,
+  so the major premise is replaced by the first constructor without being examined.
+
+  `disc MyBool.true` is then `True` rather than `False`.
+
+  `MyBool` rather than `Bool` because a module that overwrites an imported constant
+  cannot be re-imported by the exporter.
+leanfile: tests/rec-k-lie.lean
+export-decls: ["bad"]
+outcome: reject

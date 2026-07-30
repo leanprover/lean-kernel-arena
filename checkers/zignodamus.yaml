@@ -1,0 +1,16 @@
+description: |
+  Zig kernel based on [sokonanoda](https://github.com/intgrah/sokonanoda)
+url: https://github.com/intgrah/zignodamus
+ref: master
+rev: 68e25dcb983947da4cdd98b0ae546d23f6238e71
+build: |
+  zig build -Drelease
+run: |
+  ./zig-out/bin/zignodamus \
+    --use-stdin \
+    --nat-extension \
+    --string-extension \
+    --unsafe-permit-all-axioms \
+    --no-unpermitted-axiom-hard-error \
+    -j4 \
+    < "$IN" || exit 1

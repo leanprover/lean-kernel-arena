@@ -117,6 +117,47 @@ good_def imax1 : (p : Prop) → Prop := fun p => Type → p
 /-- Type inference for forall using imax -/
 good_def imax2 : (α : Type) → Type 1 := fun α => Type → α
 
+/--
+Level equality: `max` is commutative (`max u v ≈ max v u`).
+-/
+good_def levelMaxComm.{u, v} : Sort (max v u + 1) := Sort (max u v)
+
+/--
+Level equality: `max` is associative (`max (max u v) w ≈ max u (max v w)`).
+-/
+good_def levelMaxAssoc.{u, v, w} :
+    Sort (max u (max v w) + 1) := Sort (max (max u v) w)
+
+/--
+Level equality: `max` is idempotent (`max u u ≈ u`).
+-/
+good_decl 
+  -- elaboration would simplify it if we just wrote
+  -- def levelMaxIdem : Sort (u + 1) := Sort (max u u)
+  (.defnDecl {
+    name := `levelMaxIdem
+    levelParams := [`u]
+    type := .sort (.succ (.param `u))
+    value := .sort (.max (.param `u) (.param `u)) 
+    hints := .opaque
+    safety := .safe
+  })
+
+/--
+Level equality: `max` absorption (`max u (max u v) ≈ max u v`).
+-/
+good_decl
+  -- elaboration would simplify it if we just wrote
+  -- def maxLevelAbsorb : Sort (max u v + 1) := Sort (max u (max u v))
+  (.defnDecl {
+    name := `levelMaxAbsorb
+    levelParams := [`u, `v]
+    type := .sort (.succ (.max (.param `u) (.param `v)))
+    value := .sort (.max (.param `u) (.max (.param `u) (.param `v)))
+    hints := .opaque
+    safety := .safe
+  })
+
 /-- Type inference of local variables -/
 good_def inferVar : ∀ (f : Prop) (g : f), f := fun f g => g
 
@@ -992,8 +1033,24 @@ good_decl (.thmDecl {
 
 /-! Proof irrelevance and unit Eta -/
 
-/-- Proof irrelevance -/
+/--
+Proof irrelevance: every `Prop` is a subsingleton, if `p : Prop` then all elements of `p`
+are definitionally equal.
+-/
 good_def proofIrrelevance : ∀ (p : Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
+
+/--
+Proof irrelevance is limited to Prop: if `p : Type`, then all elements of `p` are *not*
+definitionally equal.
+-/
+bad_def proofIrrelevanceBad : ∀ (p : Type) (h1 h2 : p), h1 = h2 :=
+  unchecked (fun (p : Type) (h1 h2 : p) => @rfl p h1)
+
+/--
+Proof irrelevance: if `p : A` and `A` is definitionally equal to `Prop`, then all elements of `p`
+are still definitionally equal. Just applying proof irrelevance at `Sort 0` isn't sufficient.
+-/
+good_def proofIrrelevanceWhnf : ∀ (p : id Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
 
 /-- Unit eta -/
 good_def unitEta1 : ∀ (x y : Unit), x = y := fun _ _ => rfl
@@ -1273,6 +1330,7 @@ properly detect and reject name collisions.
 def dupDef : Type := Prop
 def dupDef2 : Type := Prop
 inductive DupInd where | mk
+noncomputable def dupRecUser := @DupInd.rec
 inductive DupInd2 where | mk1 | mk2
 
 /-- Two definitions with the same name -/
@@ -1292,12 +1350,21 @@ bad_consts #[`dupDef, `DupInd]
   renaming #[(`DupInd, `dup_rec_def), (`DupInd.mk, `dup_rec_def.mk), (`DupInd.rec, `dup_rec_def.rec), (`dupDef, `dup_rec_def.rec)]
 
 /--
-A definition with the name of a recursor, and the recursor named differently.
-This would pass simple checks for duplicate definitions in the parser, but should still
-be rejected by the checker.
+The name of the recursor for `misnamed_rec` must be `misnamed_rec.rec`:
+another name (like `misnamed_rec.not_rec`) should be rejected.
+`dupRecUser` is included so that checkers that recreate the recursor (as `misnamed_rec.rec`)
+rather than validating it still fail, because `misnamed_rec_user` references `misnamed_rec.not_rec`.
+-/
+bad_consts #[`DupInd, `dupRecUser]
+  renaming #[(`DupInd, `misnamed_rec), (`DupInd.mk, `misnamed_rec.mk), (`DupInd.rec, `misnamed_rec.not_rec), (`dupRecUser, `misnamed_rec_user)]
+
+/--
+Even if a kernel doesn't catch a recursor for `dup_rec_def2` that is misnamed
+as `dup_rec_def2.not_rec`, it should catch some *other* constant being given
+the name `dup_rec_def2.rec` that is reserved for the recursor.
 -/
 bad_consts #[`dupDef, `DupInd]
-  renaming #[(`DupInd, `dup_rec_def2), (`DupInd.mk, `dup_rec_def2.mk), (`DupInd.rec, `dup_rec_def2.original_rec), (`dupDef, `dup_rec_def2.rec)]
+  renaming #[(`DupInd, `dup_rec_def2), (`DupInd.mk, `dup_rec_def2.mk), (`DupInd.rec, `dup_rec_def2.not_rec), (`dupDef, `dup_rec_def2.rec)]
 
 /-- A constructor and a recursor with the same name -/
 bad_consts #[`DupInd]

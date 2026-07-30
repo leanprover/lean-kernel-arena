@@ -2,7 +2,7 @@ description: |
   The Lean Computer Science Library (CSLib). 
 url: https://github.com/leanprover/cslib
 ref: main
-rev: 02e2a23eef42925cc87a5ce2ec76e9d07fdee267
+rev: d1dbe1ec53e08957ff4cb893d82f3e0f7eaa4b00
 pre-build: lake exe cache get
 module: Cslib
 outcome: accept

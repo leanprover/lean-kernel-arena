@@ -54,8 +54,8 @@
     },
     "outcome": {
       "type": "string",
-      "enum": ["accept", "reject"],
-      "description": "Expected test outcome for correctness checking"
+      "enum": ["accept", "reject", "either"],
+      "description": "Expected test outcome for correctness checking. Use 'either' for tests where it is not (yet) settled whether a checker should accept or reject: both behaviours are treated as acceptable, and the test is excluded from the completeness and soundness columns."
     },
     "compare-perf": {
       "type": "boolean",
