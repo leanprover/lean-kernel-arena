@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% from "macros.html" import detail_styles, result_status_cell, perf_cells, perf_header %}
 
+{# One result row in the results table; group members are shown indented, without the group prefix #}
+{% macro result_row(result, group) %}
+            <tr>
+                <td{% if group %} class="group-member"{% endif %}><a href="#test-{{ result.test }}">{% if group %}{{ result.test[(group | length) + 1:] }}{% else %}{{ result.test }}{% endif %}</a></td>
+                <td class="spacer-col"></td>
+                <td class="text-center">
+                    {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}
+                </td>
+                {{ result_status_cell(result.expected, result.status) }}
+                {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
+            </tr>
+{% endmacro %}
+
 {% block static_path %}../../{% endblock %}
 
 {% block title %}{{ checker.name }} - Lean Kernel Arena{% endblock %}
@@ -102,18 +115,35 @@ section pre, details pre {
             </tr>
         </thead>
         <tbody>
-            {% for result in results %}
-            <tr>
-                <td><a href="#test-{{ result.test }}">{{ result.test }}</a></td>
-                <td class="spacer-col"></td>
-                <td class="text-center">
-                    {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}
-                </td>
-                {{ result_status_cell(result.expected, result.status) }}
-                {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
-            </tr>
+            {% for row in result_rows if not row.is_group %}
+            {{ result_row(row.member, none) }}
             {% endfor %}
         </tbody>
+        {% for row in result_rows if row.is_group %}
+        <tbody class="group">
+            <tr class="group-summary">
+                <td><label title="Click to show the individual tests"><input type="checkbox" class="group-toggle"><span class="group-arrow"></span>{{ row.name }}/ <span class="text-muted">({{ row.count }} tests)</span></label></td>
+                <td class="spacer-col"></td>
+                <td class="text-center"></td>
+                <td class="text-center {% if row.incorrect > 0 %}bg-error{% elif row.declined > 0 %}bg-warning{% endif %}">
+                    <span title="{{ row.correct }} correct, {{ row.incorrect }} incorrect, {{ row.declined }} declined or crashed{% if row.either %}, {{ row.either }} either{% endif %}">{{ row.correct }}</span>
+                </td>
+                <td class="text-right">
+                    {% if row.time_sum %}<span title="Total over all tests in the group">{{ format_duration(row.time_sum) }}</span>{% endif %}
+                </td>
+                <td class="text-left">
+                    {% if row.percent is not none %}({% if row.percent > 0 %}+{% endif %}{{ row.percent }}%){% endif %}
+                </td>
+                <td class="text-right">
+                    {% if row.rss_max %}<span title="Maximum over all tests in the group">{{ format_memory(row.rss_max) }}</span>{% endif %}
+                </td>
+                <td class="text-left"></td>
+            </tr>
+            {% for result in row.members %}
+            {{ result_row(result, row.name) }}
+            {% endfor %}
+        </tbody>
+        {% endfor %}
     </table>
     </div>
 </section>

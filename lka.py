@@ -1768,6 +1768,59 @@ def cmd_build_tarball(args: argparse.Namespace) -> int:
     return 0
 
 
+def result_virtual_time(result: dict, instructions_per_second: float) -> float:
+    """Virtual CPU time of a result: derived from the instruction count if
+    available, falling back to the measured CPU time."""
+    instructions = result.get("instructions") or 0
+    if instructions > 0 and instructions_per_second > 0:
+        return instructions / instructions_per_second
+    return result.get("cpu_time") or 0
+
+
+def group_rows(members: list, name_of) -> list[dict]:
+    """Group a list of table rows by test group for collapsible display.
+
+    Members whose test name has a directory component (e.g. "perf/app-lam")
+    are grouped by its first component. Returns a list of row dicts: first
+    {"is_group": False, "member": m} for the ungrouped members, then, at the
+    end of the table, {"is_group": True, "name": g, "members": [...]} for
+    each group.
+    """
+    rows = []
+    trailing_rows = []
+    groups = {}
+    for member in members:
+        name = name_of(member)
+        if "/" not in name:
+            rows.append({"is_group": False, "member": member})
+            continue
+        group_name = name.split("/", 1)[0]
+        if group_name not in groups:
+            groups[group_name] = {"is_group": True, "name": group_name, "members": []}
+            trailing_rows.append(groups[group_name])
+        groups[group_name]["members"].append(member)
+    return rows + trailing_rows
+
+
+def summarize_correctness(result_list: list[dict]) -> dict:
+    """Tally the correctness of a list of results (for group summary rows).
+
+    Errors are counted as declined, matching the scoring elsewhere.
+    """
+    counts = {"present": 0, "correct": 0, "incorrect": 0, "declined": 0, "either": 0}
+    for result in result_list:
+        if result is None:
+            continue
+        counts["present"] += 1
+        correctness = result.get("correctness", "error")
+        if correctness == "error":
+            correctness = "declined"
+        counts[correctness] = counts.get(correctness, 0) + 1
+    # Scored tests: those that count towards completeness/soundness plus declines
+    counts["scored"] = counts["correct"] + counts["incorrect"] + counts["declined"]
+    return counts
+
+
 def collect_results_data() -> dict:
     """Collect checkers, tests, results and build metadata into a single
     JSON-serializable structure.
@@ -1898,6 +1951,22 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
     checkers.sort(key=sort_key)
 
+    # Group tests (e.g. perf/, tutorial/) into collapsible table rows, with
+    # per-checker summary statistics for the group summary row
+    test_rows = group_rows(tests, lambda test: test["name"])
+    for row in test_rows:
+        if not row["is_group"]:
+            continue
+        row["count"] = len(row["members"])
+        row["size"] = sum(test.get("size", 0) for test in row["members"])
+        row["size_str"] = format_memory(row["size"])
+        row["checker_stats"] = {
+            checker["name"]: summarize_correctness(
+                [results.get((checker["name"], test["name"])) for test in row["members"]]
+            )
+            for checker in checkers
+        }
+
     # Create the test tarball, or take a pre-built one (see build-tarball)
     tarball_file = output_dir / "lean-arena-tests.tar.gz"
     if args.tarball:
@@ -1911,6 +1980,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     # Build context data
     data = {
         "tests": tests,
+        "test_rows": test_rows,
         "checkers": checkers,
         "test_results": results,  # Pass results dict with (checker, test) keys
         "format_duration": format_duration,
@@ -1972,6 +2042,30 @@ def cmd_build_site(args: argparse.Namespace) -> int:
             # Sort checker results by name (alphabetical order)
             checker_results.sort(key=lambda result: result.get("test", ""))
 
+            # Group tests (e.g. perf/, tutorial/) into collapsible table rows
+            result_rows = group_rows(checker_results, lambda result: result["test"])
+            for row in result_rows:
+                if not row["is_group"]:
+                    continue
+                row["count"] = len(row["members"])
+                row.update(summarize_correctness(row["members"]))
+                row["time_sum"] = sum(result_virtual_time(r, instructions_per_second) for r in row["members"])
+                row["rss_max"] = max(r.get("max_rss") or 0 for r in row["members"])
+                # Overall performance relative to the official checker, summed
+                # over the tests that both checkers accepted
+                own_time = 0.0
+                official_time = 0.0
+                for r in row["members"]:
+                    official = r.get("official")
+                    if (r.get("expected") == "accept" and r.get("status") == "accepted"
+                            and official and official.get("status") == "accepted"):
+                        own_time += result_virtual_time(r, instructions_per_second)
+                        official_time += result_virtual_time(official, instructions_per_second)
+                if official_time >= 0.05 and own_time > 0:
+                    row["percent"] = round((own_time - official_time) / official_time * 100)
+                else:
+                    row["percent"] = None
+
             # Create a copy of checker data with rendered description
             checker_with_rendered_desc = checker.copy()
             checker_with_rendered_desc["description"] = render_markdown(checker.get("description", ""))
@@ -1980,6 +2074,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 "checker": checker_with_rendered_desc,
                 "checker_links": checker_links,
                 "results": checker_results,
+                "result_rows": result_rows,
                 "format_duration": format_duration,
                 "format_memory": format_memory,
                 "format_instructions": format_instructions,

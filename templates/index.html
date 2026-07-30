@@ -2,6 +2,86 @@
 
 {% block static_path %}{% endblock %}
 
+{# One test row in the Tests table; group members are shown indented, without the group prefix #}
+{% macro test_row(test, group) %}
+            <tr>
+                <td{% if group %} class="group-member"{% endif %}><a href="test/{{ test.name }}/">{% if group %}{{ test.name[(group | length) + 1:] }}{% else %}{{ test.name }}{% endif %}</a>{% if test.outcome == 'either' %} <span title="No expected outcome: accepting and rejecting are both acceptable">🤷</span>{% endif %}</td>
+                <td class="spacer-col"></td>
+                {% for checker in checkers %}
+                    {% if checker.name == 'official' %}
+                    {% set key = (checker.name, test.name) %}
+                    {% set result = test_results.get(key) %}
+                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                        {% if result %}
+                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
+                            {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
+                                {# Show absolute virtual time for perf-compared tests #}
+                                {% set official_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
+                                {% if official_cpu_time and official_cpu_time >= 0.05 %}
+                                    {{ format_duration(official_cpu_time) }}
+                                {% else %}
+                                    👍
+                                {% endif %}
+                            {% else %}
+                                {# Show result status for other tests #}
+                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
+                            {% endif %}
+                        </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                {% endfor %}
+                {% for checker in checkers %}
+                    {% if checker.name != 'official' %}
+                    {% set key = (checker.name, test.name) %}
+                    {% set result = test_results.get(key) %}
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                        {% if result %}
+                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
+                            {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
+                                {# Show performance comparison for perf-compared tests #}
+                                {% set official_key = ('official', test.name) %}
+                                {% set official_result = test_results.get(official_key) %}
+                                {% if official_result and official_result.status == 'accepted' %}
+                                    {% set official_cpu_time = convert_instructions_to_time(official_result.get('instructions', 0), instructions_per_second) if official_result.get('instructions', 0) > 0 and instructions_per_second > 0 else official_result.cpu_time %}
+                                    {% set current_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
+                                    {% if official_cpu_time and official_cpu_time >= 0.05 and current_cpu_time %}
+                                        {% set percent_change = ((current_cpu_time - official_cpu_time) / official_cpu_time * 100) | round(0) | int %}
+                                        {% if percent_change > 0 %}+{{ percent_change }}%{% elif percent_change < 0 %}{{ percent_change }}%{% else %}0%{% endif %}
+                                    {% else %}
+                                        👍
+                                    {% endif %}
+                                {% else %}
+                                    👍
+                                {% endif %}
+                            {% else %}
+                                {# Show result status for other tests #}
+                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
+                            {% endif %}
+                        </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                {% endfor %}
+                <td class="text-right">{{ test.size_str }}</td>
+            </tr>
+{% endmacro %}
+
+{# Aggregated per-checker cell in a group summary row #}
+{% macro group_summary_cell(stats, official) %}
+                <td class="text-center {% if official %}official-column {% endif %}{% if stats.present == 0 %}{% elif stats.incorrect > 0 %}bg-error{% elif stats.declined > 0 %}bg-warning{% endif %}">
+                    {% if stats.present == 0 %}
+                        -
+                    {% else %}
+                        <span title="{{ stats.correct }} correct, {{ stats.incorrect }} incorrect, {{ stats.declined }} declined or crashed{% if stats.either %}, {{ stats.either }} either{% endif %}">{{ stats.correct }}</span>
+                    {% endif %}
+                </td>
+{% endmacro %}
+
 {% block style %}
 .checker-name { font-weight: 600; }
 .bg-success { background-color: #d4edda; }
@@ -123,74 +203,28 @@ table thead th {
             </tr>
         </thead>
         <tbody>
-            {% for test in tests %}
-            <tr>
-                <td><a href="test/{{ test.name }}/">{{ test.name }}</a></td>
-                <td class="spacer-col"></td>
-                {% for checker in checkers %}
-                    {% if checker.name == 'official' %}
-                    {% set key = (checker.name, test.name) %}
-                    {% set result = test_results.get(key) %}
-                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
-                        {% if result %}
-                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
-                            {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
-                                {# Show absolute virtual time for perf-compared tests #}
-                                {% set official_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
-                                {% if official_cpu_time and official_cpu_time >= 0.05 %}
-                                    {{ format_duration(official_cpu_time) }}
-                                {% else %}
-                                    👍
-                                {% endif %}
-                            {% else %}
-                                {# Show result status for other tests #}
-                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
-                            {% endif %}
-                        </a>
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    {% endif %}
-                {% endfor %}
-                {% for checker in checkers %}
-                    {% if checker.name != 'official' %}
-                    {% set key = (checker.name, test.name) %}
-                    {% set result = test_results.get(key) %}
-                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
-                        {% if result %}
-                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
-                            {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
-                                {# Show performance comparison for perf-compared tests #}
-                                {% set official_key = ('official', test.name) %}
-                                {% set official_result = test_results.get(official_key) %}
-                                {% if official_result and official_result.status == 'accepted' %}
-                                    {% set official_cpu_time = convert_instructions_to_time(official_result.get('instructions', 0), instructions_per_second) if official_result.get('instructions', 0) > 0 and instructions_per_second > 0 else official_result.cpu_time %}
-                                    {% set current_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
-                                    {% if official_cpu_time and official_cpu_time >= 0.05 and current_cpu_time %}
-                                        {% set percent_change = ((current_cpu_time - official_cpu_time) / official_cpu_time * 100) | round(0) | int %}
-                                        {% if percent_change > 0 %}+{{ percent_change }}%{% elif percent_change < 0 %}{{ percent_change }}%{% else %}0%{% endif %}
-                                    {% else %}
-                                        👍
-                                    {% endif %}
-                                {% else %}
-                                    👍
-                                {% endif %}
-                            {% else %}
-                                {# Show result status for other tests #}
-                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
-                            {% endif %}
-                        </a>
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    {% endif %}
-                {% endfor %}
-                <td class="text-right">{{ test.size_str }}</td>
-            </tr>
+            {% for row in test_rows if not row.is_group %}
+            {{ test_row(row.member, none) }}
             {% endfor %}
         </tbody>
+        {% for row in test_rows if row.is_group %}
+        <tbody class="group">
+            <tr class="group-summary">
+                <td><label title="Click to show the individual tests"><input type="checkbox" class="group-toggle"><span class="group-arrow"></span>{{ row.name }}/ <span class="text-muted">({{ row.count }} tests)</span></label></td>
+                <td class="spacer-col"></td>
+                {% for checker in checkers %}
+                {% if checker.name == 'official' %}{{ group_summary_cell(row.checker_stats[checker.name], true) }}{% endif %}
+                {% endfor %}
+                {% for checker in checkers %}
+                {% if checker.name != 'official' %}{{ group_summary_cell(row.checker_stats[checker.name], false) }}{% endif %}
+                {% endfor %}
+                <td class="text-right">{{ row.size_str }}</td>
+            </tr>
+            {% for test in row.members %}
+            {{ test_row(test, row.name) }}
+            {% endfor %}
+        </tbody>
+        {% endfor %}
     </table>
     </div>
     {% else %}

@@ -15,3 +15,26 @@ table th, table td {
 th.spacer-col, td.spacer-col {
   width: 100%;
 }
+
+/* Collapsible test group rows: each group is a tbody whose summary row
+   holds a hidden checkbox in a label; the checkbox state shows or hides
+   the remaining rows of the tbody, no JavaScript needed */
+tr.group-summary label {
+  cursor: pointer;
+  display: block;
+}
+tr.group-summary .group-toggle {
+  display: none;
+}
+tbody.group:not(:has(.group-toggle:checked)) tr:not(.group-summary) {
+  display: none;
+}
+tr.group-summary .group-arrow::before {
+  content: "▸ ";
+}
+td.group-member {
+  padding-left: 2.4em;
+}
+tbody.group:has(.group-toggle:checked) .group-arrow::before {
+  content: "▾ ";
+}
