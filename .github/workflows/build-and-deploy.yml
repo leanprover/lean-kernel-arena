@@ -19,7 +19,7 @@ jobs:
       checkers: ${{ steps.select.outputs.checkers }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
@@ -57,7 +57,7 @@ jobs:
       CHECKER: ${{ matrix.checker }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
@@ -117,9 +117,46 @@ jobs:
           name: results-${{ matrix.checker }}
           path: /tmp/artifact
 
+  tutorial:
+    name: Build tutorial page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # On pull requests, check out the PR head instead of the artificial
+          # merge commit (empty ref means default behavior otherwise)
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup nix shell
+        run: "true"
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Build tutorial tests
+        run: ./lka.py build-test tutorial
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Build tutorial test viewer
+        run: |
+          cd test-printer
+          lake build
+          lake exe test-printer ../_build/tests/tutorial/ ../_out/tutorial/index.html
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Upload tutorial page
+        uses: actions/upload-artifact@v7
+        with:
+          name: tutorial-page
+          path: _out/tutorial
+
   build-site:
     name: Build and deploy site
-    needs: check
+    needs: [check, tutorial]
     if: ${{ !cancelled() && needs.check.result != 'skipped' }}
     runs-on: ubuntu-latest
 
@@ -130,7 +167,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
@@ -143,7 +180,7 @@ jobs:
 
       - name: Setup Pages
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Setup nix shell
         run: "true"
@@ -159,23 +196,18 @@ jobs:
         run: ./lka.py ci-merge _artifacts/*
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
-      - name: Build tutorial tests
-        run: ./lka.py build-test tutorial
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Build tutorial test viewer
-        run: |
-          cd test-printer
-          lake build
-          lake exe test-printer ../_build/tests/tutorial/ ../_out/tutorial/index.html
-        shell: 'nix develop -c bash -euxo pipefail {0}'
+      - name: Fetch tutorial page
+        uses: actions/download-artifact@v8
+        with:
+          name: tutorial-page
+          path: _out/tutorial
 
       - name: Generate website
         run: ./lka.py build-site
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: '_out'
 
@@ -193,4 +225,4 @@ jobs:
       - name: Deploy to GitHub Pages
         if: github.event_name == 'workflow_dispatch'
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
