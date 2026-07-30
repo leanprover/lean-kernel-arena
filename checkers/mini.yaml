@@ -8,3 +8,11 @@ ref: master
 rev: ad8ebe0e061a76b520061800b47bb60c3ce7d81e
 build: lake build
 run: timeout 30s .lake/build/bin/mini-kernel "$IN"
+# Cannot handle the full Init.Prelude, so decline everything built on top of it
+declines:
+  - init-prelude
+  - init
+  - std
+  - mathlib
+  - cedar
+  - cslib

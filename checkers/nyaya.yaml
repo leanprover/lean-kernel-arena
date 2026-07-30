@@ -11,3 +11,10 @@ build: |
 run: |
   ulimit -v 1000000 -c 0
   NYAYA_ARENA=1 timeout 30s ./_opam/bin/nyaya "$IN"
+# Cannot handle anything bigger than the init test
+# (init itself is kept to show that it explodes there)
+declines:
+  - std
+  - mathlib
+  - cedar
+  - cslib
