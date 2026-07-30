@@ -1,77 +1,68 @@
 name: Build and Deploy Site
 
 on:
-  workflow_dispatch: # Manual trigger, also deploys the site
+  workflow_dispatch: # Manual trigger
   pull_request: # Run on pull requests
 
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
-  select-checkers:
-    name: Select checkers
+  create-runner:
+    name: Create Hetzner Cloud runner
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'  # Only create runner for manual dispatch
     outputs:
-      checkers: ${{ steps.select.outputs.checkers }}
+      label: ${{ steps.create-hcloud-runner.outputs.label }}
+      server_id: ${{ steps.create-hcloud-runner.outputs.server_id }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - name: Create runner
+        id: create-hcloud-runner
+        uses: Cyclenerd/hcloud-github-runner@v1.3.0
         with:
-          # On pull requests, check out the PR head instead of the artificial
-          # merge commit (empty ref means default behavior otherwise)
-          ref: ${{ github.event.pull_request.head.sha }}
-          # Full history, to compute the merge base of a pull request
-          fetch-depth: 0
+          mode: create
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          server_type: ccx23
+          location: nbg1  # Nuremberg, Germany
+          image: ubuntu-24.04
+          ssh_key: ${{ secrets.HCLOUD_SSH_KEY_ID }}
 
+  build-and-deploy:
+    needs: create-runner # required to start the main job when the runner is ready
+    runs-on: ${{ needs.create-runner.outputs.label || 'ubuntu-latest' }} # run on custom runner if available, otherwise default
+    if: always() # Run even if create-runner was skipped
+    timeout-minutes: 1440
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    steps:
+      # Workaround for: https://github.com/actions/runner/issues/1864
+      - name: Ensure HOME is defined
+        run: |
+          set -exuo pipefail
+          if [ -z "${HOME:-}" ]; then
+            HOME="$(getent passwd "$(id -u)" | cut -d: -f6)"
+            export HOME
+          fi
+          echo "HOME=$HOME" >> "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup nix shell
-        run: "true"
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Select checkers to run
-        id: select
-        run: .github/checker-matrix.sh >> "$GITHUB_OUTPUT"
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-
-  check:
-    name: 'Checker: ${{ matrix.checker }}'
-    needs: select-checkers
-    runs-on: ubuntu-latest
-    timeout-minutes: 360
-    strategy:
-      fail-fast: false
-      matrix:
-        checker: ${{ fromJSON(needs.select-checkers.outputs.checkers) }}
-    env:
-      CHECKER: ${{ matrix.checker }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          # On pull requests, check out the PR head instead of the artificial
-          # merge commit (empty ref means default behavior otherwise)
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Pages
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/configure-pages@v4
 
       - name: Setup nix shell
         run: "true"
         shell: 'nix develop -c bash -euxo pipefail {0}'
-
+      
       - name: Check perf support
         run: |
           echo "=== System info ==="
@@ -94,53 +85,19 @@ jobs:
           perf stat -e cycles -a -- true 2>&1 || echo "perf stat failed or not permitted"
         shell: 'nix develop -c bash -euxo pipefail {0}'
         continue-on-error: true
-
-      - name: Build checker
-        run: ./lka.py build-checker "$CHECKER"
+      
+      - name: Build checkers
+        run: ./lka.py build-checker
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Generate tests
-        run: ./lka.py build-test --skip-declined-by "$CHECKER" ${{ github.event_name != 'workflow_dispatch' && '--skip-ci' || '' }}
+        run: ./lka.py build-test ${{ github.event_name != 'workflow_dispatch' && '--skip-ci' || '' }}
         shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Run checker on tests
-        run: ./lka.py run --checker "$CHECKER"
+      
+      - name: Run checkers on tests
+        run: ./lka.py run
         shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Stage results for upload
-        run: ./lka.py ci-pack --outdir /tmp/artifact --results
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Upload results
-        uses: actions/upload-artifact@v7
-        with:
-          name: results-${{ matrix.checker }}
-          path: /tmp/artifact
-
-  tutorial:
-    name: Build tutorial page
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          # On pull requests, check out the PR head instead of the artificial
-          # merge commit (empty ref means default behavior otherwise)
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup nix shell
-        run: "true"
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Build tutorial tests
-        run: ./lka.py build-test tutorial
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
+      
       - name: Build tutorial test viewer
         run: |
           cd test-printer
@@ -148,122 +105,12 @@ jobs:
           lake exe test-printer ../_build/tests/tutorial/ ../_out/tutorial/index.html
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
-      - name: Upload tutorial page
-        uses: actions/upload-artifact@v7
-        with:
-          name: tutorial-page
-          path: _out/tutorial
-
-  test-stats:
-    name: Build test stats and tarball
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          # On pull requests, check out the PR head instead of the artificial
-          # merge commit (empty ref means default behavior otherwise)
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup nix shell
-        run: "true"
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Generate tests
-        run: ./lka.py build-test ${{ github.event_name != 'workflow_dispatch' && '--skip-ci' || '' }}
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Build test tarball
-        run: ./lka.py build-tarball
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Stage test stats for upload
-        run: ./lka.py ci-pack --outdir /tmp/artifact --test-stats
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Upload test stats
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-stats
-          path: /tmp/artifact
-
-      - name: Upload test tarball
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-tarball
-          path: _out/lean-arena-tests.tar.gz
-
-  build-site:
-    name: Build and deploy site
-    needs: [check, tutorial, test-stats]
-    if: ${{ !cancelled() && needs.check.result != 'skipped' }}
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          # On pull requests, check out the PR head instead of the artificial
-          # merge commit (empty ref means default behavior otherwise)
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Pages
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/configure-pages@v6
-
-      - name: Setup nix shell
-        run: "true"
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Fetch checker results
-        uses: actions/download-artifact@v8
-        with:
-          pattern: results-*
-          path: _artifacts
-
-      - name: Fetch test stats
-        uses: actions/download-artifact@v8
-        with:
-          name: test-stats
-          path: _artifacts/test-stats
-
-      - name: Merge checker results and test stats
-        run: ./lka.py ci-merge _artifacts/*
-        shell: 'nix develop -c bash -euxo pipefail {0}'
-
-      - name: Fetch tutorial page
-        uses: actions/download-artifact@v8
-        with:
-          name: tutorial-page
-          path: _out/tutorial
-
-      - name: Fetch test tarball
-        uses: actions/download-artifact@v8
-        with:
-          name: test-tarball
-          path: _tarball
-
       - name: Generate website
-        run: ./lka.py build-site --tarball _tarball/lean-arena-tests.tar.gz
+        run: ./lka.py build-site
         shell: 'nix develop -c bash -euxo pipefail {0}'
-
+      
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v3
         with:
           path: '_out'
 
@@ -281,4 +128,22 @@ jobs:
       - name: Deploy to GitHub Pages
         if: github.event_name == 'workflow_dispatch'
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v4
+
+
+  delete-runner:
+    name: Delete Hetzner Cloud runner
+    needs:
+      - create-runner
+      - build-and-deploy
+    runs-on: ubuntu-latest
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.create-runner.result != 'skipped' }} # Only delete if runner was created
+    steps:
+      - name: Delete runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          name: ${{ needs.create-runner.outputs.label }}
+          server_id: ${{ needs.create-runner.outputs.server_id }}

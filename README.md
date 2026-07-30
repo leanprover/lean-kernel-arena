@@ -162,7 +162,6 @@ The following resources may be useful:
 * The thesis [The Type Theory of Lean](https://github.com/digama0/lean-type-theory/releases) by Mario Carneiro is a thorough description of Lean's theory.
 * The book [Type Checking in Lean4](https://ammkrn.github.io/type_checking_in_lean4/) by Chris Bailey has good advice on on writing a Lean kernel.
 * On the [arena website](https://arena.lean-lang.org/) you can download a zipfile with the arena tests (excluding large ones).
-* The arena website also publishes a machine-readable `results.json` with all checker metadata, test metadata and individual results, useful for further analysis.
 * The [source of the tutorial tests](https://github.com/leanprover/lean-kernel-arena/blob/master/tutorial/Tutorial.lean) suggests a sequence in which to implement tests.
 
 To add a new checker implementation:

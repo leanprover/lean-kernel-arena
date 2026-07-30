@@ -17,7 +17,6 @@
           libffi
           libffi.dev
           pkg-config
-          jq
           just
           pypy
           monolith
