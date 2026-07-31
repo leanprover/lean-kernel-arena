@@ -11,6 +11,7 @@
 
 import argparse
 import datetime
+import filecmp
 import fnmatch
 import json
 import os
@@ -49,6 +50,10 @@ _configure_stdout_stderr_unbuffered()
 
 # Global verbose flag
 VERBOSE = False
+
+# Tests with .ndjson files larger than this are excluded from the downloadable
+# test tarball.
+TEST_SIZE_LIMIT = 10 * 1024 * 1024
 
 # Timing/measurement utilities
 
@@ -1070,6 +1075,18 @@ def cmd_build_test(args: argparse.Namespace) -> int:
         if skipped_count > 0:
             print(f"Skipping {skipped_count} test(s) due to --skip-ci flag")
 
+    # Filter out tests that the given checker declaratively declines
+    if args.skip_declined_by:
+        checker = find_checker_by_name(args.skip_declined_by)
+        if checker is None:
+            print(f"No checker found: {args.skip_declined_by}")
+            return 1
+        declines = set(checker.get("declines", []))
+        skipped = [test["name"] for test in tests if test["name"] in declines]
+        if skipped:
+            tests = [test for test in tests if test["name"] not in declines]
+            print(f"Skipping {len(skipped)} test(s) declined by {checker['name']}: {', '.join(skipped)}")
+
     if not tests:
         print("No tests found.")
         return 0
@@ -1167,6 +1184,29 @@ def cmd_build_checker(args: argparse.Namespace) -> int:
 # =============================================================================
 
 
+def write_declined_result(checker_name: str, test_name: str, results_dir: Path) -> dict:
+    """Record a declaratively declined (checker, test) pair without running the checker."""
+    result_data = {
+        "checker": checker_name,
+        "test": test_name,
+        "status": "declined",
+        "correctness": "declined",
+        "exit_code": 2,
+        "wall_time": 0,
+        "cpu_time": 0,
+        "max_rss": 0,
+        "instructions": 0,
+        "stdout": "",
+        "stderr": "Declined via the `declines` field in the checker configuration; the checker was not run.",
+    }
+    results_dir.mkdir(parents=True, exist_ok=True)
+    safe_test_name = test_name.replace("/", "_")
+    result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
+    with open(result_file, "w") as f:
+        json.dump(result_data, f, indent=2)
+    return result_data
+
+
 def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: Path, results_dir: Path) -> dict:
     """Run a checker on a test and return the result."""
     checker_name = checker["name"]
@@ -1175,30 +1215,12 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
 
     # Tests listed in the checker's `declines` are declined without running
     if test_name in checker.get("declines", []):
-        result_data = {
-            "checker": checker_name,
-            "test": test_name,
-            "status": "declined",
-            "correctness": "declined",
-            "exit_code": 2,
-            "wall_time": 0,
-            "cpu_time": 0,
-            "max_rss": 0,
-            "instructions": 0,
-            "stdout": "",
-            "stderr": "Declined via the `declines` field in the checker configuration; the checker was not run.",
-        }
-        results_dir.mkdir(parents=True, exist_ok=True)
-        safe_test_name = test_name.replace("/", "_")
-        result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
-        with open(result_file, "w") as f:
-            json.dump(result_data, f, indent=2)
-        return result_data
+        return write_declined_result(checker_name, test_name, results_dir)
 
     # Use the file path stored in the test dict
-    test_file = test["file"]
+    test_file = test.get("file")
 
-    if not test_file.exists():
+    if test_file is None or not test_file.exists():
         result_data = {
             "checker": checker_name,
             "test": test_name,
@@ -1366,6 +1388,18 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
             
             print(f"[{status_emoji} {correctness_emoji} {format_duration(result['wall_time'])}]")
 
+        # Also record declaratively declined tests that are not among the
+        # built tests (e.g. because `build-test --skip-declined-by` skipped
+        # building them).
+        built_test_names = {test["name"] for test in tests}
+        for declined_name in checker.get("declines", []):
+            if declined_name in built_test_names:
+                continue
+            if args.test and not fnmatch.fnmatch(declined_name, args.test):
+                continue
+            print(f"Declining {declined_name} for {checker['name']} (declared in checker configuration) [⊘]")
+            results.append(write_declined_result(checker["name"], declined_name, results_dir))
+
     # Summary
     print("\n" + "=" * 60)
     print("Summary:")
@@ -1438,14 +1472,13 @@ def load_tests() -> list[dict]:
             with open(stats_file, "r") as f:
                 test_data = json.load(f)
 
-            # Determine the corresponding .ndjson file path based on stats file location
+            # Determine the corresponding .ndjson file path based on stats file location.
+            # The .ndjson file may be absent, e.g. when only the stats files were
+            # fetched from a CI artifact; such tests can still be shown on the
+            # website, but not be run or included in the tarball.
             ndjson_file = stats_file.parent / (stats_file.stem.replace('.stats', '') + '.ndjson')
-            if ndjson_file.exists():
-                # Add the file path that callers expect
-                test_data["file"] = ndjson_file
-                tests.append(test_data)
-            else:
-                print(f"Warning: No corresponding .ndjson file for {stats_file}")
+            test_data["file"] = ndjson_file if ndjson_file.exists() else None
+            tests.append(test_data)
 
         except Exception as e:
             print(f"Warning: Could not read stats file {stats_file}: {e}")
@@ -1666,13 +1699,14 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
 
     with tarfile.open(tarball_path, "w:gz") as tar:
         for test in tests:
-            # Skip tests larger than 10 MB
-            if test.get("size", 0) > 10*1024*1024:
+            # Skip tests larger than the size limit
+            if test.get("size", 0) > TEST_SIZE_LIMIT:
                 continue
 
-            # Use the file path from test data
-            test_file = test["file"]
-            if not test_file.exists():
+            # Use the file path from test data (may be absent for tests whose
+            # stats came from a CI artifact without the .ndjson file)
+            test_file = test.get("file")
+            if test_file is None or not test_file.exists():
                 continue
 
             outcome = test.get("outcome", "unknown")
@@ -1699,6 +1733,39 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
         "good_count": good_count,
         "bad_count": bad_count
     }
+
+
+def tarball_info_from_file(tarball_path: Path) -> dict:
+    """Derive tarball statistics (as returned by create_test_tarball) from an
+    existing tarball file."""
+    import tarfile
+
+    good_count = 0
+    bad_count = 0
+    with tarfile.open(tarball_path, "r:gz") as tar:
+        for member in tar:
+            if member.name.startswith("good/"):
+                good_count += 1
+            elif member.name.startswith("bad/"):
+                bad_count += 1
+
+    return {
+        "tarball_size": tarball_path.stat().st_size,
+        "good_count": good_count,
+        "bad_count": bad_count
+    }
+
+
+def cmd_build_tarball(args: argparse.Namespace) -> int:
+    """Handle the build-tarball command."""
+    output_dir = Path(args.outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tests = load_tests()
+    tarball_info = create_test_tarball(tests, output_dir)
+    print(f"Created {output_dir / 'lean-arena-tests.tar.gz'} "
+          f"({tarball_info['good_count']} good tests, {tarball_info['bad_count']} bad tests, "
+          f"{format_memory(tarball_info['tarball_size'])})")
+    return 0
 
 
 def result_virtual_time(result: dict, instructions_per_second: float) -> float:
@@ -1758,8 +1825,9 @@ def collect_results_data() -> dict:
     """Collect checkers, tests, results and build metadata into a single
     JSON-serializable structure.
 
-    This is the content of the published results.json file, so it is a
-    complete description of the site's data.
+    This is the content of the published results.json file, and also the data
+    the website is rendered from, so it is a complete description of the
+    site's data.
     """
     checkers = load_checkers()
     tests = load_tests()
@@ -1779,6 +1847,17 @@ def collect_results_data() -> dict:
     }
 
 
+def cmd_write_results(args: argparse.Namespace) -> int:
+    """Handle the write-results command."""
+    out_file = Path(args.out)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    data = collect_results_data()
+    with open(out_file, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"Wrote {out_file} ({len(data['checkers'])} checkers, {len(data['tests'])} tests, {len(data['results'])} results)")
+    return 0
+
+
 def cmd_build_site(args: argparse.Namespace) -> int:
     """Handle the build-site command."""
     output_dir = Path(args.outdir)
@@ -1794,16 +1873,31 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         autoescape=select_autoescape(),
     )
 
-    checkers = load_checkers()
-    results = load_results()
-    tests = load_tests()
+    # The site is rendered from the results.json data structure, either read
+    # from a previously written file (--results) or collected now.
+    if args.results:
+        with open(args.results, "r") as f:
+            results_data = json.load(f)
+    else:
+        results_data = collect_results_data()
 
     # Publish the raw data alongside the site
     results_json_file = output_dir / "results.json"
     with open(results_json_file, "w") as f:
-        json.dump(collect_results_data(), f, indent=2)
+        json.dump(results_data, f, indent=2)
     results_json_info = {"size": results_json_file.stat().st_size}
     print(f"Generated: {results_json_file}")
+
+    checkers = results_data["checkers"]
+    tests = results_data["tests"]
+    results = {(r["checker"], r["test"]): r for r in results_data["results"]}
+    build_info = results_data.get("meta", {})
+
+    # Attach local .ndjson file paths where available (needed for the test
+    # tarball; deliberately not part of results.json)
+    test_files = {test["name"]: test.get("file") for test in load_tests()}
+    for test in tests:
+        test["file"] = test_files.get(test["name"])
 
     # Calculate global instructions per second from results with both cpu_time and instructions
     total_instructions = 0
@@ -1873,11 +1967,15 @@ def cmd_build_site(args: argparse.Namespace) -> int:
             for checker in checkers
         }
 
-    # Get build metadata
-    build_info = get_build_metadata()
-
-    # Create test tarball
-    tarball_info = create_test_tarball(tests, output_dir)
+    # Create the test tarball, or take a pre-built one (see build-tarball)
+    tarball_file = output_dir / "lean-arena-tests.tar.gz"
+    if args.tarball:
+        tarball_src = Path(args.tarball)
+        if tarball_src.resolve() != tarball_file.resolve():
+            shutil.copy2(tarball_src, tarball_file)
+        tarball_info = tarball_info_from_file(tarball_file)
+    else:
+        tarball_info = create_test_tarball(tests, output_dir)
 
     # Build context data
     data = {
@@ -2059,6 +2157,99 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
 
 # =============================================================================
+# CI support commands
+# =============================================================================
+
+
+def cmd_list_checkers(args: argparse.Namespace) -> int:
+    """Handle the list-checkers command."""
+    names = [checker["name"] for checker in load_checkers()]
+    if args.json:
+        print(json.dumps(names))
+    else:
+        for name in names:
+            print(name)
+    return 0
+
+
+def cmd_ci_pack(args: argparse.Namespace) -> int:
+    """Handle the ci-pack command.
+
+    Stages the selected data, preserving project-relative paths:
+    - --results: all result files from _results/
+    - --test-stats: all test .stats.json files from _build/tests/
+    """
+    if not (args.results or args.test_stats):
+        print("Error: nothing to stage; pass --results and/or --test-stats")
+        return 1
+
+    root = get_project_root()
+    outdir = Path(args.outdir)
+
+    files = []
+    if args.results:
+        results_dir = root / "_results"
+        if results_dir.exists():
+            files.extend(sorted(results_dir.glob("*.json")))
+
+    if args.test_stats:
+        tests_dir = root / "_build" / "tests"
+        if tests_dir.exists():
+            files.extend(sorted(tests_dir.rglob("*.stats.json")))
+
+    for file in files:
+        dest = outdir / file.relative_to(root)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file, dest)
+
+    print(f"Staged {len(files)} file(s) in {outdir}")
+    return 0
+
+
+def cmd_ci_merge(args: argparse.Namespace) -> int:
+    """Handle the ci-merge command.
+
+    Merges directories staged by ci-pack back into the project, copying each
+    file to its project-relative location. A file that already exists (from a
+    previous artifact or a local build) must be byte-identical; anything else
+    indicates that the CI jobs did not build the same test data, and the merge
+    fails.
+    """
+    root = get_project_root()
+    copied = 0
+    identical = 0
+    conflicts = []
+
+    for dir_str in args.dirs:
+        artifact_dir = Path(dir_str)
+        if not artifact_dir.is_dir():
+            print(f"Error: Not a directory: {artifact_dir}")
+            return 1
+        for file in sorted(path for path in artifact_dir.rglob("*") if path.is_file()):
+            rel = file.relative_to(artifact_dir)
+            dest = root / rel
+            if dest.exists():
+                if filecmp.cmp(file, dest, shallow=False):
+                    identical += 1
+                else:
+                    conflicts.append((rel, artifact_dir))
+            else:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(file, dest)
+                copied += 1
+
+    print(f"Merged {len(args.dirs)} artifact(s): {copied} file(s) copied, {identical} identical duplicate(s)")
+
+    if conflicts:
+        print("Error: The following files differ from an already present copy, but should be identical:")
+        for rel, artifact_dir in conflicts:
+            print(f"  {rel} (from {artifact_dir})")
+        return 1
+
+    return 0
+
+
+# =============================================================================
 # Main entry point
 # =============================================================================
 
@@ -2092,6 +2283,11 @@ def main() -> int:
         "--skip-ci",
         action="store_true",
         help="Skip tests marked with 'skip-on-ci: true' in YAML",
+    )
+    build_test_parser.add_argument(
+        "--skip-declined-by",
+        metavar="CHECKER",
+        help="Skip tests listed in the given checker's 'declines' field",
     )
 
     # build-checker command
@@ -2129,6 +2325,81 @@ def main() -> int:
         default="_out",
         help="Output directory for the website (default: _out)",
     )
+    build_site_parser.add_argument(
+        "--results",
+        metavar="FILE",
+        help="Render the site from a previously written results.json instead of collecting the data (see write-results)",
+    )
+    build_site_parser.add_argument(
+        "--tarball",
+        metavar="FILE",
+        help="Use a pre-built test tarball instead of creating one (see build-tarball)",
+    )
+
+    # build-tarball command
+    build_tarball_parser = subparsers.add_parser(
+        "build-tarball",
+        help="Create the downloadable test tarball from the built tests",
+    )
+    build_tarball_parser.add_argument(
+        "--outdir",
+        default="_out",
+        help="Output directory for the tarball (default: _out)",
+    )
+
+    # write-results command
+    write_results_parser = subparsers.add_parser(
+        "write-results",
+        help="Write all checker/test metadata and results into a single results.json file",
+    )
+    write_results_parser.add_argument(
+        "--out",
+        default="_build/results.json",
+        help="Output file (default: _build/results.json)",
+    )
+
+    # list-checkers command
+    list_checkers_parser = subparsers.add_parser(
+        "list-checkers",
+        help="List all enabled checkers",
+    )
+    list_checkers_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as a JSON array",
+    )
+
+    # ci-pack command
+    ci_pack_parser = subparsers.add_parser(
+        "ci-pack",
+        help="Stage results and test metadata for upload as a CI artifact",
+    )
+    ci_pack_parser.add_argument(
+        "--outdir",
+        required=True,
+        help="Directory to stage the files in",
+    )
+    ci_pack_parser.add_argument(
+        "--results",
+        action="store_true",
+        help="Stage the result files from _results/",
+    )
+    ci_pack_parser.add_argument(
+        "--test-stats",
+        action="store_true",
+        help="Stage the test .stats.json files from _build/tests/",
+    )
+
+    # ci-merge command
+    ci_merge_parser = subparsers.add_parser(
+        "ci-merge",
+        help="Merge CI artifact directories (created by ci-pack) back into the project, checking that duplicate files are identical",
+    )
+    ci_merge_parser.add_argument(
+        "dirs",
+        nargs="+",
+        help="Artifact directories to merge",
+    )
 
     args = parser.parse_args()
 
@@ -2147,6 +2418,16 @@ def main() -> int:
         return cmd_run_checker(args)
     elif args.command == "build-site":
         return cmd_build_site(args)
+    elif args.command == "write-results":
+        return cmd_write_results(args)
+    elif args.command == "build-tarball":
+        return cmd_build_tarball(args)
+    elif args.command == "list-checkers":
+        return cmd_list_checkers(args)
+    elif args.command == "ci-pack":
+        return cmd_ci_pack(args)
+    elif args.command == "ci-merge":
+        return cmd_ci_merge(args)
     else:
         parser.print_help()
         return 1
