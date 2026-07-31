@@ -1,0 +1,28 @@
+description: |
+  A declaration that names one of the kernel's `_nested` auxiliary types, which
+  a correct kernel must reject (the check added in leanprover/lean4#14616). This
+  is not a proof of `False`: the declaration is well-typed, so a kernel lacking
+  the guard accepts it — it only exercises the reserved-prefix check.
+
+  The kernel generates auxiliary types under the `_nested` prefix while
+  eliminating nested inductives; they live only in a temporary environment. A
+  user declaration naming one reaches into that machinery, where `restore_nested`
+  can later hand a stored constructor a type in a different universe than it was
+  checked against. The kernel therefore rejects the reserved `_nested` prefix in
+  `add_inductive`, for both constant names and projection structure names.
+
+  `_nested.KNHost_1` here is an ordinary `Prop`-valued `def` (accepted by every
+  kernel; the guard is only in `add_inductive`). `KNAux : Prop` names it in a
+  constructor field of type `True`, so `KNAux` is well-typed; a guarded kernel
+  rejects it for the reserved prefix, an unguarded one accepts it.
+
+  Scaled-down counterpart to the full unsoundness: the axiom-free proof of
+  `False` that this bug also enables relies on transient in-kernel state (the
+  `equiv_manager` defeq cache) that is not reconstructed on a fresh replay of an
+  export, so it cannot be captured as an export-based arena test. This test
+  instead mirrors the upstream regression test
+  `tests/elab/kernelNestedAuxName.lean` from
+  <https://github.com/leanprover/lean4/pull/14616>.
+leanfile: tests/nested-aux-name.lean
+export-decls: ["KNAux"]
+outcome: reject
