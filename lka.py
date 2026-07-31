@@ -285,7 +285,9 @@ def measure_perf_with_fallback(
                             try:
                                 data = json.loads(line)
                                 if "event" in data and "counter-value" in data:
-                                    event = data["event"]
+                                    # Strip modifiers like ":u" that perf appends when it
+                                    # falls back to user-space-only counting (perf_event_paranoid=2)
+                                    event = data["event"].split(":")[0]
                                     value = float(data["counter-value"])
                                     unit = data.get("unit", "")
 
