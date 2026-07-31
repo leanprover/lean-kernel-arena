@@ -90,8 +90,19 @@ jobs:
               printf "%s: (missing)\n" "$f"
             fi
           done
-          echo "=== try perf stat (may require privileges) ==="
-          perf stat -e cycles -a -- true 2>&1 || echo "perf stat failed or not permitted"
+          echo "=== software event, own process (works even without PMU) ==="
+          perf stat -e task-clock -- true 2>&1 || echo "software event failed"
+          echo "=== hardware event, own process (allowed at paranoid=2 if a PMU exists) ==="
+          perf stat -e cycles,instructions -- true 2>&1 || echo "hardware event failed"
+          echo "=== try lowering perf_event_paranoid via sudo ==="
+          if sudo sysctl -w kernel.perf_event_paranoid=-1 2>&1; then
+            echo "=== hardware event after sysctl ==="
+            perf stat -e cycles,instructions -- true 2>&1 || echo "hardware event still failing (likely no vPMU)"
+            echo "=== system-wide after sysctl ==="
+            perf stat -e cycles -a -- true 2>&1 || echo "system-wide still failing"
+          else
+            echo "sudo sysctl not permitted"
+          fi
         shell: 'nix develop -c bash -euxo pipefail {0}'
         continue-on-error: true
 
