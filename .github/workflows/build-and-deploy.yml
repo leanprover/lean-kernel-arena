@@ -47,7 +47,9 @@ jobs:
   check:
     name: 'Checker: ${{ matrix.checker }}'
     needs: select-checkers
-    runs-on: ubuntu-latest
+    # Namespace runner: unlike GitHub-hosted runners it exposes a vPMU,
+    # so perf instruction counts work (user-space-only at paranoid=2)
+    runs-on: nscloud-ubuntu-22.04-amd64-8x16
     timeout-minutes: 360
     strategy:
       fail-fast: false
