@@ -10,8 +10,8 @@ from pathlib import Path
 
 # Map from Lean toolchains to lean4lean git tags
 TOOLCHAIN_TO_TAG = {
-    "4.29.0": ("arena/v4.29.0","50005444cce5317cc6cc044c9f0f36b54682b59f"),
-    "4.29.1": ("arena/v4.29.0","50005444cce5317cc6cc044c9f0f36b54682b59f"),
+    "4.29.0": ("arena/v4.29.0","742ecffc09ef06e174cae75d9c6c73a609549e26"),
+    "4.29.1": ("arena/v4.29.0","742ecffc09ef06e174cae75d9c6c73a609549e26"),
 }
 
 # Base directory for lean4lean builds
@@ -43,7 +43,7 @@ def build_lean4lean(tag_sha):
     # Clone the repository
     run_cmd([
         "git", "clone",
-        "https://github.com/nomeata/lean4lean.git",
+        "https://github.com/digama0/lean4lean.git",
         str(build_path)
     ])
     
