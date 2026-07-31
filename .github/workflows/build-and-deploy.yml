@@ -214,6 +214,9 @@ jobs:
   build-site:
     name: Build and deploy site
     needs: [check, tutorial, test-stats]
+    # Run even if some checker jobs failed, so the site (including the failures)
+    # is still built and deployed; a final step below then fails this job if any
+    # checker failed.
     if: ${{ !cancelled() && needs.check.result != 'skipped' }}
     runs-on: ubuntu-latest
 
@@ -275,9 +278,14 @@ jobs:
         run: ./lka.py build-site --tarball _tarball/lean-arena-tests.tar.gz
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
+      # Give each run attempt its own artifact name. Re-running only this job
+      # leaves the previous attempt's artifact in place; a fixed name would then
+      # collide and deploy-pages aborts with "Multiple artifacts named
+      # github-pages". A per-attempt name makes restarts collision-free.
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: '_out'
 
       - name: Generate self-contained report
@@ -295,3 +303,14 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+      # The checker matrix uses fail-fast: false, so a failing checker does not
+      # stop the others and the site is still built and deployed above. Surface
+      # the failure by failing this final job once everything else is done.
+      - name: Fail if any checker job failed
+        if: ${{ always() && needs.check.result == 'failure' }}
+        run: |
+          echo "::error::One or more checker jobs failed; see the 'Checker: …' matrix jobs."
+          exit 1
