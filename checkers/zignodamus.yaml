@@ -2,7 +2,7 @@ description: |
   Zig kernel based on [sokonanoda](https://github.com/intgrah/sokonanoda)
 url: https://github.com/intgrah/zignodamus
 ref: master
-rev: 68e25dcb983947da4cdd98b0ae546d23f6238e71
+rev: 5f3ce2edd75b48ba24c90248bed56f377fde3ea8
 build: |
   zig build -Drelease
 run: |
