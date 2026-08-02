@@ -8,9 +8,9 @@ description: |
   [smalltt](https://github.com/AndrasKovacs/smalltt).
 url: https://github.com/intgrah/sokonanoda
 ref: master
-rev: 8212fd5c4632a41b13ca23f319ae2fb9105b5368
+rev: d2a0be0c17f4f3b30ea2be43324573092c690522
 build: |
-  cargo build --release
+  RUSTFLAGS="-C target-cpu=native" cargo build --release
   cat > config.json <<__END__
    {
      "use_stdin": true,
