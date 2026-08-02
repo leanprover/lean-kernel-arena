@@ -1,10 +1,11 @@
-version: "-"
 description: |
   [**Lean4Lean**](https://github.com/digama0/lean4lean/) is an implementation of the Lean 4 kernel written in (mostly) pure Lean 4. It is derived directly from the C++ kernel implementation, and as such likely shares some implementation bugs with it (it's not really an independent implementation), although it also benefits from the same algorithmic performance improvements existing in the C++ Lean kernel.
 
   The project also houses some metatheory regarding the Lean system, in the same general direction as the MetaCoq project.
 
-  The lean4lean checker checks that primitive definitions from the prelude are as expected. For that reason, it is tied to a specific Lean version. The arena uses a wrapper script to switch to the appropriate version for the tests we have here.
-dir: lean4lean
-build: ./lean4lean-wrapper.py build
-run: ./lean4lean-wrapper.py run "$IN"
+  The lean4lean checker checks that primitive definitions from the prelude are as expected, so it is sensitive to the Lean version it is built against. The `arena` branch tracks lean4lean's master and carries its own `lean-toolchain`, which selects that version.
+url: https://github.com/digama0/lean4lean
+ref: arena
+rev: b93fad07164c25545d22f6841810ba3d2ed54a60
+build: lake build lean4lean
+run: .lake/build/bin/lean4lean --import "$IN"
