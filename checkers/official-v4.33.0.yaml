@@ -1,7 +1,7 @@
 version: "v4.33.0-rc2"
 description: |
   The official Lean 4 kernel checker implementation.
-dir: official-nightly
+dir: official
 build: |
   echo leanprover/lean4:v4.33.0-rc2 > lean-toolchain
   lake build
