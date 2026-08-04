@@ -52,6 +52,20 @@ bad_decl (.defnDecl {
 /-- The type of a declaration has to be a type, not some other expression -/
 bad_def nonTypeType : constType := unchecked Prop
 
+/--
+This applies to axioms as well, which are easy to overlook because they have no
+value to check the type against. Letting one through is not merely untidy: an
+axiom whose type is an arbitrary term inhabits whatever that term is later found
+definitionally equal to, and the eta and proof irrelevance rules are happy to
+equate a term like this with a great many things.
+-/
+bad_decl (.axiomDecl {
+  name := `nonTypeAxiom
+  levelParams := []
+  type := Lean.mkConst ``constType
+  isUnsafe := false
+})
+
 /-- The type of a theorem has to be a proposition -/
 bad_decl (.thmDecl {
   name := `nonPropThm
