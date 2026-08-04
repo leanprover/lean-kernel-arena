@@ -8,7 +8,7 @@ description: |
   [smalltt](https://github.com/AndrasKovacs/smalltt).
 url: https://github.com/intgrah/sokonanoda
 ref: master
-rev: d2a0be0c17f4f3b30ea2be43324573092c690522
+rev: 333fe75d6e74ad2330d07d8801718c768980111e
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo build --release
   cat > config.json <<__END__
