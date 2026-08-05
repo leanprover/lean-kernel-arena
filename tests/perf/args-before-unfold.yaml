@@ -1,0 +1,35 @@
+description: |
+  Mechanism: deciding the arguments of two applications of the same constant
+  convertible before unfolding that constant.
+
+  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
+  (POPL 2026), section 10.
+
+  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
+  `count #k` evaluates to `#k`. Each of the k steps of the recursion adds one to
+  the numeral accumulated so far, and `N.add` recurses over its first argument,
+  so evaluating `count #k` performs Θ(k²) reductions.
+
+  The declaration compares
+
+    count #n   with   count (N.add #(n-1) #1)
+
+  `N.add #(n-1) #1` reduces to `#n` in n steps, so the two arguments of `count`
+  are convertible at cost Θ(n) and the two applications agree without `count`
+  being unfolded. Evaluating the two applications of `count` instead costs
+  Θ(n²). Running at n, 2n, 4n separates the two behaviours as an exponent of 1
+  against an exponent of 2.
+
+  `N.add` and `count` are written with `N.rec` applied directly, so each exported
+  definition is a single recursor application, with no `WellFounded.fix` or
+  `brecOn` wrapper in between.
+
+  The recursion depth reached is Θ(n).
+
+  For lean-kernel-arena:
+    lean4export args-before-unfold.lean > test.jsonl
+    # declaration to check: kernel_args_before_unfold
+leanfile: tests/perf/args-before-unfold.lean
+export-decls: ["kernel_args_before_unfold"]
+outcome: accept
+compare-perf: true

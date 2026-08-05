@@ -1,0 +1,37 @@
+description: |
+  Mechanism: choosing which of two different head constants to unfold, where one
+  unrolling step of the recursive side reproduces the other side.
+
+  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
+  (POPL 2026), section 2, which poses `exp 40 ≈ exp 39 + exp 39` and the
+  mutually recursive `odd 999999 ≈ even 1000000`.
+
+  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
+  `count #k` evaluates to `#k` in Θ(k²) reductions, because each of the k steps
+  of the recursion adds one to the numeral accumulated so far and `N.add`
+  recurses over its first argument.
+
+  The declaration compares
+
+    count #(n+1)   with   N.add (count #n) #1
+
+  The head constants are `count` on the left and `N.add` on the right. Unrolling
+  `count` by one step turns the left side into `N.add (count #n) #1`, which is
+  the right side, so the problem is settled by that one step together with a
+  traversal of the shared numeral `#n`, in Θ(n). Evaluating the two sides instead
+  costs Θ(n²). Running at n, 2n, 4n separates the two behaviours as an exponent
+  of 1 against an exponent of 2.
+
+  `N.add` and `count` are written with `N.rec` applied directly, so each exported
+  definition is a single recursor application, with no `WellFounded.fix` or
+  `brecOn` wrapper in between.
+
+  The recursion depth reached is Θ(n).
+
+  For lean-kernel-arena:
+    lean4export unroll-versus-evaluate.lean > test.jsonl
+    # declaration to check: kernel_unroll_versus_evaluate
+leanfile: tests/perf/unroll-versus-evaluate.lean
+export-decls: ["kernel_unroll_versus_evaluate"]
+outcome: accept
+compare-perf: true

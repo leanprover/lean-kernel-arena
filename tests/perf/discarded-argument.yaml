@@ -1,0 +1,37 @@
+description: |
+  Mechanism: comparing the arguments of two applications of the same constant
+  when that constant discards its argument.
+
+  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
+  (POPL 2026), section 10, where Rocq spends 0.14s and the paper's checker
+  spends 5 × 10⁻⁶s.
+
+  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
+  `count #k` evaluates to `#k` in Θ(k²) reductions, because each of the k steps
+  of the recursion adds one to the numeral accumulated so far and `N.add`
+  recurses over its first argument. `dropArg` maps every numeral to `N.O`.
+
+  The declaration compares
+
+    dropArg (count #n)   with   dropArg (count #(n+1))
+
+  The two arguments of `dropArg` evaluate to different numerals, so establishing
+  that they are not convertible costs Θ(n²) and the answer is then thrown away:
+  unfolding `dropArg` on both sides leaves `N.O` against `N.O`. An engine that
+  unfolds `dropArg` before looking at its argument answers in Θ(1), and one that
+  compares arguments first answers in Θ(n²). Running at n, 2n, 4n separates the
+  two behaviours as an exponent of 0 against an exponent of 2.
+
+  `N.add` and `count` are written with `N.rec` applied directly, so each exported
+  definition is a single recursor application, with no `WellFounded.fix` or
+  `brecOn` wrapper in between.
+
+  The recursion depth reached is Θ(n).
+
+  For lean-kernel-arena:
+    lean4export discarded-argument.lean > test.jsonl
+    # declaration to check: kernel_discarded_argument
+leanfile: tests/perf/discarded-argument.lean
+export-decls: ["kernel_discarded_argument"]
+outcome: accept
+compare-perf: true

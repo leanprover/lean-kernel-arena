@@ -1,0 +1,41 @@
+description: |
+  Mechanism: consuming a term whose normal form has 2^n nodes and whose
+  representation has n nodes, without expanding the representation.
+
+  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
+  (POPL 2026), section 10.
+
+  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
+  `perfect #k leaf` builds the perfect binary tree of depth k. Its k reduction
+  steps each duplicate the tree built so far into both arguments of `Tr.node`, so
+  the result has 2^k leaves and a representation of size k. `ldepth` and
+  `ldepth2` both return the length of the leftmost path of a tree, `ldepth` by
+  placing one `N.S` per level and `ldepth2` by adding one to the count obtained
+  from the level below.
+
+  The declaration compares
+
+    ldepth (perfect #n leaf)   with   ldepth2 (perfect #n leaf)
+
+  Both sides evaluate to `#n`. The two head constants differ, so both sides are
+  evaluated: `ldepth` walks the n nodes of the leftmost path for Θ(n), `ldepth2`
+  walks the same path and folds n additions over numerals of growing size for
+  Θ(n²), and comparing the two resulting numerals costs Θ(n). Neither traversal
+  looks at more than the leftmost path, so an engine that keeps the duplicated
+  subtrees shared answers in Θ(n²), while an engine that expands `perfect #n
+  leaf` into its normal form allocates 2^n nodes. Running at n, 2n, 4n gives an
+  exponent of 2 for the first behaviour.
+
+  `perfect`, `ldepth` and `ldepth2` are written with `N.rec` and `Tr.rec` applied
+  directly, so each exported definition is a single recursor application, with no
+  `WellFounded.fix` or `brecOn` wrapper in between.
+
+  The recursion depth reached is Θ(n).
+
+  For lean-kernel-arena:
+    lean4export shared-subterm.lean > test.jsonl
+    # declaration to check: kernel_shared_subterm
+leanfile: tests/perf/shared-subterm.lean
+export-decls: ["kernel_shared_subterm"]
+outcome: accept
+compare-perf: true
