@@ -1,9 +1,9 @@
 /-
-Mechanism: deciding the arguments of two applications of the same constant
-convertible before unfolding that constant.
+Two applications of one constant, whose arguments are convertible. Does the
+checker compare the arguments, or evaluate both applications?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10.
 -/
 import Lean
 

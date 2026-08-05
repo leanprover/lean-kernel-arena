@@ -1,40 +1,29 @@
 description: |
-  Mechanism: the order in which the arguments of a constructor application are
-  visited while refuting it, with the cheap refutation in the last argument.
+  A pair whose two components each refute convertibility on their own, one
+  cheaply and one expensively. In which order does the checker visit them?
 
-  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-  (POPL 2026), section 10, where the two argument orders cost Rocq 4 × 10⁻⁶s and
-  0.61s.
+  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count #k`
+  evaluates to `#k` in Θ(k²) reductions, since each of the k steps adds one to
+  the numeral so far and `N.add` recurses on its first argument.
 
-  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
-  `count #k` evaluates to `#k` in Θ(k²) reductions, because each of the k steps
-  of the recursion adds one to the numeral accumulated so far and `N.add`
-  recurses over its first argument.
+  The two sides are
 
-  The declaration compares
+      dropArg (count #n, false)      and      dropArg (count #(n+1), true)
 
-    dropArg (count #n, false)   with   dropArg (count #(n+1), true)
+  `false` against `true` refutes the pairs in **Θ(1)**; the numerals refute them
+  in **Θ(n²)**. Here the cheap component comes last. `refute-cheap-first.lean`
+  poses the same problem with the components swapped, and the ratio between the
+  two files is what argument order costs a checker.
 
-  The two pairs are not convertible, and each of the two components refutes them
-  on its own: the first components are numerals of different value, at a cost of
-  Θ(n²), and the second components are `false` against `true`, at a cost of
-  Θ(1). The cheap refutation is the last argument of `Prod.mk`. Once the pairs
-  have been refuted, unfolding `dropArg` on both sides leaves `N.O` against
-  `N.O`, which is why the declaration holds.
+  The declaration is accepted: once the pairs are refuted, unfolding `dropArg`
+  leaves `N.O` against `N.O`.
 
-  Paired with `refute-cheap-first.lean`, which carries the same two components in
-  the opposite positions. The ratio between the two files is the cost an engine
-  pays for the order in which it visits arguments.
+  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+  POPL 2026, §10, where the two orders cost Rocq 4 × 10⁻⁶s and 0.61s.
 
-  `N.add` and `count` are written with `N.rec` applied directly, so each exported
-  definition is a single recursor application, with no `WellFounded.fix` or
-  `brecOn` wrapper in between.
-
-  The recursion depth reached is Θ(n).
-
-  For lean-kernel-arena:
-    lean4export refute-cheap-last.lean > test.jsonl
-    # declaration to check: kernel_refute_cheap_last
+  `N.add` and `count` use `N.rec` directly, so each exported definition is one
+  recursor application with no `brecOn` in between. Reduction nests Θ(n) deep.
+  The size parameter is the single `let n :=` in the `run_elab`.
 leanfile: tests/perf/refute-cheap-last.lean
 export-decls: ["kernel_refute_cheap_last"]
 outcome: accept

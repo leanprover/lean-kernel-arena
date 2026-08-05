@@ -1,9 +1,9 @@
 /-
-Mechanism: beta reduction under binders, on two terms whose normal forms are
-long and carry no repeated subterms.
+Beta reduction under binders, on normal forms that share nothing. How fast
+does the checker reduce?
 
-Test case from the `conv_eval` benchmark of András Kovács' smalltt, whose
-`NatConv` entry compares Church numerals of a given value.
+From the `conv_eval` benchmark of András Kovács' smalltt, whose `NatConv`
+entry compares Church numerals.
 -/
 import Lean
 

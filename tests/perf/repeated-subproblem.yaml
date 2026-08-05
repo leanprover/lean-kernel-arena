@@ -1,36 +1,30 @@
 description: |
-  Mechanism: reaching the same convertibility subproblem an exponential number of
-  times, so that the cost depends on whether convertibility results are shared.
+  One convertibility subproblem reached 2^n times. Does the checker share the
+  answer, or solve every occurrence afresh?
 
-  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-  (POPL 2026), section 10, where Rocq spends 0.018s and the paper's checker
-  spends 9 × 10⁻⁵s.
+  Write `#k` for the numeral `N.S (... N.O)` with k successors. `perfect #k t`
+  builds the perfect binary tree of depth k with leaves `t`. Each of its k steps
+  duplicates the tree so far into both arguments of `Tr.node`, so the result has
+  2^k leaves and a representation of size k.
 
-  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
-  `perfect #k t` builds the perfect binary tree of depth k whose leaves are `t`.
-  Its k reduction steps each duplicate the tree built so far into both arguments
-  of `Tr.node`, so the result has 2^k leaves and a representation of size k.
+  The two sides are
 
-  The declaration compares
+      perfect #n leaf      and      perfect #(n-1) (node leaf leaf)
 
-    perfect #n leaf   with   perfect #(n-1) (node leaf leaf)
+  Both reduce to the perfect tree of depth n. Descending them meets
+  `Tr.node u u` against `Tr.node v v` at every level, where both argument
+  positions pose the same subproblem, u against v. So the recursion reaches 2^n
+  pairs of nodes, of which n are distinct. Recording proved pairs answers in
+  **Θ(n)**; solving each occurrence afresh answers in **Θ(2ⁿ)**.
 
-  Both sides reduce to the perfect tree of depth n. Comparing them descends
-  through `Tr.node u u` against `Tr.node v v` at every level, and the pair (u, v)
-  reached from the left argument is the pair reached from the right argument, so
-  the recursion visits 2^n pairs of nodes while only n of them are distinct. An
-  engine that records which pairs of terms it has already proved convertible
-  answers in Θ(n); an engine that solves each occurrence afresh answers in
-  Θ(2^n). Stepping n by one doubles the cost of the second behaviour and adds a
-  constant to the cost of the first.
+  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+  POPL 2026, §10, where Rocq spends 0.018s and the paper's checker 9 × 10⁻⁵s.
 
-  `perfect` is written with `N.rec` applied directly, so the exported definition
-  is a single recursor application, with no `WellFounded.fix` or `brecOn` wrapper
-  in between.
-
-  For lean-kernel-arena:
-    lean4export repeated-subproblem.lean > test.jsonl
-    # declaration to check: kernel_repeated_subproblem
+  `perfect` uses `N.rec` directly, so the exported definition is one recursor
+  application with no `brecOn` in between. The size parameter is the single
+  `let n :=` in the `run_elab`. This file scales by stepping n up by one: that
+  doubles the cost for a checker without sharing, and adds a constant for one
+  with it.
 leanfile: tests/perf/repeated-subproblem.lean
 export-decls: ["kernel_repeated_subproblem"]
 outcome: accept

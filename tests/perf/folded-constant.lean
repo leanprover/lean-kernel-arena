@@ -1,11 +1,10 @@
 /-
-Mechanism: recognizing the folded form of a constant application after a shared
-occurrence of it has been reduced to weak head normal form for an earlier
-subproblem.
+One constant application occurring twice in a problem, reduced for the first
+subproblem it appears in. Is its folded form still available for the second?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10, where Rocq spends 0.078s and the paper's checker
-spends 2 × 10⁻⁴s.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10, where Rocq spends 0.078s and the paper's checker
+2 × 10⁻⁴s.
 -/
 import Lean
 

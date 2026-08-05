@@ -1,10 +1,10 @@
 /-
-Mechanism: answering a convertibility problem whose two sides are the same
-deeply nested term, by observing that they are the same term.
+Both sides are the same deeply nested term. Does the checker notice before it
+starts unfolding?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10, where Rocq spends 2 × 10⁻⁵s and the paper's checker
-spends 0.15s, its largest loss against Rocq.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10, where Rocq spends 2 × 10⁻⁵s and the paper's checker
+0.15s, its largest loss to Rocq.
 -/
 import Lean
 

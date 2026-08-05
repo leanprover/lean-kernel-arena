@@ -1,10 +1,10 @@
 /-
-Mechanism: reaching the same convertibility subproblem an exponential number of
-times, so that the cost depends on whether convertibility results are shared.
+One convertibility subproblem reached 2^n times. Does the checker share the
+answer, or solve every occurrence afresh?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10, where Rocq spends 0.018s and the paper's checker
-spends 9 × 10⁻⁵s.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10, where Rocq spends 0.018s and the paper's checker
+9 × 10⁻⁵s.
 -/
 import Lean
 

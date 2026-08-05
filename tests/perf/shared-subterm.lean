@@ -1,9 +1,9 @@
 /-
-Mechanism: consuming a term whose normal form has 2^n nodes and whose
-representation has n nodes, without expanding the representation.
+A term whose normal form has 2^n nodes and whose representation has n. Does
+the checker consume it without expanding it?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10.
 -/
 import Lean
 

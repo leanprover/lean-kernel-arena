@@ -1,42 +1,32 @@
 description: |
-  Mechanism: recognizing the folded form of a constant application after a shared
-  occurrence of it has been reduced to weak head normal form for an earlier
-  subproblem.
+  The same constant application appears in two subproblems, and the first
+  subproblem reduces it. Does the second still see the folded form?
 
-  Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-  (POPL 2026), section 10, where Rocq spends 0.078s and the paper's checker
-  spends 2 × 10⁻⁴s.
+  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count #k`
+  evaluates to `#k` in Θ(k²) reductions, since each of the k steps adds one to
+  the numeral so far and `N.add` recurses on its first argument; reaching the
+  head constructor alone takes Θ(k). `tagged m` is the pair `(m, isZero m)`, so
+  unfolding `tagged` duplicates its argument.
 
-  Write `#k` for the unary numeral `N.S (N.S (... N.O))` with k successors.
-  `count #k` evaluates to `#k` in Θ(k²) reductions, because each of the k steps
-  of the recursion adds one to the numeral accumulated so far and `N.add`
-  recurses over its first argument. Reaching the head constructor of `count #k`
-  alone takes Θ(k) reductions. `tagged m` pairs `m` with the test `isZero m`, so
-  unfolding `tagged` duplicates its argument into both components of the pair.
+  The two sides are
 
-  The declaration compares
+      tagged (count #n)      and      (count #n, false)
 
-    tagged (count #n)   with   (count #n, false)
+  Unfolding `tagged` gives `(count #n, isZero (count #n))`, whose two
+  occurrences of `count #n` are one shared subterm. Settling the second
+  components, `isZero (count #n)` against `false`, reduces that subterm to its
+  head constructor, in Θ(n). The first components are then `count #n` against
+  `count #n`: identical, for **Θ(n)** overall, if the shared subterm still
+  carries its folded form, and two numerals to evaluate, for **Θ(n²)**, if it
+  now holds the weak head normal form.
 
-  Unfolding `tagged` on the left gives `(count #n, isZero (count #n))`, where the
-  two occurrences of `count #n` are one shared subterm. The second components,
-  `isZero (count #n)` against `false`, are settled by reducing that shared
-  subterm to its head constructor, in Θ(n). The first components are then
-  `count #n` against `count #n`. An engine for which the shared occurrence still
-  carries its folded form settles them by identity, for Θ(n) overall; an engine
-  for which the shared occurrence now holds the weak head normal form evaluates
-  both numerals, for Θ(n²) overall. Running at n, 2n, 4n separates the two
-  behaviours as an exponent of 1 against an exponent of 2.
+  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+  POPL 2026, §10, where Rocq spends 0.078s and the paper's checker 2 × 10⁻⁴s.
 
-  `N.add`, `count` and `isZero` are written with `N.rec` applied directly, so
-  each exported definition is a single recursor application, with no
-  `WellFounded.fix` or `brecOn` wrapper in between.
-
-  The recursion depth reached is Θ(n).
-
-  For lean-kernel-arena:
-    lean4export folded-constant.lean > test.jsonl
-    # declaration to check: kernel_folded_constant
+  `N.add`, `count` and `isZero` use `N.rec` directly, so each exported
+  definition is one recursor application with no `brecOn` in between. Reduction
+  nests Θ(n) deep. The size parameter is the single `let n :=` in the
+  `run_elab`; running at n, 2n, 4n separates exponent 1 from exponent 2.
 leanfile: tests/perf/folded-constant.lean
 export-decls: ["kernel_folded_constant"]
 outcome: accept

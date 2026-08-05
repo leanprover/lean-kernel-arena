@@ -1,10 +1,10 @@
 /-
-Mechanism: comparing the arguments of two applications of the same constant
-when that constant discards its argument.
+Two applications of a constant that ignores its argument. Does the checker
+unfold the constant, or compare the arguments first?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10, where Rocq spends 0.14s and the paper's checker
-spends 5 × 10⁻⁶s.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10, where Rocq spends 0.14s and the paper's checker
+5 × 10⁻⁶s.
 -/
 import Lean
 

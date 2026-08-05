@@ -1,10 +1,10 @@
 /-
-Mechanism: the order in which the arguments of a constructor application are
-visited while refuting it, with the cheap refutation in the first argument.
+A pair whose two components each refute convertibility on their own, one
+cheaply and one expensively. In which order does the checker visit them? Here
+the cheap component comes first; `refute-cheap-last.lean` swaps them.
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 10, where the two argument orders cost Rocq 4 × 10⁻⁶s and
-0.61s.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 10, where the two orders cost Rocq 4 × 10⁻⁶s and 0.61s.
 -/
 import Lean
 

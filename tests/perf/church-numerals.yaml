@@ -1,35 +1,35 @@
 description: |
-  Mechanism: beta reduction under binders, on two terms whose normal forms are
-  long and carry no repeated subterms.
+  Beta reduction under binders, on normal forms that share nothing. How fast
+  does the checker reduce?
 
-  Test case from the `conv_eval` benchmark of András Kovács' smalltt, whose
-  `NatConv` entry compares Church numerals of a given value.
+  `cnum k` is the Church numeral `fun X s z => s (s (... z))`, a term of size k.
+  `cmul a b` iterates `b` as many times as `a` counts.
 
-  `cnum k` is the Church numeral `fun X s z => s (s (... z))` with k applications
-  of `s`, written out as a term of size k. `cmul a b` iterates `b` as many times
-  as `a` counts.
+  The two sides are
 
-  The declaration compares
+      cmul (cnum n) (cnum (n+1))      and      cmul (cnum (n+1)) (cnum n)
 
-    cmul (cnum n) (cnum (n+1))   with   cmul (cnum (n+1)) (cnum n)
+  Both have the normal form `fun X s z => s (... s z)` with n(n+1) applications
+  of the bound `s`. Unfolding `cmul` on the left leaves
 
-  Both sides have the normal form `fun X s z => s (s (... z))` with n(n+1)
-  applications of the free variable `s`. Unfolding `cmul` on the left leaves
-  `cnum n X (cnum (n+1) X s)` under the binders `X`, `s`, `z`, and each of the n
-  occurrences of the bound function in `cnum n` is a separate copy of the redex
-  `cnum (n+1) X s`, so reaching the normal form takes n(n+1) beta steps and
-  allocates a term with no repeated subterms. The exported terms have size Θ(n)
-  and the decision costs Θ(n²), so running at n, 2n, 4n gives an exponent of 2.
-  The only delta step available is the unfolding of `cmul` on each side, and the
-  only argument comparison available, `cnum n` against `cnum (n+1)`, costs Θ(n),
-  so the figure measures the rate at which an engine performs beta reduction
-  under binders.
+      cnum n X (cnum (n+1) X s)
 
-  The recursion depth reached is n(n+1), which is 14520 at the default n.
+  under the three binders, where each of the n occurrences of the bound
+  function in `cnum n` is a separate copy of the redex `cnum (n+1) X s`. So
+  reaching the normal form takes n(n+1) beta steps and allocates a term with no
+  repeated subterms: the exported terms have size Θ(n), and the decision costs
+  **Θ(n²)**.
 
-  For lean-kernel-arena:
-    lean4export church-numerals.lean > test.jsonl
-    # declaration to check: kernel_church_numerals
+  `cmul` on each side is the only delta step available, and `cnum n` against
+  `cnum (n+1)` the only argument comparison, at Θ(n). What the figure measures
+  is therefore beta reduction under binders and little else.
+
+  From the `conv_eval` benchmark of András Kovács' smalltt, whose `NatConv`
+  entry compares Church numerals.
+
+  Reduction nests n(n+1) deep, which is 14520 at the default n. The size
+  parameter is the single `let n :=` in the `run_elab`; running at n, 2n, 4n
+  gives exponent 2.
 leanfile: tests/perf/church-numerals.lean
 export-decls: ["kernel_church_numerals"]
 outcome: accept

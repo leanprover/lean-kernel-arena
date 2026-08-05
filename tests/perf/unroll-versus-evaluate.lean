@@ -1,10 +1,10 @@
 /-
-Mechanism: choosing which of two different head constants to unfold, where one
-unrolling step of the recursive side reproduces the other side.
+Two different head constants, where one unrolling step of the left side
+reproduces the right side. Which side does the checker unfold?
 
-Test case from Courant and Leroy, "A Lazy, Concurrent Convertibility Checker"
-(POPL 2026), section 2, which poses `exp 40 ≈ exp 39 + exp 39` and the
-mutually recursive `odd 999999 ≈ even 1000000`.
+From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
+POPL 2026, section 2, which poses `exp 40 ≈ exp 39 + exp 39` and the mutually
+recursive `odd 999999 ≈ even 1000000`.
 -/
 import Lean
 
