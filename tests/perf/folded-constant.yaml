@@ -1,32 +1,19 @@
 description: |
-  The same constant application appears in two subproblems, and the first
-  subproblem reduces it. Does the second still see the folded form?
-
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count #k`
-  evaluates to `#k` in Θ(k²) reductions, since each of the k steps adds one to
-  the numeral so far and `N.add` recurses on its first argument; reaching the
-  head constructor alone takes Θ(k). `tagged m` is the pair `(m, isZero m)`, so
-  unfolding `tagged` duplicates its argument.
-
-  The two sides are
+  The declaration to check compares
 
       tagged (count #n)      and      (count #n, false)
 
+  where `count #k` evaluates to the numeral `#k` in Θ(k²) reductions, reaching
+  its head constructor alone takes Θ(k), and `tagged m` is `(m, isZero m)`.
+
   Unfolding `tagged` gives `(count #n, isZero (count #n))`, whose two
   occurrences of `count #n` are one shared subterm. Settling the second
-  components, `isZero (count #n)` against `false`, reduces that subterm to its
-  head constructor, in Θ(n). The first components are then `count #n` against
-  `count #n`: identical, for **Θ(n)** overall, if the shared subterm still
-  carries its folded form, and two numerals to evaluate, for **Θ(n²)**, if it
-  now holds the weak head normal form.
+  components reduces that subterm to its head constructor, in Θ(n), and leaves
+  `count #n` against `count #n`. The test asks what the shared occurrence holds
+  by then: still the folded application, settled by identity for **Θ(n)**, or
+  its weak head normal form, leaving two numerals to evaluate for **Θ(n²)**.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10, where Rocq spends 0.078s and the paper's checker 2 × 10⁻⁴s.
-
-  `N.add`, `count` and `isZero` use `N.rec` directly, so each exported
-  definition is one recursor application with no `brecOn` in between. Reduction
-  nests Θ(n) deep. The size parameter is the single `let n :=` in the
-  `run_elab`; running at n, 2n, 4n separates exponent 1 from exponent 2.
+  N=1000 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/folded-constant.lean
 export-decls: ["kernel_folded_constant"]
 outcome: accept

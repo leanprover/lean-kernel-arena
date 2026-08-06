@@ -1,27 +1,18 @@
 description: |
-  Two applications of a constant that ignores its argument. Does the checker
-  unfold the constant, or compare the arguments first?
-
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count #k`
-  evaluates to `#k` in Θ(k²) reductions, since each of the k steps adds one to
-  the numeral so far and `N.add` recurses on its first argument. `dropArg` maps
-  every numeral to `N.O`.
-
-  The two sides are
+  The declaration to check compares
 
       dropArg (count #n)      and      dropArg (count #(n+1))
 
+  where `count #k` evaluates to the numeral `#k` in Θ(k²) reductions, and
+  `dropArg` maps every numeral to `N.O`.
+
   Unfolding `dropArg` leaves `N.O` against `N.O`, for **Θ(1)**. Comparing the
   arguments first evaluates two numerals of different value, for **Θ(n²)**, and
-  then throws the answer away.
+  then throws that answer away. The test asks whether a checker unfolds a
+  constant before looking at an argument the constant never uses.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10, where Rocq spends 0.14s and the paper's checker 5 × 10⁻⁶s.
-
-  `N.add` and `count` use `N.rec` directly, so each exported definition is one
-  recursor application with no `brecOn` in between. Reduction nests Θ(n) deep.
-  The size parameter is the single `let n :=` in the `run_elab`; running at
-  n, 2n, 4n separates exponent 0 from exponent 2.
+  `N.add` and `count` use `N.rec` directly, so no `brecOn` intervenes. N=200 in
+  the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/discarded-argument.lean
 export-decls: ["kernel_discarded_argument"]
 outcome: accept

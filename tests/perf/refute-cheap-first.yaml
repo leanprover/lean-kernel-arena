@@ -1,29 +1,19 @@
 description: |
-  A pair whose two components each refute convertibility on their own, one
-  cheaply and one expensively. In which order does the checker visit them?
-
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count #k`
-  evaluates to `#k` in Θ(k²) reductions, since each of the k steps adds one to
-  the numeral so far and `N.add` recurses on its first argument.
-
-  The two sides are
+  The declaration to check compares
 
       dropArg (false, count #n)      and      dropArg (true, count #(n+1))
 
-  `false` against `true` refutes the pairs in **Θ(1)**; the numerals refute them
-  in **Θ(n²)**. Here the cheap component comes first. `refute-cheap-last.lean`
-  poses the same problem with the components swapped, and the ratio between the
-  two files is what argument order costs a checker.
+  where `count #k` evaluates to the numeral `#k` in Θ(k²) reductions, and
+  `dropArg` maps every numeral to `N.O`.
 
-  The declaration is accepted: once the pairs are refuted, unfolding `dropArg`
-  leaves `N.O` against `N.O`.
+  The two pairs differ in both components, and either component refutes them on
+  its own: `false` against `true` for **Θ(1)**, the numerals for **Θ(n²)**. The
+  test asks in which order a checker visits the arguments of a constructor.
+  `refute-cheap-last.lean` swaps the components, and the ratio between the two
+  files is what that order costs. Both declarations hold: once the pairs are
+  refuted, unfolding `dropArg` leaves `N.O` against `N.O`.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10, where the two orders cost Rocq 4 × 10⁻⁶s and 0.61s.
-
-  `N.add` and `count` use `N.rec` directly, so each exported definition is one
-  recursor application with no `brecOn` in between. Reduction nests Θ(n) deep.
-  The size parameter is the single `let n :=` in the `run_elab`.
+  N=200 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/refute-cheap-first.lean
 export-decls: ["kernel_refute_cheap_first"]
 outcome: accept

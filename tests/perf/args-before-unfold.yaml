@@ -1,27 +1,18 @@
 description: |
-  Two applications of one constant, whose arguments are convertible. Does the
-  checker compare the arguments, or evaluate both applications?
+  The declaration to check compares
 
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count` counts
-  up to its argument: `count #k` evaluates to `#k` in Θ(k²) reductions, since
-  each of the k steps adds one to the numeral so far and `N.add` recurses on its
-  first argument.
+      count #n      and      count (N.add #(n-1) #1)
 
-  The two sides are
-
-      count #n        and        count (N.add #(n-1) #1)
+  where `#k` is the numeral with k successors, and `count #k` evaluates to `#k`
+  in Θ(k²) reductions.
 
   `N.add #(n-1) #1` reduces to `#n` in n steps, so the two arguments agree for
   **Θ(n)**, and the applications agree with them without `count` ever being
-  unfolded. Evaluating both applications of `count` costs **Θ(n²)**.
+  unfolded. Evaluating both applications costs **Θ(n²)**. The test asks whether
+  a checker tries the arguments of a shared head constant before unfolding it.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10.
-
-  `N.add` and `count` use `N.rec` directly, so each exported definition is one
-  recursor application with no `brecOn` in between. Reduction nests Θ(n) deep.
-  The size parameter is the single `let n :=` in the `run_elab`; running at
-  n, 2n, 4n separates exponent 1 from exponent 2.
+  `N.add` and `count` use `N.rec` directly, so no `brecOn` intervenes. N=1000 in
+  the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/args-before-unfold.lean
 export-decls: ["kernel_args_before_unfold"]
 outcome: accept

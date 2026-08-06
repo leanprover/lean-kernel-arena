@@ -1,31 +1,19 @@
 description: |
-  A term whose normal form has 2^n nodes and whose representation has n. Does
-  the checker consume it without expanding it?
-
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `perfect #n
-  leaf` builds the perfect binary tree of depth n in n steps, each duplicating
-  the tree so far into both arguments of `Tr.node`. `ldepth` and `ldepth2` both
-  return the length of the leftmost path: `ldepth` emits one `N.S` per level,
-  `ldepth2` adds one to the count from the level below.
-
-  The two sides are
+  The declaration to check compares
 
       ldepth (perfect #n leaf)      and      ldepth2 (perfect #n leaf)
 
-  Both evaluate to `#n`. The head constants differ, so both sides are evaluated,
-  and neither traversal looks beyond the leftmost path: `ldepth` walks n nodes
-  for Θ(n), `ldepth2` folds n additions over numerals of growing size for Θ(n²),
-  and comparing the results costs Θ(n). Keeping the duplicated subtrees shared
-  therefore answers in **Θ(n²)**, while expanding `perfect #n leaf` to its
-  normal form allocates **2ⁿ** nodes.
+  where `perfect #n leaf` builds the perfect binary tree of depth n in n steps
+  that each duplicate the tree so far, and `ldepth` and `ldepth2` both return
+  the length of the leftmost path.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10.
+  The head constants differ, so both sides are evaluated, and neither traversal
+  looks beyond the leftmost path: `ldepth` walks n nodes for Θ(n), `ldepth2`
+  folds n additions over growing numerals for Θ(n²). The test asks whether a
+  checker consumes the tree through its representation, for **Θ(n²)**, or
+  expands it into the **2ⁿ** nodes of its normal form.
 
-  `perfect`, `ldepth` and `ldepth2` use `N.rec` and `Tr.rec` directly, so each
-  exported definition is one recursor application with no `brecOn` in between.
-  Reduction nests Θ(n) deep. The size parameter is the single `let n :=` in the
-  `run_elab`; running at n, 2n, 4n gives exponent 2 for the sharing behaviour.
+  N=1000 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/shared-subterm.lean
 export-decls: ["kernel_shared_subterm"]
 outcome: accept

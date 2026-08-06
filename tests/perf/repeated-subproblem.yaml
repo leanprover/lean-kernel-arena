@@ -1,30 +1,20 @@
 description: |
-  One convertibility subproblem reached 2^n times. Does the checker share the
-  answer, or solve every occurrence afresh?
-
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `perfect #k t`
-  builds the perfect binary tree of depth k with leaves `t`. Each of its k steps
-  duplicates the tree so far into both arguments of `Tr.node`, so the result has
-  2^k leaves and a representation of size k.
-
-  The two sides are
+  The declaration to check compares
 
       perfect #n leaf      and      perfect #(n-1) (node leaf leaf)
 
-  Both reduce to the perfect tree of depth n. Descending them meets
+  where `perfect #k t` builds the perfect binary tree of depth k with leaves
+  `t`, in k steps that each duplicate the tree so far into both arguments of
+  `Tr.node`.
+
+  Both sides reduce to the perfect tree of depth n. Descending them meets
   `Tr.node u u` against `Tr.node v v` at every level, where both argument
-  positions pose the same subproblem, u against v. So the recursion reaches 2^n
-  pairs of nodes, of which n are distinct. Recording proved pairs answers in
-  **Θ(n)**; solving each occurrence afresh answers in **Θ(2ⁿ)**.
+  positions pose the same subproblem, so the recursion reaches 2^n pairs of
+  nodes of which n are distinct. The test asks whether a checker records the
+  pairs it has proved convertible: **Θ(n)** if it does, **Θ(2ⁿ)** if not.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10, where Rocq spends 0.018s and the paper's checker 9 × 10⁻⁵s.
-
-  `perfect` uses `N.rec` directly, so the exported definition is one recursor
-  application with no `brecOn` in between. The size parameter is the single
-  `let n :=` in the `run_elab`. This file scales by stepping n up by one: that
-  doubles the cost for a checker without sharing, and adds a constant for one
-  with it.
+  N=20 in the Lean source, stepped up by one rather than doubled. From Courant
+  and Leroy, POPL 2026, §10.
 leanfile: tests/perf/repeated-subproblem.lean
 export-decls: ["kernel_repeated_subproblem"]
 outcome: accept

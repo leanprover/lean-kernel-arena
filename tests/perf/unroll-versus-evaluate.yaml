@@ -1,27 +1,18 @@
 description: |
-  Two different head constants, where one unrolling step of the left side
-  reproduces the right side. Which side does the checker unfold?
-
-  Write `#k` for the numeral `N.S (... N.O)` with k successors. `count #k`
-  evaluates to `#k` in Θ(k²) reductions, since each of the k steps adds one to
-  the numeral so far and `N.add` recurses on its first argument.
-
-  The two sides are
+  The declaration to check compares
 
       count #(n+1)      and      N.add (count #n) #1
 
-  Unrolling `count` once turns the left side into the right side, leaving a
-  traversal of the shared numeral `#n`, for **Θ(n)**. Evaluating both sides
-  costs **Θ(n²)**.
+  where `#k` is the numeral with k successors, and `count #k` evaluates to `#k`
+  in Θ(k²) reductions.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §2, which poses `exp 40 ≈ exp 39 + exp 39` and the mutually
-  recursive `odd 999999 ≈ even 1000000`.
+  The head constants differ. Unrolling `count` once turns the left side into the
+  right side, leaving a traversal of the shared numeral `#n`, for **Θ(n)**;
+  evaluating both sides costs **Θ(n²)**. The test asks which of two differing
+  head constants a checker chooses to unfold.
 
-  `N.add` and `count` use `N.rec` directly, so each exported definition is one
-  recursor application with no `brecOn` in between. Reduction nests Θ(n) deep.
-  The size parameter is the single `let n :=` in the `run_elab`; running at
-  n, 2n, 4n separates exponent 1 from exponent 2.
+  `N.add` and `count` use `N.rec` directly, so no `brecOn` intervenes. N=1000 in
+  the Lean source. From Courant and Leroy, POPL 2026, §2.
 leanfile: tests/perf/unroll-versus-evaluate.lean
 export-decls: ["kernel_unroll_versus_evaluate"]
 outcome: accept

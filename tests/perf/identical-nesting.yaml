@@ -1,24 +1,18 @@
 description: |
-  Both sides are the same deeply nested term. Does the checker notice before it
-  starts unfolding?
-
-  `f0` is the identity on `N`, and each of `f1`, `f2`, `f3`, `f4` applies its
-  predecessor twice, so `f4` expands into 16 applications of `f0`, and an n-fold
-  nesting of `f4` into 16n of them.
-
-  The two sides are n applications of `f4` to `N.O`, and they are identical:
+  The declaration to check compares
 
       f4 (f4 (... (f4 N.O) ...))      and      f4 (f4 (... (f4 N.O) ...))
 
-  Comparing the sides before unfolding anything answers in **Θ(n)**. Unfolding
-  one side at a time offers 16n applications to choose from per side, and the
-  reachable pairs of partially unfolded sides grow exponentially in n.
+  n applications of `f4` on each side, the same term twice, where `f0` is the
+  identity on `N` and each of `f1`, `f2`, `f3`, `f4` applies its predecessor
+  twice, so the nesting expands into 16n applications of `f0`.
 
-  From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-  POPL 2026, §10, where Rocq spends 2 × 10⁻⁵s and the paper's checker 0.15s,
-  its largest loss to Rocq.
+  The test asks whether a checker compares the two sides before it starts
+  unfolding, which answers in **Θ(n)**. Unfolding one side at a time offers 16n
+  applications to choose from per side, and the reachable pairs of partially
+  unfolded sides grow exponentially in n.
 
-  The size parameter is the single `let n :=` in the `run_elab`.
+  N=30 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/identical-nesting.lean
 export-decls: ["kernel_identical_nesting"]
 outcome: accept
