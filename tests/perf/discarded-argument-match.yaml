@@ -1,0 +1,24 @@
+description: |
+  `discarded-argument.lean` with `count` and `N.add` written by structural
+  recursion, so the declaration to check is the same
+
+      dropArg (count #n)      and      dropArg (count #(n+1))
+
+  over definitions that unfold through `brecOn` rather than through `N.rec`.
+
+  `brecOn` reduces via the course-of-values table
+  `N.below #k = m #(k-1) ×' (m #(k-2) ×' (… ×' PUnit))`, a k-deep tuple holding
+  the result at every predecessor. The compiled `count` reads only `x.1`, so
+  the rest of the table is built and never read, and typing each projection
+  forces `N.below` to the depth of that projection.
+
+  Paired with `discarded-argument.lean`: the same question, one encoding apart.
+  The ratio between the two files is what a checker pays for the encoding the
+  equation compiler emits for every recursive Lean function, and it is large
+  enough to reorder checkers that the recursor form separates cleanly.
+
+  N=200 in the Lean source, matching its pair.
+leanfile: tests/perf/discarded-argument-match.lean
+export-decls: ["kernel_discarded_argument_match"]
+outcome: accept
+compare-perf: true
