@@ -11,8 +11,7 @@ description: |
   then throws that answer away. The test asks whether a checker unfolds a
   constant before looking at an argument the constant never uses.
 
-  `N.add` and `count` use `N.rec` directly, so no `brecOn` intervenes. N=200 in
-  the Lean source. From Courant and Leroy, POPL 2026, §10.
+  N=200 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/discarded-argument.lean
 export-decls: ["kernel_discarded_argument"]
 outcome: accept

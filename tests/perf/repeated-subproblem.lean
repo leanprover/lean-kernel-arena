@@ -22,6 +22,11 @@ inductive Tr where
   | leaf : Tr
   | node : Tr → Tr → Tr
 
+-- The definitions below apply the recursor directly. Structural recursion
+-- would compile through `brecOn`, whose course-of-values table dominates every
+-- cost these tests are about: measured on `discarded-argument`, the `brecOn`
+-- form costs 3074M instructions against 17M, and reorders the checkers under
+-- test.
 noncomputable def perfect (k : N) (t : Tr) : Tr :=
   N.rec (motive := fun _ => Tr → Tr) (fun t => t) (fun _ ih => fun t => ih (Tr.node t t)) k t
 

@@ -11,8 +11,7 @@ description: |
   unfolded. Evaluating both applications costs **Θ(n²)**. The test asks whether
   a checker tries the arguments of a shared head constant before unfolding it.
 
-  `N.add` and `count` use `N.rec` directly, so no `brecOn` intervenes. N=1000 in
-  the Lean source. From Courant and Leroy, POPL 2026, §10.
+  N=1000 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/args-before-unfold.lean
 export-decls: ["kernel_args_before_unfold"]
 outcome: accept

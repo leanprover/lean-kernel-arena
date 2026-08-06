@@ -17,6 +17,11 @@ inductive N where
   | O : N
   | S : N → N
 
+-- The definitions below apply the recursor directly. Structural recursion
+-- would compile through `brecOn`, whose course-of-values table dominates every
+-- cost these tests are about: measured on `discarded-argument`, the `brecOn`
+-- form costs 3074M instructions against 17M, and reorders the checkers under
+-- test.
 noncomputable def N.add (a b : N) : N :=
   N.rec (motive := fun _ => N) b (fun _ ih => N.S ih) a
 
