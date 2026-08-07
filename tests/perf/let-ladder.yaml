@@ -1,18 +1,22 @@
 description: |
   The declaration to check has type `Nat` and value
 
-      let x₁ := 0; … let xₙ := 0; x₁ + (x₂ + (… + (xₙ + 0)))
+      let x₃ := 0; x₃ + (let x₂ := 0; x₂ + (let x₁ := 0; x₁ + (x₃ + (x₂ + (x₁ + 0)))))
 
-  n `let` bindings over a body that reads every one of them.
+  shown at n=3: n `let` bindings, each separated from the next by an addition,
+  over an innermost sum that names every binding.
 
-  Every bound value is closed, so nothing a checker substitutes needs
-  shifting, and what the test measures is how the body reaches its bindings.
-  Substituting into the body at binding k copies the n − k bindings still
-  below it, summing to **Θ(n²)**. Reading a binding from an environment when
-  the body names it leaves **Θ(n)**.
+  Substituting a binding into the body before checking it traverses O(n) nodes
+  at each of the n bindings, for **Θ(n²)** in time and in allocated nodes.
+  Recording the binding and reading it where the body names it costs O(1) per
+  binding, for **Θ(n)**.
+
+  The additions are what keep the bindings apart: a run of adjacent `let`s is
+  opened by a single substitution. `Nat.add` is the only application head, so
+  no beta reduction is involved.
 
   N=2000 in the Lean source.
 leanfile: tests/perf/let-ladder.lean
-export-decls: ["let_ladder"]
+export-decls: ["kernel_quadratic_let_ladder"]
 outcome: accept
 compare-perf: true
