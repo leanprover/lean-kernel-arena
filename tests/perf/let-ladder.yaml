@@ -1,0 +1,18 @@
+description: |
+  The declaration to check has type `Nat` and value
+
+      let x₁ := 0; … let xₙ := 0; x₁ + (x₂ + (… + (xₙ + 0)))
+
+  n `let` bindings over a body that reads every one of them.
+
+  Every bound value is closed, so nothing a checker substitutes needs
+  shifting, and what the test measures is how the body reaches its bindings.
+  Substituting into the body at binding k copies the n − k bindings still
+  below it, summing to **Θ(n²)**. Reading a binding from an environment when
+  the body names it leaves **Θ(n)**.
+
+  N=2000 in the Lean source.
+leanfile: tests/perf/let-ladder.lean
+export-decls: ["let_ladder"]
+outcome: accept
+compare-perf: true
