@@ -1,20 +1,14 @@
 description: |
-  The declaration to check compares
+  The declaration to check claims
 
-      dropArg (count #n, false)      and      dropArg (count #(n+1), true)
+      (count #n, false) = (count #(n+1), true)
 
-  where `count #k` evaluates to the numeral `#k` in Θ(k²) reductions, and
-  `dropArg` maps every numeral to `N.O`.
-
-  The two pairs differ in both components, and either component refutes them on
-  its own: the numerals for **Θ(n²)**, `false` against `true` for **Θ(1)**. The
-  test asks in which order a checker visits the arguments of a constructor.
-  `refute-cheap-first.lean` swaps the components, and the ratio between the two
-  files is what that order costs. Both declarations hold: once the pairs are
-  refuted, unfolding `dropArg` leaves `N.O` against `N.O`.
+  and must be rejected: `refute-cheap-first.lean` with the components swapped,
+  so the cheap refutation sits behind the expensive one for a checker that
+  visits components left to right.
 
   N=200 in the Lean source. From Courant and Leroy, POPL 2026, §10.
 leanfile: tests/perf/refute-cheap-last.lean
 export-decls: ["kernel_refute_cheap_last"]
-outcome: accept
+outcome: reject
 compare-perf: true

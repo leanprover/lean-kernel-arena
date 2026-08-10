@@ -1,7 +1,7 @@
 /-
 A pair whose two components each refute convertibility on their own, one
-cheaply and one expensively. In which order does the checker visit them? Here
-the cheap component comes last; `refute-cheap-first.lean` swaps them.
+cheaply and one expensively. In which order does the checker visit them?
+Here the cheap component comes last; `refute-cheap-first.lean` swaps them.
 
 From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
 POPL 2026, section 10, where the two orders cost Rocq 4 × 10⁻⁶s and 0.61s.
@@ -29,25 +29,23 @@ noncomputable def N.add (a b : N) : N :=
 noncomputable def count (m : N) : N :=
   N.rec (motive := fun _ => N) N.O (fun _ ih => N.add ih (N.S N.O)) m
 
-def dropArg (_ : N × Bool) : N := N.O
-
 run_elab do
   let n := 200
   let ty := mkConst ``N
+  let bool := mkConst ``Bool
   let num : Nat → Expr := fun k => Id.run do
     let mut e := mkConst ``N.O
     for _ in [:k] do
       e := mkApp (mkConst ``N.S) e
     return e
+  let prodTy := mkApp2 (mkConst ``Prod [0, 0]) ty bool
   let pair : Expr → Expr → Expr := fun a b =>
-    mkApp4 (mkConst ``Prod.mk [0, 0]) ty (mkConst ``Bool) a b
-  let lhs := mkApp (mkConst ``dropArg)
-    (pair (mkApp (mkConst ``count) (num n)) (mkConst ``Bool.false))
-  let rhs := mkApp (mkConst ``dropArg)
-    (pair (mkApp (mkConst ``count) (num (n + 1))) (mkConst ``Bool.true))
+    mkApp4 (mkConst ``Prod.mk [0, 0]) ty bool a b
+  let lhs := pair (mkApp (mkConst ``count) (num n)) (mkConst ``Bool.false)
+  let rhs := pair (mkApp (mkConst ``count) (num (n + 1))) (mkConst ``Bool.true)
   Lean.addDecl (.thmDecl {
     name := `kernel_refute_cheap_last
     levelParams := []
-    type := mkApp3 (mkConst ``Eq [1]) ty lhs rhs
-    value := mkApp2 (mkConst ``Eq.refl [1]) ty lhs
+    type := mkApp3 (mkConst ``Eq [1]) prodTy lhs rhs
+    value := mkApp2 (mkConst ``Eq.refl [1]) prodTy lhs
   })
