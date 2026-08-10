@@ -12,11 +12,6 @@ description: |
   the rest of the table is built and never read, and typing each projection
   forces `N.below` to the depth of that projection.
 
-  Paired with `discarded-argument.lean`: the same question, one encoding apart.
-  The ratio between the two files is what a checker pays for the encoding the
-  equation compiler emits for every recursive Lean function, and it is large
-  enough to reorder checkers that the recursor form separates cleanly.
-
   N=200 in the Lean source, matching its pair.
 leanfile: tests/perf/discarded-argument-match.lean
 export-decls: ["kernel_discarded_argument_match"]
