@@ -1,10 +1,11 @@
 /-
-One constant application occurring twice in a problem, reduced for the first
-subproblem it appears in. Is its folded form still available for the second?
+One constant application occurring twice in a problem, once plain and once
+under a function that forces it. Here the forcing component comes first, so a
+checker visiting components in order reduces the application before comparing
+the plain occurrences; `folded-constant-last.lean` swaps them.
 
 From Courant and Leroy, "A Lazy, Concurrent Convertibility Checker",
-POPL 2026, section 10, where Rocq spends 0.078s and the paper's checker
-2 × 10⁻⁴s.
+POPL 2026, section 10, where the two orders cost Rocq 3 × 10⁻⁵s and 0.078s.
 -/
 import Lean
 
@@ -32,12 +33,12 @@ noncomputable def count (m : N) : N :=
 noncomputable def isZero (m : N) : Bool :=
   N.rec (motive := fun _ => Bool) true (fun _ _ => false) m
 
-noncomputable def tagged (m : N) : N × Bool := (m, isZero m)
+noncomputable def tagged (m : N) : Bool × N := (isZero m, m)
 
 run_elab do
   let n := 1000
   let ty := mkConst ``N
-  let pairTy := mkApp2 (mkConst ``Prod [0, 0]) ty (mkConst ``Bool)
+  let pairTy := mkApp2 (mkConst ``Prod [0, 0]) (mkConst ``Bool) ty
   let num : Nat → Expr := fun k => Id.run do
     let mut e := mkConst ``N.O
     for _ in [:k] do
@@ -45,9 +46,9 @@ run_elab do
     return e
   let arg := mkApp (mkConst ``count) (num n)
   let lhs := mkApp (mkConst ``tagged) arg
-  let rhs := mkApp4 (mkConst ``Prod.mk [0, 0]) ty (mkConst ``Bool) arg (mkConst ``Bool.false)
+  let rhs := mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``Bool) ty (mkConst ``Bool.false) arg
   Lean.addDecl (.thmDecl {
-    name := `kernel_folded_constant
+    name := `kernel_folded_constant_first
     levelParams := []
     type := mkApp3 (mkConst ``Eq [1]) pairTy lhs rhs
     value := mkApp2 (mkConst ``Eq.refl [1]) pairTy lhs
