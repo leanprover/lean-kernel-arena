@@ -1,0 +1,20 @@
+description: |
+  The declaration to check compares
+
+      useProof (slowTriv (count #n))      and      useProof True.intro
+
+  where `slowTriv m : True` recurses over `m`, so forcing it to a constructor
+  evaluates the numeral in Θ(n²) reductions, and `useProof` maps every proof
+  to `N.O`.
+
+  The two arguments are proofs of one proposition. Proof irrelevance settles
+  them for **Θ(1)**; evaluating the left proof to a constructor first costs
+  **Θ(n²)** and yields the answer irrelevance already gave. The test asks
+  whether a checker consults proof irrelevance before it reduces.
+
+  Lean-specific: definitional proof irrelevance has no counterpart in the
+  checker of Courant and Leroy. N=200 in the Lean source.
+leanfile: tests/perf/irrelevance-before-evaluation.lean
+export-decls: ["kernel_irrelevance_before_evaluation"]
+outcome: accept
+compare-perf: true
