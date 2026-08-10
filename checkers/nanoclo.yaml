@@ -1,0 +1,32 @@
+description: |
+  **nanoclo** — a Lean 4 kernel whose terms in flight are closures over
+  interned environments.
+
+  Forked from [nanoda_lib](https://github.com/ammkrn/nanoda_lib). Entering
+  a binder extends the environment in O(1); a variable occurrence reads its
+  entry through skew-binary jump pointers; substitution into a body happens
+  only when a type leaves the checker. Conversion runs on spined closures
+  with lazy delta unfolding, and the speculative comparison of two
+  applications of one constant runs under one budget of conversion steps
+  covering everything it nests, so a mistaken bet costs a constant rather
+  than an asymptotic factor.
+
+  The modifications from the original nanoda_lib were written by Claude
+  (Anthropic), directed by Sebastian Graf.
+url: https://github.com/sgraf812/nanoclo
+ref: main
+rev: 15b3560a7ad931a71c1500ffd6142805344b51c4
+build: |
+  cargo build --release
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+run: |
+  timeout 3600 target/release/nanoclo config.json < "$IN" || exit 1
