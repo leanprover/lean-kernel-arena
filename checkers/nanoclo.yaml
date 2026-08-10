@@ -1,15 +1,11 @@
 description: |
-  **nanoclo** — a Lean 4 kernel whose terms in flight are closures over
-  interned environments.
+  **nanoclo** — a Lean 4 kernel based on *delayed substitutions*.
+  Terms in flight are closures over interned environments.
 
   Forked from [nanoda_lib](https://github.com/ammkrn/nanoda_lib). Entering
   a binder extends the environment in O(1); a variable occurrence reads its
   entry through skew-binary jump pointers; substitution into a body happens
-  only when a type leaves the checker. Conversion runs on spined closures
-  with lazy delta unfolding, and the speculative comparison of two
-  applications of one constant runs under one budget of conversion steps
-  covering everything it nests, so a mistaken bet costs a constant rather
-  than an asymptotic factor.
+  only when a type leaves the checker.
 
   The modifications from the original nanoda_lib were written by Claude
   (Anthropic), directed by Sebastian Graf.
