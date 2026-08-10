@@ -1,7 +1,9 @@
 /-
 Two proofs of one proposition, one a constructor and one a computation that
-evaluates a numeral before reaching that constructor. Does the checker fire
-proof irrelevance before it evaluates?
+evaluates a numeral before reaching that constructor, compared as the sides
+of an equality type. `Eq` gives the comparison a rigid head, so nothing can
+be unfolded instead: the checker settles the proofs by their type, or it
+evaluates one of them. Does it fire proof irrelevance before it evaluates?
 
 Lean's definitional proof irrelevance has no counterpart in the checker of
 Courant and Leroy, so this test is not from their suite.
@@ -34,22 +36,19 @@ noncomputable def count (m : N) : N :=
 noncomputable def slowTriv (m : N) : True :=
   N.rec (motive := fun _ => True) True.intro (fun _ ih => ih) m
 
-def useProof (_ : True) : N := N.O
-
 run_elab do
   let n := 200
-  let ty := mkConst ``N
+  let true_ := mkConst ``True
   let num : Nat → Expr := fun k => Id.run do
     let mut e := mkConst ``N.O
     for _ in [:k] do
       e := mkApp (mkConst ``N.S) e
     return e
-  let lhs := mkApp (mkConst ``useProof)
-    (mkApp (mkConst ``slowTriv) (mkApp (mkConst ``count) (num n)))
-  let rhs := mkApp (mkConst ``useProof) (mkConst ``True.intro)
+  let p1 := mkApp (mkConst ``slowTriv) (mkApp (mkConst ``count) (num n))
+  let p2 := mkConst ``True.intro
   Lean.addDecl (.thmDecl {
     name := `kernel_irrelevance_before_evaluation
     levelParams := []
-    type := mkApp3 (mkConst ``Eq [1]) ty lhs rhs
-    value := mkApp2 (mkConst ``Eq.refl [1]) ty lhs
+    type := mkApp3 (mkConst ``Eq [0]) true_ p1 p2
+    value := mkApp2 (mkConst ``Eq.refl [0]) true_ p1
   })

@@ -1,14 +1,14 @@
 description: |
-  The declaration to check compares
+  The declaration to check is
 
-      useProof (slowTriv (count #n))      and      useProof True.intro
+      slowTriv (count #n) = True.intro
 
-  where `slowTriv m : True` recurses over `m`, so forcing it to a constructor
-  evaluates the numeral in Θ(n²) reductions, and `useProof` maps every proof
-  to `N.O`.
+  proved by `Eq.refl`, where `slowTriv m : True` recurses over `m`, so forcing
+  it to a constructor evaluates the numeral in Θ(n²) reductions.
 
-  The two arguments are proofs of one proposition. Proof irrelevance settles
-  them for **Θ(1)**; evaluating the left proof to a constructor first costs
+  Checking compares the two proofs as arguments of `Eq`, whose head is rigid:
+  nothing can be unfolded instead. Proof irrelevance settles the proofs by
+  their type for **Θ(1)**; evaluating the left one to a constructor costs
   **Θ(n²)** and yields the answer irrelevance already gave. The test asks
   whether a checker consults proof irrelevance before it reduces.
 
