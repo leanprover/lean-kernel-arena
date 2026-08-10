@@ -12,8 +12,7 @@ description: |
   **Θ(n²)** and yields the answer irrelevance already gave. The test asks
   whether a checker consults proof irrelevance before it reduces.
 
-  Lean-specific: definitional proof irrelevance has no counterpart in the
-  checker of Courant and Leroy. N=200 in the Lean source.
+  N=200 in the Lean source.
 leanfile: tests/perf/irrelevance-before-evaluation.lean
 export-decls: ["kernel_irrelevance_before_evaluation"]
 outcome: accept
