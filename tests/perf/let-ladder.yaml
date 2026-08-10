@@ -11,9 +11,9 @@ description: |
   Recording the binding and reading it where the body names it costs O(1) per
   binding, for **Θ(n)**.
 
-  The additions are what keep the bindings apart: a run of adjacent `let`s is
-  opened by a single substitution. `Nat.add` is the only application head, so
-  no beta reduction is involved.
+  The additions are what keep the bindings apart: a run of adjacent `let`s could
+  be opened by a single substitution; not so here. 
+  `Nat.add` is the only application head, so no beta reduction is involved.
 
   N=2000 in the Lean source.
 leanfile: tests/perf/let-ladder.lean
