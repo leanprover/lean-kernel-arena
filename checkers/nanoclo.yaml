@@ -7,6 +7,18 @@ description: |
   entry through skew-binary jump pointers; substitution into a body happens
   only when a type leaves the checker.
 
+  A term is keyed by the bindings it reads rather than by the environment it
+  stands in, so two environments that agree on what a subterm names share one
+  delayed argument and one inferred type for it, however the rest of those
+  environments differ.
+
+  Conversion evaluates both sides into a graph of interned values and unifies
+  by one match per pair. The value representation, the conversion algorithm,
+  and the fast path of the export parser come from
+  [sokonanoda](https://github.com/intgrah/sokonanoda) (Apache-2.0), whose
+  normalization by evaluation follows András Kovács'
+  [smalltt](https://github.com/AndrasKovacs/smalltt).
+
   The modifications from the original nanoda_lib were written by Claude
   (Anthropic), directed by Sebastian Graf.
 url: https://github.com/sgraf812/nanoclo
