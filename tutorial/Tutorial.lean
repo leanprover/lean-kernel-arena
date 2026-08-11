@@ -1094,8 +1094,36 @@ good_def unitEta2.{u} : ∀ (x y : PUnit.{u}), x = y := fun _ _ => rfl
 /-- Unit eta -/
 good_def unitEta3 : ∀ (x y : PUnit.{0}), x = y := fun _ _ => rfl
 
+inductive IndexedUnit : Bool → Type where
+  | mk : IndexedUnit true
+
+/--
+The unit-like rule, which makes any two elements of a single-constructor type with
+no fields definitionally equal, is also restricted to non-recursive structures
+*without indices* (`is_def_eq_unit_like` goes through `is_non_rec_structure`), so it
+does not fire for `IndexedUnit`.
+-/
+bad_def indexedUnitEta : ∀ (x y : IndexedUnit true), x = y :=
+  fun x y => unchecked Eq.refl x
+
 /-- Structure eta -/
 good_def structEta.{u} : ∀ (α β : Type u) (x : α × β), x = ⟨x.1, x.2⟩ ∧ ⟨x.1, x.2⟩ = x:= fun _ _ _ => ⟨rfl, rfl⟩
+
+inductive IndexedSingleton : Bool → Type where
+  | mk : True → IndexedSingleton true
+
+/--
+Structure eta applies only to *non-recursive structures without indices*: the
+official kernel's `is_non_rec_structure` requires `nindices == 0`, so it does not
+fire for `IndexedSingleton` even though that has a single constructor.
+
+Every field of `IndexedSingleton.mk` is a proof, so a kernel that checks only
+"has a single constructor" and then compares the fields against projections
+would have proof irrelevance discharge the remaining goals, and would wrongly
+accept this.
+-/
+bad_def indexedStructEta : ∀ (x : IndexedSingleton true), IndexedSingleton.mk True.intro = x :=
+  fun x => unchecked Eq.refl x
 
 /-! Function eta -/
 
