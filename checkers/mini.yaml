@@ -5,7 +5,7 @@ description: |
   Runs with a 30s timeout.
 url: https://github.com/nomeata/lean-mini-kernel
 ref: master
-rev: ef7ade033cec1a5a0251263c26b9ef10b2969bf5
+rev: 7ea4f55f5a9f27e096ac8a6a0cf4ecb42e8b7759
 build: lake build
 run: timeout 30s .lake/build/bin/mini-kernel "$IN"
 # Cannot handle the full Init.Prelude, so decline everything built on top of it
