@@ -6,6 +6,6 @@ description: |
   The lean4lean checker checks that primitive definitions from the prelude are as expected, so it is sensitive to the Lean version it is built against. The `arena` branch tracks lean4lean's master and carries its own `lean-toolchain`, which selects that version.
 url: https://github.com/digama0/lean4lean
 ref: arena
-rev: b93fad07164c25545d22f6841810ba3d2ed54a60
+rev: ecb3b6661c14f8147be1069b126c629114baf4a8
 build: lake build lean4lean
 run: .lake/build/bin/lean4lean --import "$IN"
