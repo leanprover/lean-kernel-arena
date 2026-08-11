@@ -17,7 +17,7 @@
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
                                 {# Show absolute virtual time for perf-compared tests #}
                                 {% set official_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
-                                {% if official_cpu_time and official_cpu_time >= 0.05 %}
+                                {% if official_cpu_time %}
                                     {{ format_duration(official_cpu_time) }}
                                 {% else %}
                                     👍

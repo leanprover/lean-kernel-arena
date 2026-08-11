@@ -2099,15 +2099,13 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 # over the tests that both checkers accepted
                 own_time = 0.0
                 official_time = 0.0
-                compare_perf = False
                 for r in row["members"]:
                     official = r.get("official")
                     if (r.get("expected") == "accept" and r.get("status") == "accepted"
                             and official and official.get("status") == "accepted"):
                         own_time += result_virtual_time(r, instructions_per_second)
                         official_time += result_virtual_time(official, instructions_per_second)
-                        compare_perf = compare_perf or bool(r["test_stats"].get("compare-perf"))
-                if official_time > 0 and (compare_perf or official_time >= 0.05) and own_time > 0:
+                if official_time > 0 and own_time > 0:
                     row["relative_perf"] = format_relative_perf(own_time, official_time)
                 else:
                     row["relative_perf"] = None

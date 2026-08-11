@@ -28,15 +28,14 @@
 {% endmacro %}
 
 {# Performance cells: time, time%, memory, memory%.
-   With compare_perf set, comparisons are shown even if the official checker
-   was fast (below the noise thresholds). The time comparison cell gets a
-   light green background when the checker is at least 10% faster than the
-   official checker. #}
+   Comparisons are shown for tests marked compare-perf. The time comparison
+   cell gets a light green background when the checker is at least 10% faster
+   than the official checker. #}
 {% macro perf_cells(result, expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, compare_perf=false) %}
 {% set compared = expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
 {% set official_cpu_time = (convert_instructions_to_time(result.official.get('instructions', 0), instructions_per_second) if result.official.get('instructions', 0) > 0 and instructions_per_second > 0 else result.official.cpu_time) if compared else none %}
 {% set current_cpu_time = (convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time) if compared else none %}
-{% set show_comparison = official_cpu_time and (compare_perf or official_cpu_time >= 0.05) and current_cpu_time %}
+{% set show_comparison = compare_perf and official_cpu_time and current_cpu_time %}
 <td class="text-right">
     {% if result.get('instructions', 0) > 0 and instructions_per_second > 0 %}
         <span title="{{ format_instructions(result.get('instructions', 0)) }} instructions">{{ format_duration(convert_instructions_to_time(result.get('instructions', 0), instructions_per_second)) }}</span>
@@ -58,7 +57,7 @@
     {% if expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
         {% set official_memory = result.official.max_rss %}
         {% set current_memory = result.max_rss %}
-        {% if official_memory and (compare_perf or official_memory >= 200*1024*1024) and current_memory %}
+        {% if compare_perf and official_memory and current_memory %}
             ({{ format_relative_perf(current_memory, official_memory) }})
         {% endif %}
     {% endif %}
