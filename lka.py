@@ -1942,6 +1942,31 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     # Use fixed hardcoded conversion rate of 6 Ginst/s
     instructions_per_second = 6_000_000_000  # 6 billion instructions per second
 
+    # For perf-compared tests, mark the fastest checker (bg-perf-best) and
+    # those at least 10% faster than the official checker (bg-perf-good);
+    # shown as cell backgrounds on the index page
+    for test in tests:
+        if not test.get("compare-perf"):
+            continue
+        times = {}
+        for checker in checkers:
+            result = results.get((checker["name"], test["name"]))
+            if result and result.get("status") == "accepted":
+                time = result_virtual_time(result, instructions_per_second)
+                if time > 0:
+                    times[checker["name"]] = time
+        if not times:
+            continue
+        best = min(times, key=times.get)
+        official_time = times.get("official")
+        for name, time in times.items():
+            if name == "official":
+                continue
+            if name == best:
+                results[(name, test["name"])]["perf_highlight"] = "bg-perf-best"
+            elif official_time and time < 0.9 * official_time:
+                results[(name, test["name"])]["perf_highlight"] = "bg-perf-good"
+
     # Compute stats for each checker
     for checker in checkers:
         checker["stats"] = compute_checker_stats(checker, tests, results)

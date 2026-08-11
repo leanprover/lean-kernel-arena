@@ -37,7 +37,7 @@
                     {% if checker.name != 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -182,7 +182,7 @@ table thead th {
         <h3>Tests</h3>
     </header>
     {% if tests %}
-    <div style="overflow-x:auto">
+    <div class="sticky-table">
     <table class="striped">
         <thead>
             <tr>
@@ -244,6 +244,10 @@ table thead th {
         The time and space measurements refer to the <tt>mathlib</tt> test case, the largest correct test in the suite. 
         The ⏱️ column shows virtual CPU time, calculated from instruction counts using a fixed rate of {{ format_unitless(instructions_per_second|round|int) }}instr/s. 
         This provides consistent performance comparison across different hardware, though it does not reflect parallel processing capabilities that some checkers may use.
+    </p>
+
+    <p>
+        For performance-compared tests (such as the <tt>perf/</tt> group), the cells show the runtime relative to the official checker. A dark green background marks the fastest checker for that test, and a light green background marks checkers that are at least 10% faster than the official checker.
     </p>
 
     <p>
