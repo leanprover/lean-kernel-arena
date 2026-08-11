@@ -10,7 +10,7 @@
                     {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}
                 </td>
                 {{ result_status_cell(result.expected, result.status) }}
-                {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
+                {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, result.test_stats.get('compare-perf')) }}
             </tr>
 {% endmacro %}
 
@@ -132,7 +132,7 @@ section pre, details pre {
                     {% if row.time_sum %}<span title="Total over all tests in the group">{{ format_duration(row.time_sum) }}</span>{% endif %}
                 </td>
                 <td class="text-left">
-                    {% if row.percent is not none %}({% if row.percent > 0 %}+{% endif %}{{ row.percent }}%){% endif %}
+                    {% if row.relative_perf is not none %}({{ row.relative_perf }}){% endif %}
                 </td>
                 <td class="text-right">
                     {% if row.rss_max %}<span title="Maximum over all tests in the group">{{ format_memory(row.rss_max) }}</span>{% endif %}

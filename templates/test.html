@@ -63,7 +63,7 @@
                 <td><a href="{{ root_path }}checker/{{ result.checker }}/#test-{{ test.name }}">{{ result.checker }}</a></td>
                 <td class="spacer-col"></td>
                 {{ result_status_cell(test.outcome, result.status) }}
-                {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
+                {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, test.get('compare-perf')) }}
             </tr>
             {% endfor %}
         </tbody>

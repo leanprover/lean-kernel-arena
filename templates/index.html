@@ -47,9 +47,8 @@
                                 {% if official_result and official_result.status == 'accepted' %}
                                     {% set official_cpu_time = convert_instructions_to_time(official_result.get('instructions', 0), instructions_per_second) if official_result.get('instructions', 0) > 0 and instructions_per_second > 0 else official_result.cpu_time %}
                                     {% set current_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
-                                    {% if official_cpu_time and official_cpu_time >= 0.05 and current_cpu_time %}
-                                        {% set percent_change = ((current_cpu_time - official_cpu_time) / official_cpu_time * 100) | round(0) | int %}
-                                        {% if percent_change > 0 %}+{{ percent_change }}%{% elif percent_change < 0 %}{{ percent_change }}%{% else %}0%{% endif %}
+                                    {% if official_cpu_time and current_cpu_time %}
+                                        {{ format_relative_perf(current_cpu_time, official_cpu_time) }}
                                     {% else %}
                                         👍
                                     {% endif %}
