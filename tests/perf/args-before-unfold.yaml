@@ -1,0 +1,18 @@
+description: |
+  The declaration to check compares
+
+      count #n      and      count (N.add #(n-1) #1)
+
+  where `#k` is the numeral with k successors, and `count #k` evaluates to `#k`
+  in Θ(k²) reductions.
+
+  `N.add #(n-1) #1` reduces to `#n` in n steps, so the two arguments agree for
+  **Θ(n)**, and the applications agree with them without `count` ever being
+  unfolded. Evaluating both applications costs **Θ(n²)**. The test asks whether
+  a checker tries the arguments of a shared head constant before unfolding it.
+
+  N=1000 in the Lean source. From Courant and Leroy, POPL 2026, §10.
+leanfile: tests/perf/args-before-unfold.lean
+export-decls: ["kernel_args_before_unfold"]
+outcome: accept
+compare-perf: true

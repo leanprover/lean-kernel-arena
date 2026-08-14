@@ -1,0 +1,5 @@
+description: |
+  Quotient computation rule.
+leanfile: tests/undecidability/alg-conv-trans-quot.lean
+export-decls: ["right"]
+outcome: accept

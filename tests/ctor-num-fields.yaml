@@ -1,0 +1,10 @@
+description: |
+  Proof of False via trusted `numFields` on a constructor.
+
+  Define a wrapper structure `S` with one field, and lie by saying it has 0 fields, making
+  it look unit-like. Then definitional eta means all inhabitants are equal.
+
+  Derive a contradiction from `S.mk false = S.mk true`.
+leanfile: tests/ctor-num-fields.lean
+export-decls: ["bad"]
+outcome: reject

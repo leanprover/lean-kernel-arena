@@ -19,7 +19,7 @@
     </header>
     <p>
         <strong>Expected:</strong>
-        {% if test.outcome == 'accept' %}👍 accept{% elif test.outcome == 'reject' %}✋ reject{% else %}⚠️ {{ test.outcome }}{% endif %}
+        {% if test.outcome == 'accept' %}👍 accept{% elif test.outcome == 'reject' %}✋ reject{% elif test.outcome == 'either' %}🤷 either{% else %}⚠️ {{ test.outcome }}{% endif %}
         · <strong>Size:</strong> {{ test.size_str }}
         · <strong>Lines:</strong> {{ test.lines_str }}
         {% if test.lean4export_version %}
@@ -63,7 +63,7 @@
                 <td><a href="{{ root_path }}checker/{{ result.checker }}/#test-{{ test.name }}">{{ result.checker }}</a></td>
                 <td class="spacer-col"></td>
                 {{ result_status_cell(test.outcome, result.status) }}
-                {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) }}
+                {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, test.get('compare-perf')) }}
             </tr>
             {% endfor %}
         </tbody>

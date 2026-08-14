@@ -52,6 +52,20 @@ bad_decl (.defnDecl {
 /-- The type of a declaration has to be a type, not some other expression -/
 bad_def nonTypeType : constType := unchecked Prop
 
+/--
+This applies to axioms as well, which are easy to overlook because they have no
+value to check the type against. Letting one through is not merely untidy: an
+axiom whose type is an arbitrary term inhabits whatever that term is later found
+definitionally equal to, and the eta and proof irrelevance rules are happy to
+equate a term like this with a great many things.
+-/
+bad_decl (.axiomDecl {
+  name := `nonTypeAxiom
+  levelParams := []
+  type := Lean.mkConst ``constType
+  isUnsafe := false
+})
+
 /-- The type of a theorem has to be a proposition -/
 bad_decl (.thmDecl {
   name := `nonPropThm
@@ -703,9 +717,68 @@ inductive BoolProp : Prop where
 /-- Inductive predicates eliminate into Prop if they have more than one constructor. -/
 good_def boolPropRec : ∀ {motive : BoolProp → Prop} (a : motive BoolProp.a) (b : motive BoolProp.b) (x : BoolProp), motive x := @BoolProp.rec
 
+/--
+A kernel must not blindly trust the recursors it is handed. If we write
+
+```
+inductive BogusRecursor : Type where
+  | mk : BogusRecursor
+```
+
+then the recursor `BogusRecursor.rec` will be correctly derived with type
+`{motive : BogusRecursor → Sort u} → motive .mk → (t : BogusRecursor) → motive t`.
+
+This test instead claims that the recursor is a constant of type `False`, and
+then uses it to prove `bogusRecursorFalse : False`. A kernel that validates
+the recursors it is handed rejects the bogus recursor itself; a kernel that
+ignores them and derives the recursors anew rejects the proof of `False`
+(the derived recursor neither has type `False` nor zero universe parameters).
+Either way, this test must be rejected.
+-/
+bad_raw_consts
+  let n := `BogusRecursor
+  #[ .ctorInfo {
+      name := n ++ `mk, levelParams := [], type := .const n []
+      numParams := 0, induct := n, cidx := 0, numFields := 0, isUnsafe := false
+    },
+    .recInfo {
+      name := n ++ `rec
+      levelParams := []
+      type := .const ``False []
+      all := [n]
+      numParams := 0, numIndices := 0, numMotives := 0, numMinors := 0
+      rules := []
+      k := false
+      isUnsafe := false
+    },
+    .thmInfo {
+      name := `bogusRecursorFalse
+      levelParams := []
+      type := .const ``False []
+      value := .const (n ++ `rec) []
+    },
+    .inductInfo {
+      name := n, levelParams := [], type := .sort 1
+      numParams := 0, numIndices := 0, all := [n]
+      ctors := [n ++ `mk]
+      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false
+    }
+  ]
+
 /-- Inductive predicates eliminate into Prop if they have one constructors and it carries data. -/
 good_def existsRec.{u} : ∀ {α : Sort u} {p : α → Prop} {motive : Exists p → Prop} (intro : ∀ (w : α) (h : p w), motive ⟨w,h⟩)
   (t : Exists p), motive t := @Exists.rec
+
+
+inductive NewSingleton : Type where
+  | mk : NewSingleton
+
+/--
+Because `NewSingleton` is a singleton, `NewSingleton.rec true x` reduces to
+`true` even though `x` is a variable.
+-/
+good_def typeSingletonRecReduction : ∀ (x : NewSingleton),
+  NewSingleton.rec true x = true := fun _ => rfl
 
 
 inductive SortElimProp (b : Bool) : Bool → Bool → Prop
@@ -1021,8 +1094,36 @@ good_def unitEta2.{u} : ∀ (x y : PUnit.{u}), x = y := fun _ _ => rfl
 /-- Unit eta -/
 good_def unitEta3 : ∀ (x y : PUnit.{0}), x = y := fun _ _ => rfl
 
+inductive IndexedUnit : Bool → Type where
+  | mk : IndexedUnit true
+
+/--
+The unit-like rule, which makes any two elements of a single-constructor type with
+no fields definitionally equal, is also restricted to non-recursive structures
+*without indices* (`is_def_eq_unit_like` goes through `is_non_rec_structure`), so it
+does not fire for `IndexedUnit`.
+-/
+bad_def indexedUnitEta : ∀ (x y : IndexedUnit true), x = y :=
+  fun x y => unchecked Eq.refl x
+
 /-- Structure eta -/
 good_def structEta.{u} : ∀ (α β : Type u) (x : α × β), x = ⟨x.1, x.2⟩ ∧ ⟨x.1, x.2⟩ = x:= fun _ _ _ => ⟨rfl, rfl⟩
+
+inductive IndexedSingleton : Bool → Type where
+  | mk : True → IndexedSingleton true
+
+/--
+Structure eta applies only to *non-recursive structures without indices*: the
+official kernel's `is_non_rec_structure` requires `nindices == 0`, so it does not
+fire for `IndexedSingleton` even though that has a single constructor.
+
+Every field of `IndexedSingleton.mk` is a proof, so a kernel that checks only
+"has a single constructor" and then compares the fields against projections
+would have proof irrelevance discharge the remaining goals, and would wrongly
+accept this.
+-/
+bad_def indexedStructEta : ∀ (x : IndexedSingleton true), IndexedSingleton.mk True.intro = x :=
+  fun x => unchecked Eq.refl x
 
 /-! Function eta -/
 
@@ -1290,6 +1391,7 @@ properly detect and reject name collisions.
 def dupDef : Type := Prop
 def dupDef2 : Type := Prop
 inductive DupInd where | mk
+noncomputable def dupRecUser := @DupInd.rec
 inductive DupInd2 where | mk1 | mk2
 
 /-- Two definitions with the same name -/
@@ -1310,10 +1412,12 @@ bad_consts #[`dupDef, `DupInd]
 
 /--
 The name of the recursor for `misnamed_rec` must be `misnamed_rec.rec`:
-another name (like `misnamed_rec.invalid_rec`) should be rejected.
+another name (like `misnamed_rec.not_rec`) should be rejected.
+`dupRecUser` is included so that checkers that recreate the recursor (as `misnamed_rec.rec`)
+rather than validating it still fail, because `misnamed_rec_user` references `misnamed_rec.not_rec`.
 -/
-bad_consts #[`DupInd]
-  renaming #[(`DupInd, `misnamed_rec), (`DupInd.mk, `misnamed_rec.mk), (`DupInd.rec, `misnamed_rec.not_rec)]
+bad_consts #[`DupInd, `dupRecUser]
+  renaming #[(`DupInd, `misnamed_rec), (`DupInd.mk, `misnamed_rec.mk), (`DupInd.rec, `misnamed_rec.not_rec), (`dupRecUser, `misnamed_rec_user)]
 
 /--
 Even if a kernel doesn't catch a recursor for `dup_rec_def2` that is misnamed

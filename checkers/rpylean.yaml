@@ -1,9 +1,9 @@
-version: "v2026.6.4"
+version: "v2026.7.6"
 description: |
   **rpylean** - A Lean type checker written in (R)Python.
 url: https://github.com/Julian/rpylean
 ref: main
-rev: eeb93a7cc4e0013a21bbb7fad596f0e6ddc1df35
+rev: 1f6d2205d3958484b7de351d314a5e02896b9fab
 build: |
   git clone --filter=blob:none https://github.com/pypy/pypy
   cat > .env <<__END__
@@ -12,3 +12,6 @@ build: |
   just translate
 run: |
   ./rpylean-c check "$IN" || exit 1
+# rpylean does not pass on Mathlib yet; running it costs about an hour per
+# arena run for an already-known outcome.
+declines: mathlib

@@ -1,0 +1,21 @@
+description: |
+  The declaration to check compares
+
+      perfect #n leaf      and      perfect #(n-1) (node leaf leaf)
+
+  where `perfect #k t` builds the perfect binary tree of depth k with leaves
+  `t`, in k steps that each duplicate the tree so far into both arguments of
+  `Tr.node`.
+
+  Both sides reduce to the perfect tree of depth n. Descending them meets
+  `Tr.node u u` against `Tr.node v v` at every level, where both argument
+  positions pose the same subproblem, so the recursion reaches 2^n pairs of
+  nodes of which n are distinct. The test asks whether a checker records the
+  pairs it has proved convertible: **Θ(n)** if it does, **Θ(2ⁿ)** if not.
+
+  N=20 in the Lean source, stepped up by one rather than doubled. From Courant
+  and Leroy, POPL 2026, §10.
+leanfile: tests/perf/repeated-subproblem.lean
+export-decls: ["kernel_repeated_subproblem"]
+outcome: accept
+compare-perf: true

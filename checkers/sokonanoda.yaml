@@ -1,16 +1,14 @@
 description: |
-  **sokonanoda** — a Lean 4 kernel whose conversion checker is
-  based on normalization by evaluation (NbE).
+  sokonanoda: conversion checking uses closures.
 
-  This is a fork of
-  [still-nanoda](https://github.com/SchrodingerZhu/still-nanoda).
-  The conversion algorithm uses "glued" evaluation, as in András Kovács'
+  A (distant) fork of
+  [nanoda](https://github.com/ammkrn/nanoda_lib).
+  Inspired by
   [smalltt](https://github.com/AndrasKovacs/smalltt).
 url: https://github.com/intgrah/sokonanoda
 ref: master
-rev: f1c4b12ca88a37fcc030eef2a59260a4a2d04a24
+rev: 0fab8874080e379a774a9a27f7538d8a1ddd786b
 build: |
-  cargo build --release
   cat > config.json <<__END__
    {
      "use_stdin": true,
@@ -21,5 +19,11 @@ build: |
      "num_threads": 4
    }
   __END__
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init-prelude
+  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
+  target/release/sokonanoda config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
 run: |
   target/release/sokonanoda config.json < "$IN" || exit 1

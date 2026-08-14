@@ -43,9 +43,21 @@
       "type": "boolean",
       "description": "If true, this checker will be ignored and not built or run"
     },
-    "serious": {
-      "type": "boolean",
-      "description": "If false, this checker is omitted from the main comparison tables (default: true)"
+    "declines": {
+      "description": "Test name or list of test names that this checker declines without running them (recorded as declined, as if the checker had exited with code 2)",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      ]
+    },
+    "threads": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Worker threads the checker runs concurrently; the parallel runner reserves this many CPU slots to avoid oversubscribing (default: 1)"
     }
   },
   "required": ["run"],

@@ -1,0 +1,7 @@
+description: |
+  `Quot r` is a `Prop`, so proof irrelevance relates `q` and `Quot.mk r z`.
+  However the official kernel does WHNF first, reducing the right side to `f z`,
+  so congruence never compares the arguments.
+leanfile: tests/undecidability/alg-conv-trans-quot.lean
+export-decls: ["left"]
+outcome: either

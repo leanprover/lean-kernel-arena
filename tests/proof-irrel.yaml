@@ -1,0 +1,14 @@
+description: |
+  Incompleteness test for proof irrelevance under a binder.
+
+  `bar : ∀ h : A → P, Q (h a) := foo` where `foo : ∀ h : A → P, Q (h b)`.
+  Checking the assignment needs `Q (h a) ≡ Q (h b)`, i.e. `h a ≡ h b`. Both
+  `h a` and `h b` are proofs of the same `Prop` `P`, so they are definitionally
+  equal by proof irrelevance and a complete kernel accepts.
+
+  A checker that fails to apply proof irrelevance here — comparing `h a` and
+  `h b` structurally and finding the arguments `a` and `b` distinct — wrongly
+  rejects a valid proof.
+leanfile: tests/proof-irrel.lean
+export-decls: ["bar"]
+outcome: accept

@@ -1,0 +1,18 @@
+description: |
+  The declaration to check reduces
+
+      (fun x₁ => … (fun xₙ => x₁ + (x₂ + (… + (xₙ + 0)))) 0 …) 0
+
+  to `0`, through n beta redexes over a body that reads every binder.
+
+  Reducing the ladder takes n beta steps whatever a checker does, so the test
+  is what one step costs. Substituting into the body on entry to binder k
+  copies the n − k redexes still below it, and those copies sum to **Θ(n²)**.
+  Carrying the substitution in an environment leaves the body untouched, for
+  **Θ(n)**.
+
+  N=2000 in the Lean source.
+leanfile: tests/perf/beta-ladder.lean
+export-decls: ["beta_ladder"]
+outcome: accept
+compare-perf: true

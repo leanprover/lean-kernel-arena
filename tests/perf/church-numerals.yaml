@@ -1,0 +1,21 @@
+description: |
+  The declaration to check compares
+
+      cmul (cnum n) (cnum (n+1))      and      cmul (cnum (n+1)) (cnum n)
+
+  where `cnum k` is the Church numeral `fun X s z => s (s (... z))` and
+  `cmul a b` iterates `b` as many times as `a` counts.
+
+  Both sides have the normal form with n(n+1) applications of the bound `s`.
+  Unfolding `cmul` on the left leaves `cnum n X (cnum (n+1) X s)`, where each of
+  the n occurrences of the bound function copies the redex `cnum (n+1) X s`, so
+  the normal form takes n(n+1) beta steps and shares nothing. No other delta
+  step is available, so the **Θ(n²)** measured is beta reduction under binders
+  and little else.
+
+  N=120 in the Lean source, giving a reduction depth of 14520. From the
+  `conv_eval` benchmark of András Kovács' smalltt.
+leanfile: tests/perf/church-numerals.lean
+export-decls: ["kernel_church_numerals"]
+outcome: accept
+compare-perf: true

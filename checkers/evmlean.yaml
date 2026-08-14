@@ -29,3 +29,14 @@ ref: main
 rev: 055a6b9cad082f13838a50ba92a937d347690d13
 build: npm install --no-audit --no-fund && node tools/build.js
 run: node bin/evmlean.js $IN
+<<<<<<< HEAD
+=======
+# Cannot handle the full Init.Prelude, so decline everything built on top of it
+declines:
+  - init-prelude
+  - init
+  - std
+  - mathlib
+  - cedar
+  - cslib
+>>>>>>> e1553db0d9ad58b6d7e0ca7de839191187aff0cb

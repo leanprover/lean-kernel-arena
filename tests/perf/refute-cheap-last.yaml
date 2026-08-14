@@ -1,0 +1,14 @@
+description: |
+  The declaration to check claims
+
+      (count #n, false) = (count #(n+1), true)
+
+  and must be rejected: `refute-cheap-first.lean` with the components swapped,
+  so the cheap refutation sits behind the expensive one for a checker that
+  visits components left to right.
+
+  N=200 in the Lean source. From Courant and Leroy, POPL 2026, §10.
+leanfile: tests/perf/refute-cheap-last.lean
+export-decls: ["kernel_refute_cheap_last"]
+outcome: reject
+compare-perf: true

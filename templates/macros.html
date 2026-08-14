@@ -22,13 +22,20 @@
 
 {# Result status cell with background color #}
 {% macro result_status_cell(expected, status) %}
-<td class="text-center {% if (expected == 'accept' and status == 'accepted') or (expected == 'reject' and status == 'rejected') %}{% elif status == 'declined' or status == 'error' %}bg-warning{% else %}bg-error{% endif %}">
+<td class="text-center {% if expected == 'either' %}{% elif (expected == 'accept' and status == 'accepted') or (expected == 'reject' and status == 'rejected') %}{% elif status == 'declined' or status == 'error' %}bg-warning{% else %}bg-error{% endif %}">
     {% if status == 'accepted' %}👍{% elif status == 'rejected' %}✋{% elif status == 'declined' %}🚫{% else %}💥{% endif %}
 </td>
 {% endmacro %}
 
-{# Performance cells: time, time%, memory, memory% #}
-{% macro perf_cells(result, expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time) %}
+{# Performance cells: time, time%, memory, memory%.
+   Comparisons are shown for tests marked compare-perf. The time comparison
+   cell gets a light green background when the checker is at least 10% faster
+   than the official checker. #}
+{% macro perf_cells(result, expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, compare_perf=false) %}
+{% set compared = expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
+{% set official_cpu_time = (convert_instructions_to_time(result.official.get('instructions', 0), instructions_per_second) if result.official.get('instructions', 0) > 0 and instructions_per_second > 0 else result.official.cpu_time) if compared else none %}
+{% set current_cpu_time = (convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time) if compared else none %}
+{% set show_comparison = compare_perf and official_cpu_time and current_cpu_time %}
 <td class="text-right">
     {% if result.get('instructions', 0) > 0 and instructions_per_second > 0 %}
         <span title="{{ format_instructions(result.get('instructions', 0)) }} instructions">{{ format_duration(convert_instructions_to_time(result.get('instructions', 0), instructions_per_second)) }}</span>
@@ -36,14 +43,9 @@
         {{ format_duration(result.cpu_time) }}
     {% endif %}
 </td>
-<td class="text-left">
-    {% if expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
-        {% set official_cpu_time = convert_instructions_to_time(result.official.get('instructions', 0), instructions_per_second) if result.official.get('instructions', 0) > 0 and instructions_per_second > 0 else result.official.cpu_time %}
-        {% set current_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
-        {% if official_cpu_time and official_cpu_time >= 0.05 and current_cpu_time %}
-            {% set percent_change = ((current_cpu_time - official_cpu_time) / official_cpu_time * 100) | round(0) | int %}
-            {% if percent_change > 0 %}(+{{ percent_change }}%){% elif percent_change < 0 %}({{ percent_change }}%){% else %}(0%){% endif %}
-        {% endif %}
+<td class="text-left{% if show_comparison and current_cpu_time < official_cpu_time * 0.9 %} bg-perf-good{% endif %}">
+    {% if show_comparison %}
+        ({{ format_relative_perf(current_cpu_time, official_cpu_time) }})
     {% endif %}
 </td>
 <td class="text-right">
@@ -55,9 +57,8 @@
     {% if expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
         {% set official_memory = result.official.max_rss %}
         {% set current_memory = result.max_rss %}
-        {% if official_memory and official_memory >= 200*1024*1024 and current_memory %}
-            {% set percent_change = ((current_memory - official_memory) / official_memory * 100) | round(0) | int %}
-            {% if percent_change > 0 %}(+{{ percent_change }}%){% elif percent_change < 0 %}({{ percent_change }}%){% else %}(0%){% endif %}
+        {% if compare_perf and official_memory and current_memory %}
+            ({{ format_relative_perf(current_memory, official_memory) }})
         {% endif %}
     {% endif %}
 </td>

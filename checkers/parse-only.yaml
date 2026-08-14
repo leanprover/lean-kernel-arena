@@ -1,5 +1,4 @@
-version: v4.27.0-rc1
-serious: false
+version: "4.32.2"
 description: |
   The official Lean 4 kernel in **parse-only mode**.
   
@@ -12,5 +11,7 @@ description: |
   
   Uses the same official kernel as the main checker but with `--parse-only` flag.
 dir: official
-build: lake build
+build: |
+  echo leanprover/lean4:v4.32.2 > lean-toolchain
+  lake build
 run: .lake/build/bin/kernel --parse-only "$IN"

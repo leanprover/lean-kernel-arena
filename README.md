@@ -162,6 +162,7 @@ The following resources may be useful:
 * The thesis [The Type Theory of Lean](https://github.com/digama0/lean-type-theory/releases) by Mario Carneiro is a thorough description of Lean's theory.
 * The book [Type Checking in Lean4](https://ammkrn.github.io/type_checking_in_lean4/) by Chris Bailey has good advice on on writing a Lean kernel.
 * On the [arena website](https://arena.lean-lang.org/) you can download a zipfile with the arena tests (excluding large ones).
+* The arena website also publishes a machine-readable `results.json` with all checker metadata, test metadata and individual results, useful for further analysis.
 * The [source of the tutorial tests](https://github.com/leanprover/lean-kernel-arena/blob/master/tutorial/Tutorial.lean) suggests a sequence in which to implement tests.
 
 To add a new checker implementation:
@@ -194,6 +195,8 @@ The `run` command receives the test file path via the `$IN` environment variable
   A declined test is simply ignored for the purpose of completeness and correctness. For example, a checker that does not support `native_decide` can decline to process a proof involving the `Lean.trustCompiler` axiom. This is different from rejecting the proof (you are not claiming that the proof is not valid) or erroring out (which indicates a bug in the checker).
   
 - anything else: an error in the checker
+
+If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names). Such tests are recorded as declined without running the checker at all.
 
 The arena does not automatically update the checkers; please submit new releases manually.
 

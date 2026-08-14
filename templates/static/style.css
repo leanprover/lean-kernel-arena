@@ -15,3 +15,60 @@ table th, table td {
 th.spacer-col, td.spacer-col {
   width: 100%;
 }
+
+/* Performance highlighting: dark green marks the fastest checker on a
+   perf-compared test, light green those at least 10% faster than the
+   official checker */
+.bg-perf-best { background-color: #8ed699; }
+.bg-perf-good { background-color: #d4edda; }
+
+/* Results table with sticky header row and name column: the table scrolls
+   inside its own box (position: sticky sticks to the nearest scroll
+   container, which must not be the page as long as the table needs
+   overflow-x). Sticky cells need opaque backgrounds, matching the row
+   stripes of chota's table.striped. */
+.sticky-table {
+  overflow: auto;
+  max-height: 90vh;
+}
+.sticky-table thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-color, #fff);
+  z-index: 2;
+}
+.sticky-table th:first-child,
+.sticky-table td:first-child {
+  position: sticky;
+  left: 0;
+  background-color: var(--bg-color, #fff);
+}
+.sticky-table table.striped tr:nth-of-type(2n) td:first-child {
+  background-color: var(--bg-secondary-color, #f3f3f6);
+}
+.sticky-table thead th:first-child {
+  z-index: 3;
+}
+
+/* Collapsible test group rows: each group is a tbody whose summary row
+   holds a hidden checkbox in a label; the checkbox state shows or hides
+   the remaining rows of the tbody, no JavaScript needed */
+tr.group-summary label {
+  cursor: pointer;
+  display: block;
+}
+tr.group-summary .group-toggle {
+  display: none;
+}
+tbody.group:not(:has(.group-toggle:checked)) tr:not(.group-summary) {
+  display: none;
+}
+tr.group-summary .group-arrow::before {
+  content: "▸ ";
+}
+td.group-member {
+  padding-left: 2.4em;
+}
+tbody.group:has(.group-toggle:checked) .group-arrow::before {
+  content: "▾ ";
+}
