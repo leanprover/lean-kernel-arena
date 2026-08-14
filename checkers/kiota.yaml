@@ -6,7 +6,7 @@ description: |
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: 4c92c531d9ed88e1a7d78407a3dd2cfd656e9cd6
+rev: 3d2a44a1d863329c1f1655ac6623aa61fe7bcb3c
 build: cargo build --release
 run: timeout 30s ./target/release/kiota "$IN"
 # Cannot handle full Init.Prelude yet (Nat.beq / noConfusion / matchers).
