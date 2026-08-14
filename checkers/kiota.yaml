@@ -1,19 +1,19 @@
 description: |
   **kiota** — a from-scratch Lean 4 kernel in Rust that re-derives
   K-likeness and ι instead of trusting those export fields. Not a
-  nanoda fork. Experimental fragment: large corpora declined (same
-  policy as mini) until Init.Prelude typechecks honestly.
+  nanoda fork. Experimental fragment: `Init.Prelude` typechecks; the
+  large corpora built on it are still out of reach on time and are
+  declined (same policy as mini).
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: 343dfbc6b37fe72d0a010675befa59a711df5383
+rev: 43cd5118b9ff6aeced7912d8730683fff99bb525
 build: cargo build --release
 run: timeout 30s ./target/release/kiota "$IN"
-# Full Init / mathlib still out of reach. Prelude now typechecks.
+# Only the large corpora are declined; every short test is run and reported.
 declines:
   - init
   - std
   - mathlib
   - cslib
   - cedar
-  - nested-nonuniform-param
