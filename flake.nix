@@ -13,6 +13,7 @@
           elan
           rustc
           cargo
+          llvmPackages_21.libllvm
           perf
           libffi
           libffi.dev
