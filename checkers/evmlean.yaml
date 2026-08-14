@@ -1,37 +1,48 @@
-# Draft checker definition for leanprover/lean-kernel-arena (checkers/evmlean.yaml).
+# Checker definition for leanprover/lean-kernel-arena (checkers/evmlean.yaml).
 #
-# evmlean checks Lean exports by executing a Lean-kernel fragment implemented
-# as an EVM smart contract (Solidity), run inside an in-process EVM. It
-# explores the "different host language" corner of the design space — the
-# host is a blockchain virtual machine, and acceptance can be replayed by an
-# on-chain transaction.
+# evmlean checks Lean exports by executing a Lean-kernel implementation written
+# as an EVM smart contract (Solidity), run inside an in-process EVM. It explores
+# the "different host language" corner of the design space — the host is a
+# blockchain virtual machine, and an acceptance can be replayed as an on-chain
+# transaction.
 #
-# Supported: defs/theorems/axioms/opaques, full universe algebra,
-# beta/delta/zeta/iota reduction, definitional equality with function eta,
-# structure/unit eta and proof irrelevance, inductive families (positivity,
-# elimination restrictions, K validation, recursor minor premises and rules
-# checked against independently reconstructed types), projections, quotients
-# with exact primitive signature checks, Nat literals.
-# Declines (exit 2): nested inductives, multi-type mutual groups, unsafe
-# declarations, String-literal reduction, and anything beyond its gas/step/size
-# budget.
+# Supported: defs/theorems/axioms/opaques, full universe algebra (complete imax
+# decision procedure), beta/delta/zeta/iota reduction, definitional equality
+# with function eta, structure/unit eta and proof irrelevance, inductive
+# families (positivity, elimination restrictions, K validation, recursor minor
+# premises and rules checked against independently reconstructed types),
+# multi-type mutual inductive groups, nested inductives (the nested->mutual
+# elimination is re-run inside the kernel), projections, quotients with exact
+# primitive signature checks, Nat literals with the full `reduce_nat`
+# acceleration, and String literals.
+#
+# Declines (exit 2): unsafe/partial declarations, and anything beyond its
+# gas/step/size budget. Resource exhaustion — the contract's own budget, or the
+# host EVM running out of gas or stack — is always reported as a decline, never
+# as a reject and never as a checker fault.
 description: |
   A Lean 4 kernel implemented in Solidity and executed on the Ethereum
   Virtual Machine. Accepting a proof is a metered EVM execution; the same
-  call can be replayed on any EVM chain (36.7KB deployed — sized for the
-  EIP-7907 limit). Rejects all five of the Arena's static adversarial
-  exports at the offending declaration. Declines declarations outside its
-  fragment (nested inductives, multi-type mutual groups, unsafe decls,
-  String reduction) and exports beyond its resource budget.
-version: "0.1.0"
+  call can be replayed on any EVM chain (60.9KB deployed — over today's
+  EIP-170 limit, sized for the 64KiB raise on the Glamsterdam track, so it
+  needs a devnet/L2 with a raised code-size limit to deploy for real).
+
+  Checks inductive families including multi-type mutual groups and nested
+  inductives, projections, quotients, Nat and String literals. Rejects all
+  five of the Arena's static adversarial exports at the offending
+  declaration. Declines unsafe/partial declarations and any export beyond
+  its resource budget; resource exhaustion is reported as a decline rather
+  than as a wrong verdict or a checker fault.
+version: "0.2.0"
 url: https://github.com/FawadHa1der/evm_proof_checker
 ref: main
-rev: 055a6b9cad082f13838a50ba92a937d347690d13
+rev: c15ead7999f6534fc78c4ae711c06d84175f405a
 build: npm install --no-audit --no-fund && node tools/build.js
 run: node bin/evmlean.js $IN
-<<<<<<< HEAD
-=======
-# Cannot handle the full Init.Prelude, so decline everything built on top of it
+# Module-scale exports exceed the per-run gas budget by orders of magnitude —
+# Init.Prelude alone costs billions of gas — so they are declined up front
+# rather than burning Arena CI to reach the same verdict. This is a resource
+# limit, not a fragment limit: the declarations themselves are in scope.
 declines:
   - init-prelude
   - init
@@ -39,4 +50,3 @@ declines:
   - mathlib
   - cedar
   - cslib
->>>>>>> e1553db0d9ad58b6d7e0ca7de839191187aff0cb
