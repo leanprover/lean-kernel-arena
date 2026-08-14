@@ -6,16 +6,14 @@ description: |
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: b725ce2e5a57c98948d357cee10dfbbfa1f710b6
+rev: 343dfbc6b37fe72d0a010675befa59a711df5383
 build: cargo build --release
 run: timeout 30s ./target/release/kiota "$IN"
-# Nested inductives (Lean.Syntax) still decline Init.Prelude.
+# Full Init / mathlib still out of reach. Prelude now typechecks.
 declines:
   - init
-  - init-prelude
   - std
   - mathlib
   - cslib
   - cedar
   - nested-nonuniform-param
-  - nested-unused-param
