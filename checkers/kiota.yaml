@@ -6,10 +6,10 @@ description: |
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: 3d2a44a1d863329c1f1655ac6623aa61fe7bcb3c
+rev: b725ce2e5a57c98948d357cee10dfbbfa1f710b6
 build: cargo build --release
 run: timeout 30s ./target/release/kiota "$IN"
-# Cannot handle full Init.Prelude yet (Nat.beq / noConfusion / matchers).
+# Nested inductives (Lean.Syntax) still decline Init.Prelude.
 declines:
   - init
   - init-prelude
