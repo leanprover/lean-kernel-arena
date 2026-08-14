@@ -7,7 +7,7 @@ description: |
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: 43cd5118b9ff6aeced7912d8730683fff99bb525
+rev: c2df636deb25ad9594e8a692d992b3106c09cf75
 build: cargo build --release
 run: timeout 30s ./target/release/kiota "$IN"
 # Only the large corpora are declined; every short test is run and reported.
