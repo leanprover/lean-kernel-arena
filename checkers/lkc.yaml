@@ -1,0 +1,23 @@
+description: |
+  **lkc** — an independent, from-scratch Lean 4 kernel checker written in
+  Rust. Re-derives universes, reduction, definitional equality, inductive
+  positivity, and iota (does not trust exported `k` flags or recursor RHS).
+  Experimental: sound on the downloadable arena tarball's reject tests;
+  some accept tests are still completeness misses (including
+  `RBTree.id_spec` and a few matcher/perf cases). Prelude / mathlib are
+  declined.
+version: "0.1.0"
+url: https://github.com/sankalpsthakur/lkc
+ref: main
+rev: 08f3408b5983bd89a29da9e34904ddccd06bedbf
+build: cargo build --release
+run: timeout 30s ./target/release/lkc "$IN"
+declines:
+  - init
+  - init-prelude
+  - std
+  - mathlib
+  - cslib
+  - cedar
+  - nested-nonuniform-param
+  - nested-unused-param
