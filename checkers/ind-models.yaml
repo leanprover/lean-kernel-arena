@@ -1,0 +1,20 @@
+description: |
+  [**lean-inductive-models**](https://github.com/nomeata/lean-inductive-models) is a Lean 4
+  NDJSON-to-NDJSON filter and standalone model checker. It adds an ordinary-declaration model
+  of each supported inductive while retaining the original declaration, and structurally checks
+  that the generated models correspond to their source declarations.
+
+  In the arena it runs as a checker: the input declarations are replayed through Lean's kernel
+  (`--type-check-input`), models are generated for all supported inductives and kernel-checked
+  as they are produced, and the structural checker validates the model-to-source
+  correspondence. The transformed output is discarded (`--no-output`).
+
+  Since it is built on the official Lean kernel, it is not an independent kernel
+  implementation. However, by re-deriving each inductive's recursor and reduction behavior from
+  first principles and verifying the result, it can catch a large class of potential
+  implementation bugs in the kernel's handling of inductives.
+url: https://github.com/nomeata/lean-inductive-models
+ref: main
+rev: 4242872ad850d962403a8a06ef1c058271b6e80d
+build: lake build lean-inductive-models
+run: .lake/build/bin/lean-inductive-models --quiet --type-check-input --no-output "$IN"
