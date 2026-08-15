@@ -1,0 +1,29 @@
+description: |
+  MathGraph Kernel: optimized Lean 4 proof checker by Metalogic Labs / MathGraph,
+  derived from intgrah/sokonanoda (Apache-2.0).
+url: https://github.com/metalogiclabs/mathgraph-kernel
+ref: main
+rev: 07f7d884bdc1bbd0e6d161bf541908cdf9d14e2f
+build: |
+  git clone https://github.com/intgrah/sokonanoda.git upstream
+  cd upstream
+  git checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+  python3 ../scripts/apply_a6.py
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+  ROOT=$(cd ../../../../.. && pwd)
+  "$ROOT/lka.py" build-test init-prelude
+  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
+  target/release/sokonanoda config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+run: |
+  upstream/target/release/sokonanoda upstream/config.json < "$IN" || exit 1
