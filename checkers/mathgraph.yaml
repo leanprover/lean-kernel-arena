@@ -1,6 +1,21 @@
 description: |
-  MathGraph: verifier-preserving Lean kernel optimization derived from
-  [sokonanoda](https://github.com/intgrah/sokonanoda).
+  MathGraph explores a verifier-guided approach to machine reasoning: treat
+  failed or inefficient attempts as structured residuals rather than discarded
+  search.
+
+  Each residual asks: what is the minimal refinement of the current
+  representation needed to eliminate it? Candidate refinements are tested by
+  external verification; those that survive become reusable constraints, while
+  counterexamples refine the remaining search space.
+
+  This checker applies that process to a fork of
+  [sokonanoda](https://github.com/intgrah/sokonanoda). Arena profiling exposed
+  concentrated cost in environment handling; controlled intervention and
+  ablation isolated the retained optimizations. Changes that improved local
+  measurements but failed the full semantic gate were discarded.
+
+  residual → conjecture → minimal refinement → verification → retained
+  constraint → new residual
 
   Developed by [Metalogic Labs](https://mathgraph.org/).
 url: https://github.com/metalogiclabs/sokonanoda
