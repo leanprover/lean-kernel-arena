@@ -5,9 +5,9 @@ description: |
   [nanoda](https://github.com/ammkrn/nanoda_lib).
   Inspired by
   [smalltt](https://github.com/AndrasKovacs/smalltt).
-url: https://github.com/intgrah/sokonanoda
-ref: master
-rev: 0fab8874080e379a774a9a27f7538d8a1ddd786b
+url: https://github.com/metalogiclabs/sokonanoda
+ref: mathgraph-a3
+rev: 1e209dad266d59b4d43cdea189876bc6ea551339
 build: |
   cat > config.json <<__END__
    {
