@@ -18,7 +18,7 @@ description: |
   constraint → new residual
 
   Developed by [Metalogic Labs](https://mathgraph.org/).
-url: https://github.com/metalogiclabs/sokonanoda
+url: https://github.com/metalogiclabs/mathgraph-lean-kernel
 ref: mathgraph
 rev: 1e209dad266d59b4d43cdea189876bc6ea551339
 build: |
