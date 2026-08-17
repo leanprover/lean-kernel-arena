@@ -6,8 +6,8 @@ description: |
   declined (same policy as mini).
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
-ref: fix-soundness-and-perf
-rev: 0b42e27261dfb393599743c83d7e12676361b9ec
+ref: main
+rev: 829175371f5becda1b8435639b445cb235ec63f6
 build: cargo build --release
 run: timeout 30s ./target/release/kiota "$IN"
 # Only the large corpora are declined; every short test is run and reported.
