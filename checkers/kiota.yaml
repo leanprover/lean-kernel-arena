@@ -1,10 +1,9 @@
 description: |
   **kiota** — a from-scratch Lean 4 kernel in Rust that re-derives
   K-likeness and ι instead of trusting those export fields. Not a
-  nanoda fork. Features $(ctx.id, ka, kb)$ definitional equality memoization,
-  `OfNat` numeral unpack validation, and exact arithmetic reductions.
-  Passes 97.3% (182/187) of the Lean Kernel Arena test suite including
-  all adversarial/soundness and tutorial tests. Large corpora are declined.
+  nanoda fork. Experimental fragment: `Init.Prelude` typechecks; the
+  large corpora built on it are still out of reach on time and are
+  declined (same policy as mini).
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
