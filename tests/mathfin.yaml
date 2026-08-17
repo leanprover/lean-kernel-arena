@@ -1,0 +1,40 @@
+description: |
+  [MathFin](https://github.com/formal-applied-math/formal-mathfin), a library of
+  formally verified mathematical finance built on Mathlib and
+  [brownian-motion](https://github.com/RemyDegenne/brownian-motion).
+
+  Most of MathFin imports the `Mathlib` umbrella, so rather than the whole module
+  this test exports the dependency closure of 17 named theorems, spanning the L²
+  Itô integral, Girsanov, martingale representation and the Black-Scholes PDE.
+url: https://github.com/formal-applied-math/formal-mathfin
+ref: main
+rev: 1df87ce9b7b7dfbfc57424cef8cce6cf21d9b12c
+pre-build: lake exe cache get
+module: MathFin
+export-decls:
+  # convex separation / coherent risk
+  - MathFin.exists_pos_separating_of_cone_disjoint_simplex
+  - MathFin.coherentRisk_isLUB
+  # Black-Scholes: PDE via Feynman-Kac, CRR limit, Merton dominance
+  - MathFin.bsV_satisfies_bs_pde_via_feynmanKac
+  - MathFin.binomialPrice_call_tendsto_bs_closed
+  - MathFin.bsV_le_mertonCallPrice
+  # Ito calculus
+  - MathFin.ito_formula_unrestricted
+  - MathFin.ito_formula_td_L2_bddDeriv
+  - MathFin.ito_formula_gbm
+  - MathFin.discountedGBM_eq_itoIntegral
+  - MathFin.BrownianQuadraticVariation.qv_equals_t
+  # change of measure, representation, completeness
+  - MathFin.bs_discounted_isQMartingale
+  - MathFin.itoIntegralCLM_T_surjective_onto_centered
+  - MathFin.exists_replicating_strategy
+  # SDEs
+  - MathFin.SDEExistence.picardMap_contraction
+  - MathFin.IsL2SolutionPair.uniqueness
+  # jump processes
+  - MathFin.assembly_isometry
+  - MathFin.PoissonThinning.markedPoissonMeasure_eq_prod
+outcome: accept
+compare-perf: true
+skip-on-ci: true
