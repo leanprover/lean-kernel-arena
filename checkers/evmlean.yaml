@@ -23,20 +23,21 @@
 description: |
   A Lean 4 kernel implemented in Solidity and executed on the Ethereum
   Virtual Machine. Accepting a proof is a metered EVM execution; the same
-  call can be replayed on any EVM chain (60.9KB deployed — over today's
+  call can be replayed on any EVM chain (61.5KB deployed — over today's
   EIP-170 limit, sized for the 64KiB raise on the Glamsterdam track, so it
   needs a devnet/L2 with a raised code-size limit to deploy for real).
 
   Checks inductive families including multi-type mutual groups and nested
-  inductives, projections, quotients, Nat and String literals. Rejects all
-  five of the Arena's static adversarial exports at the offending
-  declaration. Declines unsafe/partial declarations and any export beyond
+  inductives, projections, quotients, Nat and String literals. Gets all ten of the Arena's
+  static tests right: the eight adversarial ones are rejected at the
+  offending declaration, and the two that are actually valid
+  (level-index-out-of-order, sparse-name-index) are accepted. Declines unsafe/partial declarations and any export beyond
   its resource budget; resource exhaustion is reported as a decline rather
   than as a wrong verdict or a checker fault.
-version: "0.2.0"
+version: "0.3.0"
 url: https://github.com/FawadHa1der/evm_proof_checker
 ref: main
-rev: c15ead7999f6534fc78c4ae711c06d84175f405a
+rev: 47368a1541bb96dc8ed10059ed82fbfb55e52d7b
 build: npm install --no-audit --no-fund && node tools/build.js
 run: node bin/evmlean.js $IN
 # Module-scale exports exceed the per-run gas budget by orders of magnitude —
