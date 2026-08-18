@@ -1,0 +1,70 @@
+description: |
+  Proof of `False` from a generated recursor whose reduction rule drops the
+  induction hypothesis.
+
+  ### Mechanism
+
+  1.  *Definitional equality is not transitive here.*  The test builds three
+      functions `Bool → Bool` from `Acc.rec` for which a kernel reports
+      `rcA ≡ rcB` and `rcB ≡ rcC` — both by proof irrelevance on the `Acc`
+      argument, the latter after some iota steps — but `rcA ≢ rcC`, because
+      there the two `Acc` proofs have different types (`Acc (· < ·) 1` vs.
+      `Acc (· < ·) 0`).
+
+  2.  *In the affected kernels, the defeq cache closes that relation
+      transitively, but only for hash-equal terms.*  Established equalities are
+      kept in a union-find structure, and the comparison returns early, without
+      consulting it, when the hashes differ:
+
+      ~~~cpp
+      if (is_eqp(a, b))                      return true;
+      if (m_use_hash && hash(a) != hash(b))  return false;   // skips the union-find
+      ...
+      node_ref r1 = find(to_node(a));
+      node_ref r2 = find(to_node(b));
+      if (r1 == r2) return true;
+      ~~~
+
+      So whether `rcA ≡ rcC` holds depends on the hash of the surrounding term.
+      The three constants and the two paddings are picked so that the hashes
+      collide for the free variables that the affected implementations create
+      while building the minor premises of the recursor (`_ind_fresh.3`,
+      `_ind_fresh.9`), but not for the pass that builds the recursor rules
+      (`_ind_fresh.14`).
+
+  3.  *A K-like reduction is made to depend on that comparison.*
+      `Native64TwoHashGate` is a K-like inductive predicate (one parameter, four
+      `Bool` indices, one field-less constructor pinning the indices), so
+      reducing `Gate.rec … h` requires the indices of `h`'s type to be
+      definitionally equal to the ones of `Gate.intro`'s result type.
+      `Native64TwoHashOwner.step` has a recursive argument whose type is such a
+      `Gate.rec` application, which therefore reduces to `Owner` in one pass but
+      not in the other.
+
+  The resulting `Native64TwoHashOwner.rec` has a `step` minor premise expecting
+  four arguments (including the induction hypothesis) but a rule that applies it
+  to only three, so the `ih` binder swallows the next argument.  That makes the
+  `Prop`-valued `badProp` reduce to `Bool`, and a `Prop` with two
+  distinguishable inhabitants gives `False`.
+
+  Affected kernels not only accept these declarations, they also re-derive the
+  same broken recursor when replaying the export data.  This was the case for
+  the official kernel at v4.28.0, v4.29.1, v4.33.0 and nightly-2026-08-01.
+  Kernels that construct the recursor independently reject the export, mostly
+  with an error about `Native64TwoHashOwner.step` having an invalid occurrence of
+  the datatype being declared — which is also what the affected kernels reported
+  as soon as one of the hashes no longer collided.
+
+  Fixed by
+  [leanprover/lean4#14806](https://github.com/leanprover/lean4/pull/14806), which
+  replaces the union-find defeq cache with an order-independent one, so that a
+  hash collision can no longer make a comparison succeed that fails on its own.
+# Frozen as a static export file rather than generated from a Lean source: the
+# malformed `Native64TwoHashOwner.rec` is built by the kernel's own inductive-type
+# elaborator, so regenerating this test with a toolchain that no longer has the
+# defect would quietly produce a benign export (and the elaborator would not
+# accept `badProp` either, `debug.skipKernelTC` notwithstanding).  The export
+# below was produced by tests/rec-missing-ih.lean, kept next to it as the
+# reproducer, with the toolchain from tests/lean-toolchain (v4.29.1).
+file: tests/rec-missing-ih.ndjson
+outcome: reject

@@ -1,0 +1,42 @@
+description: |
+  MathGraph explores a verifier-guided approach to machine reasoning: treat
+  failed or inefficient attempts as structured residuals rather than discarded
+  search.
+
+  Each residual asks: what is the minimal refinement of the current
+  representation needed to eliminate it? Candidate refinements are tested by
+  external verification; those that survive become reusable constraints, while
+  counterexamples refine the remaining search space.
+
+  This checker applies that process to a fork of
+  [sokonanoda](https://github.com/intgrah/sokonanoda). Arena profiling exposed
+  concentrated cost in environment handling; controlled intervention and
+  ablation isolated the retained optimizations. Changes that improved local
+  measurements but failed the full semantic gate were discarded.
+
+  residual → conjecture → minimal refinement → verification → retained
+  constraint → new residual
+
+  Developed by [Metalogic Labs](https://mathgraph.org/).
+url: https://github.com/metalogiclabs/mathgraph-lean-kernel
+ref: mathgraph
+rev: 1e209dad266d59b4d43cdea189876bc6ea551339
+build: |
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init-prelude
+  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
+  target/release/sokonanoda config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+run: |
+  target/release/sokonanoda config.json < "$IN" || exit 1
