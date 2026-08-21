@@ -6,6 +6,6 @@ description: |
 version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: 51f7fecee989776bfb9c9daeac0051dbab395984
+rev: da64ada63e56e2297d4995b1fe396354ec752b08
 build: cargo build --release
 run: timeout 3600s ./target/release/kiota "$IN"
