@@ -961,6 +961,92 @@ come after a dependent data field, even if that is not used by the present proje
 -/
 bad_raw_consts mkPropStructureTest `projProp6 (Lean.mkConst ``PUnit [0]) 5
 
+/--
+A structure that is a proposition for one instantiation of its universe parameter.
+
+All of the above concerns structures that *are* propositions. A structure whose
+sort is a bare level parameter is a proposition for `u := 0` and a data type for
+every other `u`. Lean's `inductive` command refuses to declare one ("the resulting
+universe is not `Prop`, but it may be `Prop` for some parameter values"), but the
+kernel accepts it. `Sort (max u v)` poses the same question, which is why `PProd`
+and `PSigma` land in `Sort (max 1 u v)` — a dependent pair kept at the exact
+maximum of its components has to be declared this way.
+
+The recursor eliminates into `Prop` only, since the kernel cannot rule out that
+`MaybeProp` is a proposition. Whichever way a kernel answers that question while
+checking this declaration, it has to answer it the same way when the fields are
+projected out again (`projMaybeProp`) — the exemption that lets a proposition
+carry fields from any universe and the ban on projecting data out of one are a
+matched pair.
+-/
+good_decl (.inductDecl [`u] 0 [
+  { name := `MaybeProp
+    type := .sort (.param `u)
+    ctors := [
+      { name := `MaybeProp.mk
+        type :=
+          arrow (Lean.mkConst ``PUnit [.param `u]) (n := `field) <|
+          arrow (Lean.mkApp3 (Lean.mkConst ``Eq [.param `u])
+                  (Lean.mkConst ``PUnit [.param `u]) (.bvar 0) (.bvar 0)) (n := `proof) <|
+          arrow (Lean.mkConst ``True) (n := `tail) <|
+          Lean.mkConst `MaybeProp [.param `u] }] }
+  ] false)
+
+/--
+Projecting out of a structure that may or may not be a proposition.
+
+The field `MaybeProp.field` is not a proof for every `u`, but the projection is
+sound at every instantiation: `MaybeProp.{u}` is a proposition only for `u := 0`,
+and there the field's type `PUnit.{0}` is a proposition too. That is no
+coincidence. A structure that is not a `Prop` had every constructor field's
+universe checked against its resulting universe (see `typeWithTooHighTypeField`),
+here `u ≤ u`, and such an inequality survives instantiation — so wherever the
+structure does turn out to be a proposition, so do all of its fields.
+
+That argument only holds if both checks answer "is this a proposition?" the same
+way. Waiving the field universe bound (`predWithTypeField`) and forbidding data
+projections (`projProp2`) are two halves of one rule, and a kernel that is
+generous when declaring the inductive and strict when checking the projection
+admits a data field into a proposition — which proof irrelevance then collapses,
+giving a proof of `False`.
+
+Erring in the other direction is safe but incomplete, and that is what happens
+here: a kernel that asks "could this be a proposition?" and then demands that the
+field be *definitely* a proof rejects a legitimate declaration.
+-/
+good_raw_consts #[
+  .defnInfo {
+    name := `projMaybeProp
+    levelParams := [`u]
+    type := arrow (Lean.mkConst `MaybeProp [.param `u]) (Lean.mkConst ``PUnit [.param `u])
+    value :=
+      .lam `x (binderInfo := .default) (Lean.mkConst `MaybeProp [.param `u]) <|
+      .proj `MaybeProp 0 (.bvar 0)
+    hints := .opaque
+    safety := .safe
+  }]
+
+/--
+The same, for a projection that only has to step over such a field.
+
+`MaybeProp.tail` is a proof for every `u`, so the field asked for here is
+unobjectionable even under the mistaken reading. But reaching it means walking
+past `field`, which `proof` depends on, and that is where the check on a genuine
+proposition (`projProp6`) fires. A kernel that rejects `projMaybeProp` therefore
+rejects this one as well, at field 0 rather than at field 2.
+-/
+good_raw_consts #[
+  .defnInfo {
+    name := `projMaybePropPast
+    levelParams := [`u]
+    type := arrow (Lean.mkConst `MaybeProp [.param `u]) (Lean.mkConst ``True)
+    value :=
+      .lam `x (binderInfo := .default) (Lean.mkConst `MaybeProp [.param `u]) <|
+      .proj `MaybeProp 2 (.bvar 0)
+    hints := .opaque
+    safety := .safe
+  }]
+
 inductive ProjDataIndex : N → Prop
   | mk (n : N) (p : True) : ProjDataIndex n
 
