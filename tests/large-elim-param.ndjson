@@ -1,48 +1,87 @@
-{"meta":{"format":{"version":"3.1.0"}}}
-{"in": 1, "str": {"pre": 0, "str": "False"}}
-{"in": 2, "str": {"pre": 0, "str": "True"}}
-{"in": 3, "str": {"pre": 2, "str": "intro"}}
-{"in": 4, "str": {"pre": 0, "str": "u"}}
-{"in": 5, "str": {"pre": 0, "str": "MyBool"}}
-{"in": 6, "str": {"pre": 5, "str": "tt"}}
-{"in": 7, "str": {"pre": 5, "str": "ff"}}
-{"in": 8, "str": {"pre": 5, "str": "rec"}}
-{"in": 9, "str": {"pre": 0, "str": "cast"}}
-{"in": 10, "str": {"pre": 0, "str": "false_proof"}}
-{"in": 11, "str": {"pre": 0, "str": "motive"}}
-{"in": 12, "str": {"pre": 0, "str": "val"}}
-{"in": 13, "str": {"pre": 0, "str": "x"}}
-{"il": 1, "succ": 0}
-{"il": 3, "param": 4}
-{"ie": 1, "sort": 0}
-{"inductive": {"types": [{"name": 1, "levelParams": [], "type": 1, "numParams": 0, "numIndices": 0, "all": [1], "ctors": [], "numNested": 0, "isRec": false, "isUnsafe": false, "isReflexive": false}], "ctors": [], "recs": []}}
-{"ie": 5, "const": {"name": 2, "us": []}}
-{"inductive": {"types": [{"name": 2, "levelParams": [], "type": 1, "numParams": 0, "numIndices": 0, "all": [2], "ctors": [3], "numNested": 0, "isRec": false, "isUnsafe": false, "isReflexive": false}], "ctors": [{"name": 3, "levelParams": [], "type": 5, "induct": 2, "cidx": 0, "numParams": 0, "numFields": 0, "isUnsafe": false}], "recs": []}}
-{"ie": 3, "sort": 3}
-{"ie": 10, "const": {"name": 5, "us": [3]}}
-{"inductive": {"types": [{"name": 5, "levelParams": [4], "type": 3, "numParams": 0, "numIndices": 0, "all": [5], "ctors": [6, 7], "numNested": 0, "isRec": false, "isUnsafe": false, "isReflexive": false}], "ctors": [{"name": 6, "levelParams": [4], "type": 10, "induct": 5, "cidx": 0, "numParams": 0, "numFields": 0, "isUnsafe": false}, {"name": 7, "levelParams": [4], "type": 10, "induct": 5, "cidx": 1, "numParams": 0, "numFields": 0, "isUnsafe": false}], "recs": []}}
-{"ie": 2, "sort": 1}
-{"ie": 4, "const": {"name": 1, "us": []}}
-{"ie": 6, "const": {"name": 3, "us": []}}
-{"ie": 7, "const": {"name": 5, "us": [0]}}
-{"ie": 8, "const": {"name": 6, "us": [0]}}
-{"ie": 9, "const": {"name": 7, "us": [0]}}
-{"ie": 11, "forallE": {"name": 0, "type": 7, "body": 1, "binderInfo": "default"}}
-{"ie": 12, "bvar": 0}
-{"ie": 13, "app": {"fn": 12, "arg": 8}}
-{"ie": 14, "bvar": 1}
-{"ie": 15, "app": {"fn": 14, "arg": 9}}
-{"ie": 16, "forallE": {"name": 12, "type": 13, "body": 15, "binderInfo": "default"}}
-{"ie": 17, "forallE": {"name": 11, "type": 11, "body": 16, "binderInfo": "default"}}
-{"ie": 18, "lam": {"name": 12, "type": 13, "body": 12, "binderInfo": "default"}}
-{"ie": 19, "lam": {"name": 11, "type": 11, "body": 18, "binderInfo": "default"}}
-{"def": {"name": 9, "levelParams": [], "type": 17, "value": 19, "hints": "opaque", "safety": "safe", "all": [9]}}
-{"ie": 20, "const": {"name": 8, "us": [1, 0]}}
-{"ie": 21, "lam": {"name": 13, "type": 7, "body": 1, "binderInfo": "default"}}
-{"ie": 22, "app": {"fn": 20, "arg": 21}}
-{"ie": 23, "app": {"fn": 22, "arg": 5}}
-{"ie": 24, "app": {"fn": 23, "arg": 4}}
-{"ie": 25, "const": {"name": 9, "us": []}}
-{"ie": 26, "app": {"fn": 25, "arg": 24}}
-{"ie": 27, "app": {"fn": 26, "arg": 6}}
-{"thm": {"name": 10, "levelParams": [], "type": 4, "value": 27, "all": [10]}}
+{"meta":{"exporter":{"name":"lean4export","version":"3.1.0"},"format":{"version":"3.1.0"},"lean":{"githash":"f72c35b3f637c8c6571d353742168ab66cc22c00","version":"4.29.1"}}}
+{"in":1,"str":{"pre":0,"str":"False"}}
+{"ie":0,"sort":0}
+{"in":2,"str":{"pre":1,"str":"rec"}}
+{"in":3,"str":{"pre":0,"str":"u"}}
+{"il":1,"param":3}
+{"in":4,"str":{"pre":0,"str":"motive"}}
+{"in":5,"str":{"pre":0,"str":"t"}}
+{"const":{"name":1,"us":[]},"ie":1}
+{"ie":2,"sort":1}
+{"forallE":{"binderInfo":"default","body":2,"name":5,"type":1},"ie":3}
+{"bvar":1,"ie":4}
+{"bvar":0,"ie":5}
+{"app":{"arg":5,"fn":4},"ie":6}
+{"forallE":{"binderInfo":"default","body":6,"name":5,"type":1},"ie":7}
+{"forallE":{"binderInfo":"default","body":7,"name":4,"type":3},"ie":8}
+{"inductive":{"ctors":[],"recs":[{"all":[1],"isUnsafe":false,"k":false,"levelParams":[3],"name":2,"numIndices":0,"numMinors":0,"numMotives":1,"numParams":0,"rules":[],"type":8}],"types":[{"all":[1],"ctors":[],"isRec":false,"isReflexive":false,"isUnsafe":false,"levelParams":[],"name":1,"numIndices":0,"numNested":0,"numParams":0,"type":0}]}}
+{"in":6,"str":{"pre":0,"str":"MyBool"}}
+{"in":7,"str":{"pre":6,"str":"tt"}}
+{"in":8,"str":{"pre":6,"str":"ff"}}
+{"const":{"name":6,"us":[1]},"ie":9}
+{"in":9,"str":{"pre":6,"str":"rec"}}
+{"in":10,"str":{"pre":0,"str":"v"}}
+{"il":2,"param":10}
+{"in":11,"str":{"pre":0,"str":"a"}}
+{"ie":10,"sort":2}
+{"forallE":{"binderInfo":"default","body":10,"name":11,"type":9},"ie":11}
+{"const":{"name":7,"us":[1]},"ie":12}
+{"app":{"arg":12,"fn":5},"ie":13}
+{"const":{"name":8,"us":[1]},"ie":14}
+{"app":{"arg":14,"fn":4},"ie":15}
+{"bvar":3,"ie":16}
+{"app":{"arg":5,"fn":16},"ie":17}
+{"forallE":{"binderInfo":"default","body":17,"name":5,"type":9},"ie":18}
+{"forallE":{"binderInfo":"default","body":18,"name":11,"type":15},"ie":19}
+{"forallE":{"binderInfo":"default","body":19,"name":11,"type":13},"ie":20}
+{"forallE":{"binderInfo":"implicit","body":20,"name":4,"type":11},"ie":21}
+{"in":12,"str":{"pre":0,"str":"mtt"}}
+{"in":13,"str":{"pre":0,"str":"mff"}}
+{"ie":22,"lam":{"binderInfo":"default","body":4,"name":13,"type":15}}
+{"ie":23,"lam":{"binderInfo":"default","body":22,"name":12,"type":13}}
+{"ie":24,"lam":{"binderInfo":"implicit","body":23,"name":4,"type":11}}
+{"ie":25,"lam":{"binderInfo":"default","body":5,"name":13,"type":15}}
+{"ie":26,"lam":{"binderInfo":"default","body":25,"name":12,"type":13}}
+{"ie":27,"lam":{"binderInfo":"implicit","body":26,"name":4,"type":11}}
+{"inductive":{"ctors":[{"cidx":0,"induct":6,"isUnsafe":false,"levelParams":[3],"name":7,"numFields":0,"numParams":0,"type":9},{"cidx":1,"induct":6,"isUnsafe":false,"levelParams":[3],"name":8,"numFields":0,"numParams":0,"type":9}],"recs":[{"all":[6],"isUnsafe":false,"k":false,"levelParams":[10,3],"name":9,"numIndices":0,"numMinors":2,"numMotives":1,"numParams":0,"rules":[{"ctor":7,"nfields":0,"rhs":24},{"ctor":8,"nfields":0,"rhs":27}],"type":21}],"types":[{"all":[6],"ctors":[7,8],"isRec":false,"isReflexive":false,"isUnsafe":false,"levelParams":[3],"name":6,"numIndices":0,"numNested":0,"numParams":0,"type":2}]}}
+{"in":14,"str":{"pre":0,"str":"myCast"}}
+{"const":{"name":6,"us":[0]},"ie":28}
+{"forallE":{"binderInfo":"default","body":0,"name":11,"type":28},"ie":29}
+{"const":{"name":7,"us":[0]},"ie":30}
+{"app":{"arg":30,"fn":5},"ie":31}
+{"const":{"name":8,"us":[0]},"ie":32}
+{"app":{"arg":32,"fn":4},"ie":33}
+{"forallE":{"binderInfo":"default","body":33,"name":11,"type":31},"ie":34}
+{"forallE":{"binderInfo":"implicit","body":34,"name":4,"type":29},"ie":35}
+{"in":15,"str":{"pre":0,"str":"val"}}
+{"ie":36,"lam":{"binderInfo":"default","body":5,"name":15,"type":31}}
+{"ie":37,"lam":{"binderInfo":"implicit","body":36,"name":4,"type":29}}
+{"def":{"all":[14],"hints":"opaque","levelParams":[],"name":14,"safety":"safe","type":35,"value":37}}
+{"in":16,"str":{"pre":0,"str":"True"}}
+{"in":17,"str":{"pre":16,"str":"intro"}}
+{"const":{"name":16,"us":[]},"ie":38}
+{"in":18,"str":{"pre":16,"str":"rec"}}
+{"forallE":{"binderInfo":"default","body":2,"name":5,"type":38},"ie":39}
+{"in":19,"str":{"pre":0,"str":"intro"}}
+{"const":{"name":17,"us":[]},"ie":40}
+{"app":{"arg":40,"fn":5},"ie":41}
+{"bvar":2,"ie":42}
+{"app":{"arg":5,"fn":42},"ie":43}
+{"forallE":{"binderInfo":"default","body":43,"name":5,"type":38},"ie":44}
+{"forallE":{"binderInfo":"default","body":44,"name":19,"type":41},"ie":45}
+{"forallE":{"binderInfo":"implicit","body":45,"name":4,"type":39},"ie":46}
+{"ie":47,"lam":{"binderInfo":"default","body":5,"name":19,"type":41}}
+{"ie":48,"lam":{"binderInfo":"default","body":47,"name":4,"type":39}}
+{"inductive":{"ctors":[{"cidx":0,"induct":16,"isUnsafe":false,"levelParams":[],"name":17,"numFields":0,"numParams":0,"type":38}],"recs":[{"all":[16],"isUnsafe":false,"k":true,"levelParams":[3],"name":18,"numIndices":0,"numMinors":1,"numMotives":1,"numParams":0,"rules":[{"ctor":17,"nfields":0,"rhs":48}],"type":46}],"types":[{"all":[16],"ctors":[17],"isRec":false,"isReflexive":false,"isUnsafe":false,"levelParams":[],"name":16,"numIndices":0,"numNested":0,"numParams":0,"type":0}]}}
+{"in":20,"str":{"pre":0,"str":"false_proof"}}
+{"const":{"name":14,"us":[]},"ie":49}
+{"il":3,"succ":0}
+{"const":{"name":9,"us":[3,0]},"ie":50}
+{"in":21,"str":{"pre":0,"str":"x"}}
+{"ie":51,"lam":{"binderInfo":"default","body":0,"name":21,"type":28}}
+{"app":{"arg":51,"fn":50},"ie":52}
+{"app":{"arg":38,"fn":52},"ie":53}
+{"app":{"arg":1,"fn":53},"ie":54}
+{"app":{"arg":54,"fn":49},"ie":55}
+{"app":{"arg":40,"fn":55},"ie":56}
+{"thm":{"all":[20],"levelParams":[],"name":20,"type":1,"value":56}}
