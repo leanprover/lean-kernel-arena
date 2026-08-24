@@ -3,7 +3,7 @@ import all Lean.Environment
 import Lean
 
 public section
-open Lean Elab Command
+open Lean
 
 /-- Declared as a `Type`, so everything below is ordinary, legal Lean. -/
 inductive NewBool : Type where | tt | ff
