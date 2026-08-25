@@ -1,0 +1,30 @@
+description: |
+  Proof of `False` from a constructor of an inductive type that does not exist.
+
+  The export contains `False` exactly as the prelude has it — an empty
+  `Prop`-valued inductive with no constructors, its `ctors` field is the empty
+  list — together with its ordinary `False.rec`.  Smuggled into the same
+  inductive block is a constructor named `rogue`, of type `False`, with no
+  parameters and no fields, whose `induct` field names `Orphan`, a name for
+  which the export has no declaration at all.  The theorem `inconsistent : False`
+  is then simply `rogue`.
+
+  A checker must derive the constructors of an inductive group from the
+  inductive declarations and reject any exported constructor that is not one of
+  them; here that fails because `False` has no constructors, and the inductive
+  type `rogue` claims to come from does not exist.  A checker that instead
+  registers exported constructors as given — or that only checks constructors
+  whose `induct` field points at a declaration it knows — ends up with an
+  inhabitant of the genuine empty type.
+
+  This is the constructor-side counterpart of `orphan-rec`: in both cases the
+  bogus declaration escapes by not being attached to any inductive declaration
+  that the checker verifies, rather than by disagreeing with one.
+# Hand-written export file: `lean4export` cannot produce it.  It emits the
+# constructors of an inductive block by looking up the `ctors` field of the
+# inductive declarations, so a constructor that no inductive type claims is
+# never exported.  This file is tests/extra-rec.ndjson (produced with the
+# toolchain from tests/lean-toolchain, v4.29.1, see tests/extra-rec.lean) with
+# the rogue recursor replaced by the rogue constructor.
+file: tests/orphan-ctor.ndjson
+outcome: reject
