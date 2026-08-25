@@ -1,0 +1,19 @@
+description: |
+  Proof of `False` from an extra recursor not claiming to be tied to any 
+  inductive.
+
+  A checker must derive the recursors of an inductive group from an inductive
+  declaration and reject any exported recursor that is not tied to an 
+  inductive type. 
+
+  The export contains `False` exactly as the prelude has it — an empty
+  `Prop`-valued inductive with no constructors — together with its ordinary
+  `False.rec`. The theorem `inconsistent : False` is then simply
+  `rogue`.
+# Frozen as a static export file: the recursor is injected with the private,
+# kernel-bypassing `Environment.lakeAdd`, which is liable to change, whereas this
+# export is small and needs to stay exactly as it is.  It was produced by
+# tests/rec-orphan-empty.lean, kept next to it as the reproducer, with the toolchain
+# from tests/lean-toolchain (v4.29.1).
+file: tests/rec-orphan-empty.ndjson
+outcome: reject
