@@ -74,6 +74,19 @@ bad_decl (.thmDecl {
   value := arrow (.sort 0) (.bvar 0)
 })
 
+theorem pImpliesP (p : Prop) (h : p) : p := h
+
+/-- A theorem can refer to another theorem -/
+good_thm thmProof : ∀(p : Prop), (p → p) → (p → p) := fun p => pImpliesP (p → p)
+
+/-- A theorem cannot refer to itself -/
+bad_decl (.thmDecl {
+  name := `selfProof
+  levelParams := []
+  type := .forallE `p (.sort 0) (.bvar 0) .default
+  value := Lean.mkConst `selfProof
+})
+
 /-- Some level computation -/
 good_decl (.defnDecl {
     name := `levelComp1
@@ -145,14 +158,14 @@ good_def levelMaxAssoc.{u, v, w} :
 /--
 Level equality: `max` is idempotent (`max u u ≈ u`).
 -/
-good_decl 
+good_decl
   -- elaboration would simplify it if we just wrote
   -- def levelMaxIdem : Sort (u + 1) := Sort (max u u)
   (.defnDecl {
     name := `levelMaxIdem
     levelParams := [`u]
     type := .sort (.succ (.param `u))
-    value := .sort (.max (.param `u) (.param `u)) 
+    value := .sort (.max (.param `u) (.param `u))
     hints := .opaque
     safety := .safe
   })
