@@ -1547,7 +1547,7 @@ partial def partialLoop : False := partialLoop
 ```
 
 The reason is that the Lean's *elaborator* only allows `partial def` to be an inhabited type.
-The kernel doesn't care about this in the.
+The kernel does not ensure that `.partial` types are inhabited.
 -/
 run_meta Lean.addDecl (.mutualDefnDecl [{
   name := `partialLoop
