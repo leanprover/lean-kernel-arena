@@ -82,6 +82,9 @@ jobs:
 
   select-checkers:
     name: Select checkers
+    # Nothing runs until the tag has been accepted, so a rejected round
+    # tag costs half a minute rather than a full build
+    needs: round-info
     runs-on: ubuntu-latest
     outputs:
       checkers: ${{ steps.select.outputs.checkers }}
@@ -200,6 +203,9 @@ jobs:
 
   tutorial:
     name: Build tutorial page
+    # Nothing runs until the tag has been accepted, so a rejected round
+    # tag costs half a minute rather than a full build
+    needs: round-info
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -237,6 +243,9 @@ jobs:
 
   test-stats:
     name: Build test stats and tarball
+    # Nothing runs until the tag has been accepted, so a rejected round
+    # tag costs half a minute rather than a full build
+    needs: round-info
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
