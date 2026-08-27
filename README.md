@@ -200,6 +200,64 @@ If it is already known that a checker cannot handle a test, and running it would
 
 The arena does not automatically update the checkers; please submit new releases manually.
 
+## Rounds
+
+The arena runs in **rounds**. <https://arena.lean-lang.org> shows the round
+currently in progress, rebuilt whenever checkers or tests change. Closing a
+round archives it unchanged under
+<https://arena.lean-lang.org/round/>, so that results stay
+referenceable even as checkers, tests and the Lean version they are measured
+against move on.
+
+Rounds are named after a year and a month, e.g. `2026-10`, but are closed
+whenever it seems right rather than on a schedule.
+
+### Closing a round
+
+Push a tag `round-<name>`:
+
+```bash
+git tag round-2026-10
+git push origin round-2026-10
+```
+
+This runs the full CI build (no tests are skipped), and then:
+
+1. reserves a DOI on Zenodo,
+2. builds the site with the round name and DOI baked in,
+3. creates the GitHub release `round-2026-10` with three assets, each named
+   after the round: the whole site as `lean-arena-round-2026-10-site.tar.gz`,
+   the raw results as `lean-arena-round-2026-10-results.json`, and the test
+   suite as `lean-arena-round-2026-10-tests.tar.gz`,
+4. uploads those to Zenodo as a draft deposition,
+5. reassembles `/round/` from all round releases and deploys the site,
+6. publishes the Zenodo record, which mints the DOI.
+
+Publishing cannot be undone, so it happens last, once everything else has
+succeeded. If an earlier step fails, the draft deposition is discarded again
+and no DOI is minted.
+
+Each round is deposited as a new version of the previous one, so all rounds
+share a concept DOI that resolves to the most recent round, next to their
+individual per-round DOIs. The deposition id needed for this is recorded in
+each round's own `results.json`.
+
+### Trying it out
+
+A tag `test-round-<name>` runs exactly the same thing, but against
+[sandbox.zenodo.org](https://sandbox.zenodo.org) and without deploying the
+site. Delete the tag and the GitHub release afterwards and nothing remains.
+The tag does not have to be on `master`, so a change to the round machinery
+can be exercised end to end while it is still a pull request.
+
+CI needs two secrets: `ZENODO_TOKEN` and `ZENODO_SANDBOX_TOKEN`, each a
+personal access token with the `deposit:write` and `deposit:actions` scopes,
+from zenodo.org and sandbox.zenodo.org respectively.
+
+The deposition metadata (authors, license, keywords) lives in
+[`.zenodo.json`](.zenodo.json); title, version and publication date are filled
+in per round.
+
 ## Fair Play
 
 Checkers are not run in a sandbox. We assume good faith from all contributors. The goal is to collaboratively improve Lean kernel implementations, not to exploit the test environment. Malicious submissions will be rejected.

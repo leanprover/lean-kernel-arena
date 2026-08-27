@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Rounds - Lean Kernel Arena{% endblock %}
+
+{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / Rounds{% endblock %}
+
+{# This page *is* the round index, so it does not link to itself #}
+{% block round_line %}{% endblock %}
+
+{% block style %}
+td.round-name {
+    white-space: nowrap;
+}
+{% endblock %}
+
+{% block content %}
+<section>
+    <p>
+        The Lean Kernel Arena runs in <strong>rounds</strong>. The
+        <a href="{{ root_path }}">main page</a> shows the round currently in
+        progress, which is rebuilt whenever checkers or tests change. When a
+        round is closed, its site is archived here unchanged, together with the
+        raw results and the test suite it was run against.
+    </p>
+
+    <p>
+        Results are only really comparable <em>within</em> a round: checkers,
+        tests and the Lean version they are measured against all move between
+        rounds, and the timings depend on the machine the round happened to run
+        on.
+    </p>
+</section>
+
+<section>
+    <header>
+        <h3>Closed rounds</h3>
+    </header>
+    {% if rounds %}
+    <div style="overflow-x:auto">
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Round</th>
+                <th>Closed</th>
+                <th class="text-right">Checkers</th>
+                <th class="text-right">Tests</th>
+                <th>Downloads</th>
+                <th>Citation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for round in rounds %}
+            <tr>
+                <td class="round-name"><a href="{{ round.name }}/">{{ round.name }}</a></td>
+                <td>{{ round.timestamp or '-' }}</td>
+                <td class="text-right">{{ round.checker_count }}</td>
+                <td class="text-right">{{ round.test_count }}</td>
+                <td>
+                    <a href="{{ round.name }}/results.json" title="Checker metadata, test metadata and all individual results">results.json</a>
+                    ({{ format_memory(round.results_json_size) }})
+                    {% if round.tarball_size %}
+                    · <a href="{{ round.name }}/lean-arena-tests.tar.gz" title="The test suite this round was run against">tests</a>
+                    ({{ format_memory(round.tarball_size) }})
+                    {% endif %}
+                    · <a href="{{ round.release_url }}">release</a>
+                </td>
+                <td>
+                    {% if round.doi %}
+                    <a href="https://doi.org/{{ round.doi }}"><tt>{{ round.doi }}</tt></a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="text-grey">No rounds have been closed yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

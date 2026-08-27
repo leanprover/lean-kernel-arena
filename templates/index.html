@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 
-{% block static_path %}{% endblock %}
-
 {# One test row in the Tests table; group members are shown indented, without the group prefix #}
 {% macro test_row(test, group) %}
             <tr>
@@ -279,6 +277,33 @@ table thead th {
     <p>
         We are interested in extending our test suite, in particular tests that should be rejected are a useful help for authors of new kernel checkers.
     </p>
+
+</section>
+
+<section>
+    <header>
+        <h3>Rounds</h3>
+    </header>
+
+    <p>
+        {% if build_info.round %}
+        This page is the archived <strong>round {{ build_info.round }}</strong>, closed on {{ build_info.timestamp }}. It is not updated any more; the round currently in progress and all other rounds are listed on the <a href="{{ rounds_url }}">rounds page</a>.
+        {% else %}
+        The arena runs in rounds. This page shows the <strong>round currently in progress</strong>, rebuilt whenever checkers or tests change; results from earlier, closed rounds are archived on the <a href="{{ rounds_url }}">rounds page</a>.
+        {% endif %}
+        Results are only really comparable within a round, since checkers, tests and the Lean version they are measured against all move between rounds.
+    </p>
+
+    {% if build_info.doi %}
+    <div class="citation">
+        <p>
+            This round is archived on Zenodo and can be cited as:
+        </p>
+        <p>
+            <code>Lean Kernel Arena, Round {{ build_info.round }}. <a href="https://doi.org/{{ build_info.doi }}">https://doi.org/{{ build_info.doi }}</a></code>
+        </p>
+    </div>
+    {% endif %}
 
 </section>
 {% endblock %}

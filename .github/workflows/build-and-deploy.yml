@@ -3,6 +3,14 @@ name: Build and Deploy Site
 on:
   workflow_dispatch: # Manual trigger, also deploys the site
   pull_request: # Run on pull requests
+  push:
+    tags:
+      # Closes a round: builds the site from scratch, publishes it as a release
+      # and deposits it on Zenodo for a DOI. `test-round-*` does the same
+      # against sandbox.zenodo.org, so the tag and release can be deleted again
+      # without leaving traces.
+      - 'round-*'
+      - 'test-round-*'
 
 permissions:
   contents: read
@@ -12,6 +20,55 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  round-info:
+    name: Determine round
+    runs-on: ubuntu-latest
+    outputs:
+      # 'true' when this build closes a round (i.e. runs off a round tag)
+      is_round: ${{ steps.round.outputs.is_round }}
+      # The round name, e.g. 2026-10 (the tag without its prefix)
+      round: ${{ steps.round.outputs.round }}
+      # 'true' for test rounds, which use sandbox.zenodo.org and are published
+      # as GitHub pre-releases
+      sandbox: ${{ steps.round.outputs.sandbox }}
+      # Whether this build is deployed to GitHub Pages
+      deploy: ${{ steps.round.outputs.deploy }}
+    steps:
+      - name: Determine round from the tag
+        id: round
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "Not a tag build; this is the round in progress"
+            {
+              echo "is_round=false"
+              echo "round="
+              echo "sandbox=false"
+              echo "deploy=${{ github.event_name == 'workflow_dispatch' }}"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$tag" in
+            test-round-*) sandbox=true;  round="${tag#test-round-}" ;;
+            round-*)      sandbox=false; round="${tag#round-}" ;;
+            *) echo "::error::Tag $tag is not a round tag"; exit 1 ;;
+          esac
+          # Rounds are named after a year and a month, e.g. 2026-10
+          if ! printf '%s' "$round" | grep -qE '^[0-9]{4}-[0-9]{2}$'; then
+            echo "::error::Round name '$round' (from tag $tag) is not of the form YYYY-MM"
+            exit 1
+          fi
+          echo "Closing round $round (sandbox=$sandbox)"
+          # A test round must not replace the live site; it only exercises the
+          # release and Zenodo path.
+          if [ "$sandbox" = true ]; then deploy=false; else deploy=true; fi
+          {
+            echo "is_round=true"
+            echo "round=$round"
+            echo "sandbox=$sandbox"
+            echo "deploy=$deploy"
+          } >> "$GITHUB_OUTPUT"
+
   select-checkers:
     name: Select checkers
     runs-on: ubuntu-latest
@@ -113,7 +170,7 @@ jobs:
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Generate tests
-        run: ./lka.py build-test --skip-declined-by "$CHECKER" ${{ github.event_name != 'workflow_dispatch' && '--skip-ci' || '' }}
+        run: ./lka.py build-test --skip-declined-by "$CHECKER" ${{ github.event_name == 'pull_request' && '--skip-ci' || '' }}
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Run checker on tests
@@ -188,7 +245,7 @@ jobs:
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Generate tests
-        run: ./lka.py build-test ${{ github.event_name != 'workflow_dispatch' && '--skip-ci' || '' }}
+        run: ./lka.py build-test ${{ github.event_name == 'pull_request' && '--skip-ci' || '' }}
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Build test tarball
@@ -211,19 +268,91 @@ jobs:
           name: test-tarball
           path: _out/lean-arena-tests.tar.gz
 
+  zenodo-reserve:
+    name: Reserve DOI on Zenodo
+    needs: [round-info, check, tutorial, test-stats]
+    # Only for rounds, and only once the measurements are in: a reserved DOI
+    # that is never published leaves a draft deposition behind.
+    if: ${{ !cancelled() && needs.round-info.outputs.is_round == 'true' && needs.check.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      doi: ${{ steps.reserve.outputs.doi }}
+      deposition_id: ${{ steps.reserve.outputs.deposition_id }}
+      bucket: ${{ steps.reserve.outputs.bucket }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ROUND: ${{ needs.round-info.outputs.round }}
+      SANDBOX: ${{ needs.round-info.outputs.sandbox }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # Each round is deposited as a new version of the previous round, so that
+      # all rounds share one concept DOI that resolves to the newest round.
+      # The previous round records its deposition id in its own results.json.
+      - name: Find the previous round's deposition
+        id: previous
+        run: |
+          if [ "$SANDBOX" = true ]; then prefix=test-round-; else prefix=round-; fi
+          # grep finds nothing before the first round exists, and pipefail
+          # would turn that into a failure
+          previous=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | { grep "^${prefix}[0-9]" || true; } \
+            | { grep -v "^${GITHUB_REF_NAME}$" || true; } \
+            | sort -r | head -1)
+          if [ -z "$previous" ]; then
+            echo "No previous round; this is the first deposition"
+            echo "deposition=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Previous round: $previous"
+          gh release download "$previous" --pattern '*-results.json' --dir _previous
+          deposition=$(jq -r '.meta.zenodo_deposition // empty' _previous/*-results.json)
+          if [ -z "$deposition" ]; then
+            echo "::error::Round $previous has no Zenodo deposition recorded in its results.json"
+            exit 1
+          fi
+          echo "Previous deposition: $deposition"
+          echo "deposition=$deposition" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft deposition and reserve a DOI
+        id: reserve
+        run: |
+          args=()
+          if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
+          args+=(reserve --round "$ROUND")
+          if [ -n "$PREVIOUS" ]; then args+=(--previous-deposition "$PREVIOUS"); fi
+          .github/zenodo.py "${args[@]}"
+        env:
+          PREVIOUS: ${{ steps.previous.outputs.deposition }}
+          ZENODO_TOKEN: ${{ needs.round-info.outputs.sandbox == 'true' && secrets.ZENODO_SANDBOX_TOKEN || secrets.ZENODO_TOKEN }}
+
   build-site:
     name: Build and deploy site
-    needs: [check, tutorial, test-stats]
+    needs: [round-info, check, tutorial, test-stats, zenodo-reserve]
     # Run even if some checker jobs failed, so the site (including the failures)
     # is still built and deployed; a final step below then fails this job if any
-    # checker failed.
-    if: ${{ !cancelled() && needs.check.result != 'skipped' }}
+    # checker failed. zenodo-reserve is skipped for non-round builds, which is
+    # covered by !cancelled().
+    if: ${{ !cancelled() && needs.check.result != 'skipped' && needs.zenodo-reserve.result != 'failure' }}
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write # to create the release for a round
       pages: write
       id-token: write
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # A round is only stamped into the site, released and deposited once its
+      # DOI has been reserved, which in turn requires every checker to have
+      # succeeded. A round build with a failing checker still builds and
+      # deploys the site (and fails at the end), but publishes nothing.
+      ROUND_READY: ${{ needs.round-info.outputs.is_round == 'true' && needs.zenodo-reserve.result == 'success' }}
+      ROUND: ${{ needs.round-info.outputs.round }}
+      SANDBOX: ${{ needs.round-info.outputs.sandbox }}
 
     steps:
       - name: Checkout repository
@@ -239,7 +368,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Pages
-        if: github.event_name == 'workflow_dispatch'
+        if: needs.round-info.outputs.deploy == 'true'
         uses: actions/configure-pages@v6
 
       - name: Setup nix shell
@@ -275,7 +404,91 @@ jobs:
           path: _tarball
 
       - name: Generate website
-        run: ./lka.py build-site --tarball _tarball/lean-arena-tests.tar.gz
+        run: |
+          args=(--tarball _tarball/lean-arena-tests.tar.gz)
+          if [ "$ROUND_READY" = true ]; then
+            args+=(--round "$ROUND" --doi "$DOI" --zenodo-deposition "$DEPOSITION")
+          fi
+          ./lka.py build-site "${args[@]}"
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        env:
+          DOI: ${{ needs.zenodo-reserve.outputs.doi }}
+          DEPOSITION: ${{ needs.zenodo-reserve.outputs.deposition_id }}
+
+      # Publish the round: the site as one tarball, plus results.json and the
+      # test suite separately, which are the two things people actually want to
+      # download. Every asset is named after its round, since they are read far
+      # away from the release page that would otherwise say which round they
+      # are. The site tarball leaves the other two out; the copy assembled
+      # under /round/<name>/ below puts them back under the names the archived
+      # page links to.
+      - name: Pack the round
+        if: env.ROUND_READY == 'true'
+        run: |
+          mkdir -p /tmp/round
+          prefix="lean-arena-round-$ROUND"
+          tar -czf "/tmp/round/$prefix-site.tar.gz" \
+            --exclude=results.json \
+            --exclude=lean-arena-tests.tar.gz \
+            --transform "s,^\\.,$prefix-site," \
+            -C _out .
+          cp _out/results.json "/tmp/round/$prefix-results.json"
+          cp _out/lean-arena-tests.tar.gz "/tmp/round/$prefix-tests.tar.gz"
+          ls -l /tmp/round
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Create the release
+        if: env.ROUND_READY == 'true'
+        run: |
+          prefix="lean-arena-round-$ROUND"
+          args=(--title "Round $ROUND" --notes "Round $ROUND of the Lean Kernel Arena.")
+          if [ "$SANDBOX" = true ]; then args+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${args[@]}" \
+            "/tmp/round/$prefix-site.tar.gz" \
+            "/tmp/round/$prefix-results.json" \
+            "/tmp/round/$prefix-tests.tar.gz"
+
+      - name: Upload the round to Zenodo
+        if: env.ROUND_READY == 'true'
+        run: |
+          prefix="lean-arena-round-$ROUND"
+          args=()
+          if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
+          .github/zenodo.py "${args[@]}" upload --bucket "$BUCKET" \
+            "/tmp/round/$prefix-site.tar.gz" \
+            "/tmp/round/$prefix-results.json" \
+            "/tmp/round/$prefix-tests.tar.gz"
+        env:
+          BUCKET: ${{ needs.zenodo-reserve.outputs.bucket }}
+          ZENODO_TOKEN: ${{ needs.round-info.outputs.sandbox == 'true' && secrets.ZENODO_SANDBOX_TOKEN || secrets.ZENODO_TOKEN }}
+
+      # Assemble the archive of closed rounds under /round/. This runs after the
+      # release above, so a build that closes a round already includes itself.
+      # Test rounds are deliberately not listed.
+      - name: Assemble previous rounds
+        if: needs.round-info.outputs.deploy == 'true'
+        run: |
+          mkdir -p _out/round
+          # No match before the first round is closed; pipefail would make that
+          # an error rather than an empty archive
+          tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | { grep '^round-[0-9]' || true; })
+          for tag in $tags; do
+            round="${tag#round-}"
+            prefix="lean-arena-round-$round"
+            echo "::group::Round $round"
+            gh release download "$tag" --dir "/tmp/rounds/$round"
+            mkdir -p "_out/round/$round"
+            tar -xzf "/tmp/rounds/$round/$prefix-site.tar.gz" \
+              -C "_out/round/$round" --strip-components=1
+            # The archived site links to these relatively and under fixed
+            # names, so put them back next to it, rather than only offering
+            # them under their round-qualified names on the release
+            cp "/tmp/rounds/$round/$prefix-results.json" "_out/round/$round/results.json"
+            cp "/tmp/rounds/$round/$prefix-tests.tar.gz" "_out/round/$round/lean-arena-tests.tar.gz"
+            echo "::endgroup::"
+          done
+          ./lka.py build-rounds-index --outdir _out/round
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       # Give each run attempt its own artifact name. Re-running only this job
@@ -300,11 +513,23 @@ jobs:
           archive: false
 
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'workflow_dispatch'
+        if: needs.round-info.outputs.deploy == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
+
+      # A draft deposition whose build failed would otherwise linger on Zenodo
+      # and hold on to a DOI that is never published.
+      - name: Discard the Zenodo draft on failure
+        if: ${{ failure() && env.ROUND_READY == 'true' && needs.zenodo-reserve.outputs.deposition_id }}
+        run: |
+          args=()
+          if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
+          .github/zenodo.py "${args[@]}" discard --deposition "$DEPOSITION"
+        env:
+          DEPOSITION: ${{ needs.zenodo-reserve.outputs.deposition_id }}
+          ZENODO_TOKEN: ${{ needs.round-info.outputs.sandbox == 'true' && secrets.ZENODO_SANDBOX_TOKEN || secrets.ZENODO_TOKEN }}
 
       # The checker matrix uses fail-fast: false, so a failing checker does not
       # stop the others and the site is still built and deployed above. Surface
@@ -314,3 +539,28 @@ jobs:
         run: |
           echo "::error::One or more checker jobs failed; see the 'Checker: …' matrix jobs."
           exit 1
+
+  zenodo-publish:
+    name: Publish DOI on Zenodo
+    needs: [round-info, build-site, zenodo-reserve]
+    if: ${{ needs.round-info.outputs.is_round == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # Publishing mints the DOI and cannot be undone, so this runs as its own
+    # job: it only starts once build-site has succeeded, i.e. once the release
+    # exists and the deposition is complete. Practice on a test-round-* tag,
+    # which does all of this against sandbox.zenodo.org.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Publish the deposition
+        run: |
+          args=()
+          if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
+          .github/zenodo.py "${args[@]}" publish --deposition "$DEPOSITION"
+        env:
+          SANDBOX: ${{ needs.round-info.outputs.sandbox }}
+          DEPOSITION: ${{ needs.zenodo-reserve.outputs.deposition_id }}
+          ZENODO_TOKEN: ${{ needs.round-info.outputs.sandbox == 'true' && secrets.ZENODO_SANDBOX_TOKEN || secrets.ZENODO_TOKEN }}

@@ -55,6 +55,20 @@ VERBOSE = False
 # test tarball.
 TEST_SIZE_LIMIT = 10 * 1024 * 1024
 
+# The canonical location of the published site. Used for the "other rounds"
+# link, which has to be absolute: archived rounds are served from
+# /round/<name>/ and are also distributed as standalone tarballs, so a
+# relative link back to the round index would not survive both.
+SITE_URL = "https://arena.lean-lang.org"
+ROUNDS_URL = f"{SITE_URL}/round/"
+
+# The GitHub repository, used for links to releases and source files.
+REPO_URL = "https://github.com/leanprover/lean-kernel-arena"
+
+# A round named "2026-10" is released as the tag "round-2026-10" and served
+# from "/round/2026-10/".
+ROUND_TAG_PREFIX = "round-"
+
 # Timing/measurement utilities
 
 
@@ -1606,6 +1620,13 @@ def get_build_metadata() -> dict:
         "git_revision_short": None,
         "github_url": None,
         "github_action_url": None,
+        # Round metadata, filled in by build-site from its --round/--doi/
+        # --zenodo-deposition options. A build without a round name is the
+        # ongoing round ("Round in progress"); only a release build off a
+        # round-* tag names a round and carries a DOI.
+        "round": None,
+        "doi": None,
+        "zenodo_deposition": None,
     }
 
     # Get git revision
@@ -1667,9 +1688,8 @@ def generate_source_links(config: dict, config_type: str, git_revision: str | No
         return links
 
     # Generate declaration URL (YAML file in GitHub)
-    base_github_url = "https://github.com/leanprover/lean-kernel-arena"
     declaration_path = f"{config_type}/{config['name']}.yaml"
-    links["declaration_url"] = f"{base_github_url}/blob/{git_revision}/{declaration_path}"
+    links["declaration_url"] = f"{REPO_URL}/blob/{git_revision}/{declaration_path}"
 
     # Generate source URL
     url = config.get("url")
@@ -1695,10 +1715,10 @@ def generate_source_links(config: dict, config_type: str, git_revision: str | No
             source_path = f"checkers/{local_dir}"
         else:
             source_path = local_dir
-        links["source_url"] = f"{base_github_url}/tree/{git_revision}/{source_path}"
+        links["source_url"] = f"{REPO_URL}/tree/{git_revision}/{source_path}"
     elif leanfile:
         # Lean file in this repository
-        links["source_url"] = f"{base_github_url}/blob/{git_revision}/{leanfile}"
+        links["source_url"] = f"{REPO_URL}/blob/{git_revision}/{leanfile}"
 
     return links
 
@@ -1876,6 +1896,83 @@ def cmd_write_results(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_build_rounds_index(args: argparse.Namespace) -> int:
+    """Handle the build-rounds-index command.
+
+    Renders /round/index.html from the rounds already unpacked into the output
+    directory, one subdirectory per round. Everything shown is read from each
+    round's own results.json, so adding a round needs no changes here and the
+    archived rounds stay the single source of truth about themselves.
+    """
+    rounds_dir = Path(args.outdir)
+    if not rounds_dir.is_dir():
+        print(f"Rounds directory not found: {rounds_dir}")
+        return 1
+
+    rounds = []
+    for round_dir in sorted(rounds_dir.iterdir()):
+        if not round_dir.is_dir():
+            continue
+        results_file = round_dir / "results.json"
+        if not results_file.exists():
+            print(f"Error: {round_dir} has no results.json")
+            return 1
+        with open(results_file, "r") as f:
+            data = json.load(f)
+        meta = data.get("meta", {})
+        name = meta.get("round") or round_dir.name
+        if name != round_dir.name:
+            print(f"Error: {results_file} is for round {name}, but sits in {round_dir.name}/")
+            return 1
+        tarball = round_dir / "lean-arena-tests.tar.gz"
+        rounds.append({
+            "name": name,
+            "timestamp": meta.get("timestamp"),
+            "doi": meta.get("doi"),
+            "release_url": meta.get("release_url",
+                                    f"{REPO_URL}/releases/tag/{ROUND_TAG_PREFIX}{name}"),
+            "git_revision": meta.get("git_revision"),
+            "git_revision_short": meta.get("git_revision_short"),
+            "github_url": meta.get("github_url"),
+            "checker_count": len(data.get("checkers", [])),
+            "test_count": len(data.get("tests", [])),
+            "results_json_size": results_file.stat().st_size,
+            "tarball_size": tarball.stat().st_size if tarball.exists() else None,
+        })
+
+    # Newest round first
+    rounds.sort(key=lambda r: r["name"], reverse=True)
+
+    templates_dir = get_project_root() / "templates"
+    env = make_template_env(templates_dir)
+    template = env.get_template("rounds.html")
+    output_file = rounds_dir / "index.html"
+    template.stream({
+        "rounds": rounds,
+        "format_memory": format_memory,
+        "build_info": get_build_metadata(),
+        # /round/index.html sits one level below the site root
+        "root_path": "../",
+    }).dump(str(output_file))
+    print(f"Generated: {output_file} ({len(rounds)} rounds)")
+    return 0
+
+
+def make_template_env(templates_dir: Path) -> Environment:
+    """Create the Jinja environment used for all rendered pages.
+
+    Pages locate their assets through the `root_path` context variable (the
+    relative path from the page to the site root), so that the whole site
+    stays relocatable and can be unpacked under /round/<name>/.
+    """
+    env = Environment(
+        loader=FileSystemLoader(templates_dir),
+        autoescape=select_autoescape(),
+    )
+    env.globals["rounds_url"] = ROUNDS_URL
+    return env
+
+
 def cmd_build_site(args: argparse.Namespace) -> int:
     """Handle the build-site command."""
     output_dir = Path(args.outdir)
@@ -1886,10 +1983,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         print(f"Templates directory not found: {templates_dir}")
         return 1
 
-    env = Environment(
-        loader=FileSystemLoader(templates_dir),
-        autoescape=select_autoescape(),
-    )
+    env = make_template_env(templates_dir)
     env.globals["format_relative_perf"] = format_relative_perf
 
     # The site is rendered from the results.json data structure, either read
@@ -1899,6 +1993,21 @@ def cmd_build_site(args: argparse.Namespace) -> int:
             results_data = json.load(f)
     else:
         results_data = collect_results_data()
+
+    # Stamp the round this build belongs to into the metadata, so that
+    # results.json is self-describing and the round index can be built from
+    # the results.json files of the individual rounds alone.
+    meta = results_data.setdefault("meta", {})
+    for key in ("round", "doi", "zenodo_deposition"):
+        meta.setdefault(key, None)
+    if args.round:
+        meta["round"] = args.round
+    if args.doi:
+        meta["doi"] = args.doi
+    if args.zenodo_deposition:
+        meta["zenodo_deposition"] = int(args.zenodo_deposition)
+    if meta["round"]:
+        meta["release_url"] = f"{REPO_URL}/releases/tag/{ROUND_TAG_PREFIX}{meta['round']}"
 
     # Publish the raw data alongside the site
     results_json_file = output_dir / "results.json"
@@ -2036,6 +2145,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         "build_info": build_info,
         "tarball_info": tarball_info,
         "results_json_info": results_json_info,
+        "root_path": "",
     }
 
     # Render index.html
@@ -2126,6 +2236,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 "convert_instructions_to_time": convert_instructions_to_time,
                 "instructions_per_second": instructions_per_second,
                 "build_info": build_info,
+                "root_path": "../../",
             }
 
             output_file = checker_dir / "index.html"
@@ -2379,6 +2490,31 @@ def main() -> int:
         metavar="FILE",
         help="Use a pre-built test tarball instead of creating one (see build-tarball)",
     )
+    build_site_parser.add_argument(
+        "--round",
+        metavar="NAME",
+        help="Name of the round this build closes, e.g. 2026-10 (default: no round, i.e. the ongoing round)",
+    )
+    build_site_parser.add_argument(
+        "--doi",
+        help="DOI of this round, shown for citation (pre-reserved on Zenodo before the build)",
+    )
+    build_site_parser.add_argument(
+        "--zenodo-deposition",
+        metavar="ID",
+        help="Zenodo deposition id of this round, recorded in results.json so the next round can be created as a new version of it",
+    )
+
+    # build-rounds-index command
+    build_rounds_index_parser = subparsers.add_parser(
+        "build-rounds-index",
+        help="Build the index page listing all archived rounds",
+    )
+    build_rounds_index_parser.add_argument(
+        "--outdir",
+        default="_out/round",
+        help="Directory holding the unpacked rounds, one subdirectory per round (default: _out/round)",
+    )
 
     # build-tarball command
     build_tarball_parser = subparsers.add_parser(
@@ -2462,6 +2598,8 @@ def main() -> int:
         return cmd_run_checker(args)
     elif args.command == "build-site":
         return cmd_build_site(args)
+    elif args.command == "build-rounds-index":
+        return cmd_build_rounds_index(args)
     elif args.command == "write-results":
         return cmd_write_results(args)
     elif args.command == "build-tarball":

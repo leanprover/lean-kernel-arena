@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Lean Kernel Arena{% endblock %}</title>
-    <link rel="stylesheet" href="https://unpkg.com/chota@latest">
-    <link rel="stylesheet" href="{% block static_path %}{% endblock %}static/style.css">
+    {# Chota is vendored rather than loaded from a CDN: archived rounds are
+       frozen artifacts that must still render years from now. #}
+    <link rel="stylesheet" href="{{ root_path }}static/chota.min.css">
+    <link rel="stylesheet" href="{{ root_path }}static/style.css">
     <style>
         {% block style %}{% endblock %}
     </style>
@@ -14,6 +16,12 @@
     <div class="container">
         <header class="is-center">
             <h1>{% block h1 %}Lean Kernel Arena{% endblock %}</h1>
+            {% block round_line %}
+            <p class="round-line">
+                {% if build_info.round %}Round {{ build_info.round }}{% else %}Round in progress{% endif %}
+                · <a href="{{ rounds_url }}">other rounds</a>
+            </p>
+            {% endblock %}
         </header>
 
         <main>

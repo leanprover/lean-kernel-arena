@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 {% from "macros.html" import detail_styles, result_status_cell, perf_cells, perf_header %}
 
-{% block static_path %}{{ root_path }}{% endblock %}
-
 {% block title %}{{ test.name }} - Lean Kernel Arena{% endblock %}
 
 {% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / {{ test.name }}
