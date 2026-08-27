@@ -16,6 +16,12 @@ on:
 permissions:
   contents: read
 
+env:
+  # Where a closed round ends up on the published site. Mirrors ROUNDS_URL in
+  # lka.py; this is the address a round is advertised and cited under, rather
+  # than the release it happens to be distributed from.
+  ARENA_ROUNDS_URL: https://arena.lean-lang.org/round
+
 concurrency:
   # Pull requests get a group each, so they queue and cancel per branch. All
   # other runs share one group: two of them deploying or closing a round at the
@@ -343,7 +349,7 @@ jobs:
         run: |
           args=()
           if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
-          args+=(reserve --round "$ROUND" --tag "$GITHUB_REF_NAME")
+          args+=(reserve --round "$ROUND" --url "$ARENA_ROUNDS_URL/$ROUND/")
           if [ -n "$PREVIOUS" ]; then args+=(--previous-deposition "$PREVIOUS"); fi
           .github/zenodo.py "${args[@]}"
         env:
@@ -467,7 +473,10 @@ jobs:
           # release that survived a failed attempt is indistinguishable from
           # the release of a round that closed successfully, and silently
           # replacing the latter would mint a second DOI for the same round.
-          args=(--title "Round $ROUND" --notes "Round $ROUND of the Lean Kernel Arena.")
+          # Send readers to the round on the site rather than leaving them with
+          # three tarballs; the assets stay here for downloading and archiving.
+          notes="Round $ROUND of the Lean Kernel Arena: $ARENA_ROUNDS_URL/$ROUND/"
+          args=(--title "Round $ROUND" --notes "$notes")
           if [ "$SANDBOX" = true ]; then args+=(--prerelease); fi
           gh release create "$GITHUB_REF_NAME" "${args[@]}" \
             "/tmp/round/$prefix-site.tar.gz" \

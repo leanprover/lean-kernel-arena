@@ -35,8 +35,6 @@ from pathlib import Path
 # so that it can be reviewed and changed without touching this script.
 METADATA_FILE = Path(__file__).resolve().parent.parent / ".zenodo.json"
 
-REPO_URL = "https://github.com/leanprover/lean-kernel-arena"
-
 
 def api_base(sandbox: bool) -> str:
     return "https://sandbox.zenodo.org" if sandbox else "https://zenodo.org"
@@ -78,7 +76,7 @@ def upload_file(bucket_url: str, path: Path, token: str) -> None:
     print(f"Uploaded {path.name} ({size} bytes)")
 
 
-def deposition_metadata(round_name: str, tag: str) -> dict:
+def deposition_metadata(round_name: str, url: str) -> dict:
     """Build the deposition metadata for a round from .zenodo.json."""
     with open(METADATA_FILE, "r") as f:
         # Keys starting with an underscore are comments for human readers;
@@ -88,10 +86,13 @@ def deposition_metadata(round_name: str, tag: str) -> dict:
     metadata["version"] = round_name
     metadata["publication_date"] = datetime.date.today().isoformat()
     related = list(metadata.get("related_identifiers", []))
+    # The same round, served on the web. Point at that rather than at the
+    # GitHub release it is distributed from: the release is where the bytes
+    # happen to live, the round page is what a reader wants to be sent to.
     related.append({
-        "relation": "isSupplementTo",
-        "identifier": f"{REPO_URL}/releases/tag/{tag}",
-        "resource_type": "software",
+        "relation": "isIdenticalTo",
+        "identifier": url,
+        "resource_type": "dataset",
     })
     metadata["related_identifiers"] = related
     return metadata
@@ -151,7 +152,7 @@ def cmd_reserve(args: argparse.Namespace, token: str) -> None:
         "PUT",
         f"{base}/api/deposit/depositions/{deposition_id}",
         token,
-        data={"metadata": deposition_metadata(args.round, args.tag)},
+        data={"metadata": deposition_metadata(args.round, args.url)},
     )
 
     # Setting metadata must not disturb the reservation: the DOI is about to be
@@ -208,7 +209,7 @@ def main() -> int:
 
     reserve = subparsers.add_parser("reserve", help="Create a draft deposition and pre-reserve its DOI")
     reserve.add_argument("--round", required=True, help="Round name, e.g. 2026-10")
-    reserve.add_argument("--tag", required=True, help="Tag the round is released under, e.g. round-2026-10")
+    reserve.add_argument("--url", required=True, help="Canonical address of the round on the site, e.g. https://arena.lean-lang.org/round/2026-10/")
     reserve.add_argument(
         "--previous-deposition",
         help="Deposition id of the previous round; the new round becomes a new version of it",
