@@ -230,12 +230,22 @@ This runs the full CI build (no tests are skipped), and then:
    the raw results as `lean-arena-round-2026-10-results.json`, and the test
    suite as `lean-arena-round-2026-10-tests.tar.gz`,
 4. uploads those to Zenodo as a draft deposition,
-5. reassembles `/round/` from all round releases and deploys the site,
-6. publishes the Zenodo record, which mints the DOI.
+5. publishes the Zenodo record, which mints the DOI.
+
+A round build does not touch the live site. The round appears under
+`/round/2026-10/`, and the round index gains a row, with the next
+`workflow_dispatch` run, which assembles `/round/` from the release assets.
+So closing a round is: push the tag, wait for it to go green, then dispatch a
+run of the same workflow.
 
 Publishing cannot be undone, so it happens last, once everything else has
-succeeded. If an earlier step fails, the draft deposition is discarded again
-and no DOI is minted.
+succeeded. If an earlier step fails, both the draft deposition and the release
+are removed again and no DOI is minted, so the tag can simply be pushed again.
+
+If only the last step fails, the release exists but the DOI does not resolve
+yet. Re-run the `Publish DOI on Zenodo` job; do not close another round before
+it has succeeded, since the next round is built as a new version of this one's
+deposition.
 
 Each round is deposited as a new version of the previous one, so all rounds
 share a concept DOI that resolves to the most recent round, next to their
@@ -245,8 +255,10 @@ each round's own `results.json`.
 ### Trying it out
 
 A tag `test-round-<name>` runs exactly the same thing, but against
-[sandbox.zenodo.org](https://sandbox.zenodo.org) and without deploying the
-site. Delete the tag and the GitHub release afterwards and nothing remains.
+[sandbox.zenodo.org](https://sandbox.zenodo.org), and its release is marked as
+a pre-release. Delete the tag and the GitHub release afterwards and nothing
+remains; `/round/` only ever lists `round-*`, so a test round never shows up on
+the site even if its release is left in place.
 The tag does not have to be on `master`, so a change to the round machinery
 can be exercised end to end while it is still a pull request.
 

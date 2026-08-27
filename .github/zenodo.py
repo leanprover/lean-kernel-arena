@@ -10,8 +10,9 @@ that only becomes active on publication. The round build therefore runs
     upload   -> attach the built files to the draft
     publish  -> make the record (and the DOI) public
 
-with `publish` gated behind a manual approval, since publishing is
-irreversible. `discard` deletes an unpublished draft again, for failed builds.
+Publishing is irreversible, so it runs last, once the release exists and the
+site is deployed; `discard` deletes the still unpublished draft again when an
+earlier step fails.
 
 Rounds after the first are created as new versions of the previous round's
 deposition (`--previous-deposition`). That gives them a shared concept DOI
@@ -77,7 +78,7 @@ def upload_file(bucket_url: str, path: Path, token: str) -> None:
     print(f"Uploaded {path.name} ({size} bytes)")
 
 
-def deposition_metadata(round_name: str) -> dict:
+def deposition_metadata(round_name: str, tag: str) -> dict:
     """Build the deposition metadata for a round from .zenodo.json."""
     with open(METADATA_FILE, "r") as f:
         # Keys starting with an underscore are comments for human readers;
@@ -89,7 +90,7 @@ def deposition_metadata(round_name: str) -> dict:
     related = list(metadata.get("related_identifiers", []))
     related.append({
         "relation": "isSupplementTo",
-        "identifier": f"{REPO_URL}/releases/tag/round-{round_name}",
+        "identifier": f"{REPO_URL}/releases/tag/{tag}",
         "resource_type": "software",
     })
     metadata["related_identifiers"] = related
@@ -150,7 +151,7 @@ def cmd_reserve(args: argparse.Namespace, token: str) -> None:
         "PUT",
         f"{base}/api/deposit/depositions/{deposition_id}",
         token,
-        data={"metadata": deposition_metadata(args.round)},
+        data={"metadata": deposition_metadata(args.round, args.tag)},
     )
 
     # Setting metadata must not disturb the reservation: the DOI is about to be
@@ -165,12 +166,8 @@ def cmd_reserve(args: argparse.Namespace, token: str) -> None:
     if not bucket:
         sys.exit(f"Deposition {deposition_id} has no file bucket")
 
-    emit_outputs(
-        doi=doi,
-        deposition_id=deposition_id,
-        bucket=bucket,
-        deposition_url=f"{base}/deposit/{deposition_id}",
-    )
+    print(f"Draft deposition: {base}/deposit/{deposition_id}")
+    emit_outputs(doi=doi, deposition_id=deposition_id, bucket=bucket)
 
 
 def cmd_upload(args: argparse.Namespace, token: str) -> None:
@@ -211,6 +208,7 @@ def main() -> int:
 
     reserve = subparsers.add_parser("reserve", help="Create a draft deposition and pre-reserve its DOI")
     reserve.add_argument("--round", required=True, help="Round name, e.g. 2026-10")
+    reserve.add_argument("--tag", required=True, help="Tag the round is released under, e.g. round-2026-10")
     reserve.add_argument(
         "--previous-deposition",
         help="Deposition id of the previous round; the new round becomes a new version of it",

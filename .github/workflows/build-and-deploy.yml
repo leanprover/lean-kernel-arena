@@ -6,9 +6,10 @@ on:
   push:
     tags:
       # Closes a round: builds the site from scratch, publishes it as a release
-      # and deposits it on Zenodo for a DOI. `test-round-*` does the same
-      # against sandbox.zenodo.org, so the tag and release can be deleted again
-      # without leaving traces.
+      # and deposits it on Zenodo for a DOI. Does not deploy — the round shows
+      # up under /round/<name>/ with the next workflow_dispatch. `test-round-*`
+      # does the same against sandbox.zenodo.org, so the tag and release can be
+      # deleted again without leaving traces.
       - 'round-*'
       - 'test-round-*'
 
@@ -16,7 +17,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Pull requests get a group each, so they queue and cancel per branch. All
+  # other runs share one group: two of them deploying or closing a round at the
+  # same time would race, and they are expensive enough to be worth serializing
+  # anyway.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -31,8 +36,6 @@ jobs:
       # 'true' for test rounds, which use sandbox.zenodo.org and are published
       # as GitHub pre-releases
       sandbox: ${{ steps.round.outputs.sandbox }}
-      # Whether this build is deployed to GitHub Pages
-      deploy: ${{ steps.round.outputs.deploy }}
     steps:
       - name: Determine round from the tag
         id: round
@@ -44,7 +47,6 @@ jobs:
               echo "is_round=false"
               echo "round="
               echo "sandbox=false"
-              echo "deploy=${{ github.event_name == 'workflow_dispatch' }}"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -59,14 +61,10 @@ jobs:
             exit 1
           fi
           echo "Closing round $round (sandbox=$sandbox)"
-          # A test round must not replace the live site; it only exercises the
-          # release and Zenodo path.
-          if [ "$sandbox" = true ]; then deploy=false; else deploy=true; fi
           {
             echo "is_round=true"
             echo "round=$round"
             echo "sandbox=$sandbox"
-            echo "deploy=$deploy"
           } >> "$GITHUB_OUTPUT"
 
   select-checkers:
@@ -271,9 +269,10 @@ jobs:
   zenodo-reserve:
     name: Reserve DOI on Zenodo
     needs: [round-info, check, tutorial, test-stats]
-    # Only for rounds, and only once the measurements are in: a reserved DOI
-    # that is never published leaves a draft deposition behind.
-    if: ${{ !cancelled() && needs.round-info.outputs.is_round == 'true' && needs.check.result == 'success' }}
+    # Only for rounds, and only once everything the round needs has succeeded:
+    # a DOI reserved for a build that then fails is a draft deposition to clean
+    # up. The implicit success() over `needs` covers that.
+    if: ${{ needs.round-info.outputs.is_round == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -299,7 +298,7 @@ jobs:
           # grep finds nothing before the first round exists, and pipefail
           # would turn that into a failure
           previous=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
-            | { grep "^${prefix}[0-9]" || true; } \
+            | { grep -E "^${prefix}[0-9]{4}-[0-9]{2}$" || true; } \
             | { grep -v "^${GITHUB_REF_NAME}$" || true; } \
             | sort -r | head -1)
           if [ -z "$previous" ]; then
@@ -322,7 +321,7 @@ jobs:
         run: |
           args=()
           if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
-          args+=(reserve --round "$ROUND")
+          args+=(reserve --round "$ROUND" --tag "$GITHUB_REF_NAME")
           if [ -n "$PREVIOUS" ]; then args+=(--previous-deposition "$PREVIOUS"); fi
           .github/zenodo.py "${args[@]}"
         env:
@@ -334,9 +333,10 @@ jobs:
     needs: [round-info, check, tutorial, test-stats, zenodo-reserve]
     # Run even if some checker jobs failed, so the site (including the failures)
     # is still built and deployed; a final step below then fails this job if any
-    # checker failed. zenodo-reserve is skipped for non-round builds, which is
-    # covered by !cancelled().
-    if: ${{ !cancelled() && needs.check.result != 'skipped' && needs.zenodo-reserve.result != 'failure' }}
+    # checker failed. zenodo-reserve is skipped for non-round builds and may
+    # fail for a round, in which case this still builds and deploys the site,
+    # just without closing the round (see ROUND_READY).
+    if: ${{ !cancelled() && needs.check.result != 'skipped' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -368,7 +368,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Pages
-        if: needs.round-info.outputs.deploy == 'true'
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/configure-pages@v6
 
       - name: Setup nix shell
@@ -441,6 +441,13 @@ jobs:
         if: env.ROUND_READY == 'true'
         run: |
           prefix="lean-arena-round-$ROUND"
+          # Re-running a round build finds the release an earlier attempt left
+          # behind; replace it rather than failing, so a round can be retried
+          # without deleting anything by hand. Deleting a release keeps its tag.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Replacing the release left behind by an earlier attempt"
+            gh release delete "$GITHUB_REF_NAME" --yes
+          fi
           args=(--title "Round $ROUND" --notes "Round $ROUND of the Lean Kernel Arena.")
           if [ "$SANDBOX" = true ]; then args+=(--prerelease); fi
           gh release create "$GITHUB_REF_NAME" "${args[@]}" \
@@ -462,17 +469,17 @@ jobs:
           BUCKET: ${{ needs.zenodo-reserve.outputs.bucket }}
           ZENODO_TOKEN: ${{ needs.round-info.outputs.sandbox == 'true' && secrets.ZENODO_SANDBOX_TOKEN || secrets.ZENODO_TOKEN }}
 
-      # Assemble the archive of closed rounds under /round/. This runs after the
-      # release above, so a build that closes a round already includes itself.
-      # Test rounds are deliberately not listed.
-      - name: Assemble previous rounds
-        if: needs.round-info.outputs.deploy == 'true'
+      # Assemble the archive of closed rounds under /round/, from the release
+      # assets. Only deploying runs need this, and a round becomes visible on
+      # the site with the next one. Test rounds are deliberately not listed.
+      - name: Assemble closed rounds
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p _out/round
           # No match before the first round is closed; pipefail would make that
           # an error rather than an empty archive
           tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
-            | { grep '^round-[0-9]' || true; })
+            | { grep -E '^round-[0-9]{4}-[0-9]{2}$' || true; })
           for tag in $tags; do
             round="${tag#round-}"
             prefix="lean-arena-round-$round"
@@ -513,17 +520,20 @@ jobs:
           archive: false
 
       - name: Deploy to GitHub Pages
-        if: needs.round-info.outputs.deploy == 'true'
+        if: github.event_name == 'workflow_dispatch'
         id: deployment
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
 
-      # A draft deposition whose build failed would otherwise linger on Zenodo
-      # and hold on to a DOI that is never published.
-      - name: Discard the Zenodo draft on failure
+      # Leave nothing half-published behind. The draft would otherwise linger
+      # on Zenodo holding a DOI that is never published, and the release would
+      # advertise a results.json pointing at that discarded draft — which the
+      # next round would then try to build its version chain on.
+      - name: Discard the round on failure
         if: ${{ failure() && env.ROUND_READY == 'true' && needs.zenodo-reserve.outputs.deposition_id }}
         run: |
+          gh release delete "$GITHUB_REF_NAME" --yes || echo "No release to delete"
           args=()
           if [ "$SANDBOX" = true ]; then args+=(--sandbox); fi
           .github/zenodo.py "${args[@]}" discard --deposition "$DEPOSITION"
