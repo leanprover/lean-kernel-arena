@@ -36,6 +36,10 @@ jobs:
       # 'true' for test rounds, which use sandbox.zenodo.org and are published
       # as GitHub pre-releases
       sandbox: ${{ steps.round.outputs.sandbox }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # This job has no checkout, so gh cannot infer the repository
+      GH_REPO: ${{ github.repository }}
     steps:
       - name: Determine round from the tag
         id: round
@@ -58,6 +62,15 @@ jobs:
           # Rounds are named after a year and a month, e.g. 2026-10
           if ! printf '%s' "$round" | grep -qE '^[0-9]{4}-[0-9]{2}$'; then
             echo "::error::Round name '$round' (from tag $tag) is not of the form YYYY-MM"
+            exit 1
+          fi
+          # Refuse to close a round that already has a release, before spending
+          # hours on the build. A failed attempt deletes its own release again,
+          # so one still being here means either the round was closed
+          # successfully — re-running that would mint a second DOI for it — or
+          # a run died without getting to clean up, which wants a look anyway.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::A release for $tag already exists. If round $round was closed successfully, do not re-run this build: it would create a second Zenodo record and DOI for the same round. If it is left over from a run that failed to clean up, delete it with 'gh release delete $tag' and start the build again."
             exit 1
           fi
           echo "Closing round $round (sandbox=$sandbox)"
@@ -297,7 +310,7 @@ jobs:
           if [ "$SANDBOX" = true ]; then prefix=test-round-; else prefix=round-; fi
           # grep finds nothing before the first round exists, and pipefail
           # would turn that into a failure
-          previous=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+          previous=$(gh release list --limit 1000 --json tagName --jq '.[].tagName' \
             | { grep -E "^${prefix}[0-9]{4}-[0-9]{2}$" || true; } \
             | { grep -v "^${GITHUB_REF_NAME}$" || true; } \
             | sort -r | head -1)
@@ -334,8 +347,8 @@ jobs:
     # Run even if some checker jobs failed, so the site (including the failures)
     # is still built and deployed; a final step below then fails this job if any
     # checker failed. zenodo-reserve is skipped for non-round builds and may
-    # fail for a round, in which case this still builds and deploys the site,
-    # just without closing the round (see ROUND_READY).
+    # fail for a round, in which case this still builds the site, just without
+    # closing the round (see ROUND_READY).
     if: ${{ !cancelled() && needs.check.result != 'skipped' }}
     runs-on: ubuntu-latest
 
@@ -348,8 +361,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       # A round is only stamped into the site, released and deposited once its
       # DOI has been reserved, which in turn requires every checker to have
-      # succeeded. A round build with a failing checker still builds and
-      # deploys the site (and fails at the end), but publishes nothing.
+      # succeeded. A round build with a failing checker still builds the site
+      # (and fails at the end), but publishes nothing.
       ROUND_READY: ${{ needs.round-info.outputs.is_round == 'true' && needs.zenodo-reserve.result == 'success' }}
       ROUND: ${{ needs.round-info.outputs.round }}
       SANDBOX: ${{ needs.round-info.outputs.sandbox }}
@@ -441,13 +454,10 @@ jobs:
         if: env.ROUND_READY == 'true'
         run: |
           prefix="lean-arena-round-$ROUND"
-          # Re-running a round build finds the release an earlier attempt left
-          # behind; replace it rather than failing, so a round can be retried
-          # without deleting anything by hand. Deleting a release keeps its tag.
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "Replacing the release left behind by an earlier attempt"
-            gh release delete "$GITHUB_REF_NAME" --yes
-          fi
+          # An existing release is refused by round-info, not replaced here: a
+          # release that survived a failed attempt is indistinguishable from
+          # the release of a round that closed successfully, and silently
+          # replacing the latter would mint a second DOI for the same round.
           args=(--title "Round $ROUND" --notes "Round $ROUND of the Lean Kernel Arena.")
           if [ "$SANDBOX" = true ]; then args+=(--prerelease); fi
           gh release create "$GITHUB_REF_NAME" "${args[@]}" \
@@ -478,7 +488,7 @@ jobs:
           mkdir -p _out/round
           # No match before the first round is closed; pipefail would make that
           # an error rather than an empty archive
-          tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+          tags=$(gh release list --limit 1000 --json tagName --jq '.[].tagName' \
             | { grep -E '^round-[0-9]{4}-[0-9]{2}$' || true; })
           for tag in $tags; do
             round="${tag#round-}"
@@ -530,8 +540,10 @@ jobs:
       # on Zenodo holding a DOI that is never published, and the release would
       # advertise a results.json pointing at that discarded draft — which the
       # next round would then try to build its version chain on.
+      # Cancellation counts: a run stopped between creating the release and
+      # publishing leaves exactly the half-published state this prevents.
       - name: Discard the round on failure
-        if: ${{ failure() && env.ROUND_READY == 'true' && needs.zenodo-reserve.outputs.deposition_id }}
+        if: ${{ (failure() || cancelled()) && env.ROUND_READY == 'true' && needs.zenodo-reserve.outputs.deposition_id }}
         run: |
           gh release delete "$GITHUB_REF_NAME" --yes || echo "No release to delete"
           args=()

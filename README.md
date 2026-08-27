@@ -239,13 +239,21 @@ So closing a round is: push the tag, wait for it to go green, then dispatch a
 run of the same workflow.
 
 Publishing cannot be undone, so it happens last, once everything else has
-succeeded. If an earlier step fails, both the draft deposition and the release
-are removed again and no DOI is minted, so the tag can simply be pushed again.
+succeeded. If an earlier step fails or the run is cancelled, both the draft
+deposition and the release are removed again and no DOI is minted. Retry with
+*Re-run all jobs* in the Actions UI — pushing the tag again does nothing, since
+the remote already has it. *Re-run failed jobs* does not work here: it reuses
+the discarded deposition and fails at the upload.
 
 If only the last step fails, the release exists but the DOI does not resolve
 yet. Re-run the `Publish DOI on Zenodo` job; do not close another round before
 it has succeeded, since the next round is built as a new version of this one's
 deposition.
+
+A round that closed successfully cannot be built again: the build refuses to
+start while a release for its tag exists, because a second run would mint a
+second DOI for the same round. Should a run ever die without cleaning up after
+itself, delete the release by hand and start the build again.
 
 Each round is deposited as a new version of the previous one, so all rounds
 share a concept DOI that resolves to the most recent round, next to their

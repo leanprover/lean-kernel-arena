@@ -10,9 +10,9 @@ that only becomes active on publication. The round build therefore runs
     upload   -> attach the built files to the draft
     publish  -> make the record (and the DOI) public
 
-Publishing is irreversible, so it runs last, once the release exists and the
-site is deployed; `discard` deletes the still unpublished draft again when an
-earlier step fails.
+Publishing is irreversible, so it runs last, once the release exists and all
+its assets are uploaded; `discard` deletes the still unpublished draft again
+when an earlier step fails.
 
 Rounds after the first are created as new versions of the previous round's
 deposition (`--previous-deposition`). That gives them a shared concept DOI
