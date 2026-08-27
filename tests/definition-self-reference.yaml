@@ -1,0 +1,12 @@
+description: |
+  Reject an ordinary definition whose value refers to the definition itself.
+
+  The export is equivalent to `def cutoffSelf : Sort 1 := cutoffSelf`. The
+  declaration under validation must not be available while its value is being
+  checked. Otherwise its claimed type can be used as evidence that its circular
+  value is well-typed.
+
+  This case exposed a disagreement in Kiota:
+  <https://github.com/sankalpsthakur/kiota/issues/5>.
+file: tests/definition-self-reference.ndjson
+outcome: reject
