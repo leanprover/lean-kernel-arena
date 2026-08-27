@@ -196,7 +196,7 @@ def cmd_publish(args: argparse.Namespace, token: str) -> None:
     if args.expect_doi and doi != args.expect_doi:
         message = (
             f"Published DOI {doi} differs from the pre-reserved {args.expect_doi} "
-            f"that is baked into round's pages and results.json"
+            f"that is baked into the round's pages and results.json"
         )
         if args.sandbox:
             # Sandbox pre-reserves under the production prefix (10.5281) but
