@@ -188,6 +188,24 @@ def cmd_publish(args: argparse.Namespace, token: str) -> None:
     )
     doi = result.get("doi")
     print(f"Published {result.get('links', {}).get('record_html')} as {doi}")
+
+    # The whole round is built around the pre-reserved DOI, which is printed on
+    # its pages and recorded in its results.json. If publication hands out a
+    # different one, the round cites a DOI that is not its own, and the pages
+    # are already frozen in the release: say so loudly rather than let it pass.
+    if args.expect_doi and doi != args.expect_doi:
+        message = (
+            f"Published DOI {doi} differs from the pre-reserved {args.expect_doi} "
+            f"that is baked into round's pages and results.json"
+        )
+        if args.sandbox:
+            # Sandbox pre-reserves under the production prefix (10.5281) but
+            # publishes under its own (10.5072), so test rounds always show
+            # this and their DOIs are meaningless anyway.
+            print(f"Warning: {message}. This is expected on sandbox.")
+        else:
+            sys.exit(message)
+
     emit_outputs(doi=doi, concept_doi=result.get("conceptdoi", ""))
 
 
@@ -221,6 +239,7 @@ def main() -> int:
 
     publish = subparsers.add_parser("publish", help="Publish a draft deposition (irreversible)")
     publish.add_argument("--deposition", required=True, help="Deposition id reported by reserve")
+    publish.add_argument("--expect-doi", help="DOI reserve handed out; publishing a different one is an error")
 
     discard = subparsers.add_parser("discard", help="Delete an unpublished draft deposition")
     discard.add_argument("--deposition", required=True, help="Deposition id reported by reserve")

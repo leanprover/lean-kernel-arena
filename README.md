@@ -264,7 +264,13 @@ each round's own `results.json`.
 
 A tag `test-round-<name>` runs exactly the same thing, but against
 [sandbox.zenodo.org](https://sandbox.zenodo.org), and its release is marked as
-a pre-release. Delete the tag and the GitHub release afterwards and nothing
+a pre-release. Do not read anything into the DOI of a test round: the sandbox
+pre-reserves DOIs under the production prefix (`10.5281`) and then publishes
+them under its own (`10.5072`), so the DOI printed on a test round's pages is
+not the DOI its sandbox record ends up with, and it resolves to whatever
+unrelated record happens to have that id on the real Zenodo. The build says so
+in the `Publish DOI on Zenodo` job; for a real round the same mismatch is an
+error, since the pages that cite the DOI are frozen by then. Delete the tag and the GitHub release afterwards and nothing
 remains; `/round/` only ever lists `round-*`, so a test round never shows up on
 the site even if its release is left in place.
 The tag does not have to be on `master`, so a change to the round machinery
