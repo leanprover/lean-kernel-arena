@@ -2007,7 +2007,11 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     if args.zenodo_deposition:
         meta["zenodo_deposition"] = int(args.zenodo_deposition)
     if meta["round"]:
-        meta["release_url"] = f"{REPO_URL}/releases/tag/{ROUND_TAG_PREFIX}{meta['round']}"
+        # The tag is passed in rather than derived: a test round is released
+        # under test-round-<name>, so reconstructing it from the round name
+        # would point at a release that does not exist.
+        tag = args.tag or f"{ROUND_TAG_PREFIX}{meta['round']}"
+        meta["release_url"] = f"{REPO_URL}/releases/tag/{tag}"
 
     # Publish the raw data alongside the site
     results_json_file = output_dir / "results.json"
@@ -2494,6 +2498,10 @@ def main() -> int:
         "--round",
         metavar="NAME",
         help="Name of the round this build closes, e.g. 2026-10 (default: no round, i.e. the ongoing round)",
+    )
+    build_site_parser.add_argument(
+        "--tag",
+        help=f"Tag this round is released under (default: {ROUND_TAG_PREFIX}<round>)",
     )
     build_site_parser.add_argument(
         "--doi",

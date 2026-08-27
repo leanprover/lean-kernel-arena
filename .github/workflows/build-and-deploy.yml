@@ -429,7 +429,7 @@ jobs:
         run: |
           args=(--tarball _tarball/lean-arena-tests.tar.gz)
           if [ "$ROUND_READY" = true ]; then
-            args+=(--round "$ROUND" --doi "$DOI" --zenodo-deposition "$DEPOSITION")
+            args+=(--round "$ROUND" --tag "$GITHUB_REF_NAME" --doi "$DOI" --zenodo-deposition "$DEPOSITION")
           fi
           ./lka.py build-site "${args[@]}"
         shell: 'nix develop -c bash -euxo pipefail {0}'
