@@ -526,16 +526,8 @@ jobs:
           ./lka.py build-rounds-index --outdir _out/round
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
-      # Give each run attempt its own artifact name. Re-running only this job
-      # leaves the previous attempt's artifact in place; a fixed name would then
-      # collide and deploy-pages aborts with "Multiple artifacts named
-      # github-pages". A per-attempt name makes restarts collision-free.
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          name: github-pages-${{ github.run_attempt }}
-          path: '_out'
-
+      # Taken before the analytics snippet goes in, so the standalone report is
+      # as free of it as the round tarballs are.
       - name: Generate self-contained report
         run: monolith _out/index.html -o /tmp/report.html -i -F -e -M -q
         shell: 'nix develop -c bash -euxo pipefail {0}'
@@ -546,6 +538,24 @@ jobs:
           name: report.html
           path: '/tmp/report.html'
           archive: false
+
+      # Last thing before the pages leave the runner, so that only the deployed
+      # copy carries it: not the round tarballs, not the Zenodo deposits, not
+      # the report above.
+      - name: Add analytics to the deployed pages
+        if: github.event_name == 'workflow_dispatch'
+        run: .github/add-analytics.py templates/analytics.html _out
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      # Give each run attempt its own artifact name. Re-running only this job
+      # leaves the previous attempt's artifact in place; a fixed name would then
+      # collide and deploy-pages aborts with "Multiple artifacts named
+      # github-pages". A per-attempt name makes restarts collision-free.
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          name: github-pages-${{ github.run_attempt }}
+          path: '_out'
 
       - name: Deploy to GitHub Pages
         if: github.event_name == 'workflow_dispatch'

@@ -8,11 +8,10 @@
        frozen artifacts that must still render years from now. #}
     <link rel="stylesheet" href="{{ root_path }}static/chota.min.css">
     <link rel="stylesheet" href="{{ root_path }}static/style.css">
-    <script async src="https://plausible.io/js/pa-RTua_4FfKHhfAvAc3liZd.js"></script>
-    <script>
-        window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-        plausible.init()
-    </script>
+    {# The analytics snippet is deliberately not here; it is injected into the
+       deployed pages only, see .github/add-analytics.py. A round is archived
+       and cited as a frozen artifact, and must not carry a script that calls
+       out to a third party for as long as anyone keeps a copy of it. #}
     <style>
         {% block style %}{% endblock %}
     </style>
