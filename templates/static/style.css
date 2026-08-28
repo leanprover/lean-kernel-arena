@@ -95,3 +95,10 @@ tbody.group:has(.group-toggle:checked) .group-arrow::before {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Narrow gap between column groups (e.g. the per-outcome stats on the index) */
+th.gap-col, td.gap-col {
+  padding-left: 0;
+  padding-right: 0;
+  min-width: 1em;
+}

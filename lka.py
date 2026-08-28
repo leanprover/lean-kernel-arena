@@ -1539,9 +1539,14 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
 
     Returns a dict with:
     - accept_correct: number of tests with outcome=accept that checker accepted
+    - accept_wrong: number of tests with outcome=accept that checker rejected
+    - accept_declined: number of tests with outcome=accept that checker declined
     - accept_total: number of tests with outcome=accept that weren't declined
     - reject_correct: number of tests with outcome=reject that checker rejected
-    - reject_total: number of tests with outcome=reject that weren't declined
+    - reject_wrong: number of tests with outcome=reject that checker accepted
+    - reject_declined: number of tests with outcome=reject that checker declined
+    - either_correct: number of tests with outcome=either that checker processed
+    - either_declined: number of tests with outcome=either that checker declined
     - declined_count: number of tests that checker declined
     - mathlib_time: wall time for the mathlib test (or None)
     - mathlib_cpu_time: CPU time for the mathlib test (or None)
@@ -1551,9 +1556,15 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
     checker_name = checker["name"]
 
     accept_correct = 0
+    accept_wrong = 0
+    accept_declined = 0
     accept_total = 0
     reject_correct = 0
+    reject_wrong = 0
+    reject_declined = 0
     reject_total = 0
+    either_correct = 0
+    either_declined = 0
     declined_count = 0
     mathlib_time = None
     mathlib_cpu_time = None
@@ -1583,27 +1594,44 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
         # Errors don't make any assertion about correctness, so treat them like declines
         if status == "declined" or status == "error":
             declined_count += 1
+            if expected_outcome == "accept":
+                accept_declined += 1
+            elif expected_outcome == "reject":
+                reject_declined += 1
+            elif expected_outcome == "either":
+                either_declined += 1
             continue
 
         # 'either' tests have no settled expected outcome, so they are excluded
         # from the completeness and soundness columns (neither behaviour counts).
         if expected_outcome == "either":
+            either_correct += 1
             continue
 
         if expected_outcome == "accept":
             accept_total += 1
             if status == "accepted":
                 accept_correct += 1
+            else:
+                accept_wrong += 1
         elif expected_outcome == "reject":
             reject_total += 1
             if status == "rejected":
                 reject_correct += 1
+            else:
+                reject_wrong += 1
 
     return {
         "accept_correct": accept_correct,
+        "accept_wrong": accept_wrong,
+        "accept_declined": accept_declined,
         "accept_total": accept_total,
         "reject_correct": reject_correct,
+        "reject_wrong": reject_wrong,
+        "reject_declined": reject_declined,
         "reject_total": reject_total,
+        "either_correct": either_correct,
+        "either_declined": either_declined,
         "declined_count": declined_count,
         "mathlib_time": mathlib_time,
         "mathlib_cpu_time": mathlib_cpu_time,
