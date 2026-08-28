@@ -35,6 +35,11 @@ from pathlib import Path
 # so that it can be reviewed and changed without touching this script.
 METADATA_FILE = Path(__file__).resolve().parent.parent / ".zenodo.json"
 
+# Zenodo mints DOIs as <prefix>/zenodo.<record id>. Sandbox uses DataCite's
+# test prefix, which is why a test round's DOI is not a real one.
+PRODUCTION_DOI_PREFIX = "10.5281"
+SANDBOX_DOI_PREFIX = "10.5072"
+
 
 def api_base(sandbox: bool) -> str:
     return "https://sandbox.zenodo.org" if sandbox else "https://zenodo.org"
@@ -193,18 +198,21 @@ def cmd_publish(args: argparse.Namespace, token: str) -> None:
     # its pages and recorded in its results.json. If publication hands out a
     # different one, the round cites a DOI that is not its own, and the pages
     # are already frozen in the release: say so loudly rather than let it pass.
-    if args.expect_doi and doi != args.expect_doi:
-        message = (
-            f"Published DOI {doi} differs from the pre-reserved {args.expect_doi} "
-            f"that is baked into the round's pages and results.json"
+    expected = args.expect_doi
+    if expected and args.sandbox:
+        # Zenodo synthesizes prereserve_doi with a hardcoded production prefix
+        # (see dump_prereserve_doi in zenodo-rdm's legacy serializer) while
+        # minting under the instance's configured DATACITE_PREFIX, which is
+        # 10.5072 on sandbox. Only the prefix moves; the record id is the same
+        # on both sides. Expect exactly that swap rather than waiving the check
+        # on sandbox altogether, so rehearsals still exercise it.
+        expected = expected.replace(f"{PRODUCTION_DOI_PREFIX}/", f"{SANDBOX_DOI_PREFIX}/", 1)
+
+    if expected and doi != expected:
+        sys.exit(
+            f"Published DOI {doi} differs from the {expected} that is baked "
+            f"into the round's pages and results.json"
         )
-        if args.sandbox:
-            # Sandbox pre-reserves under the production prefix (10.5281) but
-            # publishes under its own (10.5072), so test rounds always show
-            # this and their DOIs are meaningless anyway.
-            print(f"Warning: {message}. This is expected on sandbox.")
-        else:
-            sys.exit(message)
 
     emit_outputs(doi=doi, concept_doi=result.get("conceptdoi", ""))
 
