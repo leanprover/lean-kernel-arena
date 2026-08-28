@@ -2,13 +2,13 @@ description: |
   Test for subject reduction, as in Carneiro's thesis.
 
   The annotation on the lambda writes the middle term of
-  `undecidability/alg-conv-trans-acc` down by hand, sparing the kernel from
+  `corner-cases/alg-conv-trans-acc` down by hand, sparing the kernel from
   having to invent it. The body checks against `right`, the argument against
   `left`, and the two endpoints are never compared.
 
   References:
 
   - Mario Carneiro, *The Type Theory of Lean*, MSc thesis
-leanfile: tests/undecidability/alg-conv.lean
+leanfile: tests/corner-cases/alg-conv.lean
 export-decls: ["redex"]
-outcome: accept
+outcome: either

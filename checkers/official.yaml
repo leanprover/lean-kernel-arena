@@ -1,8 +1,8 @@
-version: "v4.33.0"
+version: "v4.34.0-rc2"
 description: |
   The official Lean 4 kernel checker implementation.
-dir: official-v4.33.0
+dir: official
 build: |
-  echo leanprover/lean4:v4.33.0 > lean-toolchain
+  echo leanprover/lean4:v4.34.0-rc2 > lean-toolchain
   lake build
 run: .lake/build/bin/kernel "$IN"

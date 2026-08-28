@@ -49,7 +49,7 @@ def M.runSmall (env : Environment) (act : M α) : IO α :=
 def exportDeclsFromEnv (env : Lean.Environment) (constants : Array Name)
     (renamings : NameMap Name := {}) : IO Unit := do
   M.runSmall env do
-    initStateCached env
+    initStateCached env ["--export-unsafe"]
     dumpMetadata
     -- First dump all names in the range of the renamings map
     for (_, target) in renamings.toList do

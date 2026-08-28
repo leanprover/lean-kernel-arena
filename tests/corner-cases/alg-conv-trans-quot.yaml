@@ -7,6 +7,6 @@ description: |
   References:
 
   - Mario Carneiro, *The Type Theory of Lean*, MSc thesis
-leanfile: tests/undecidability/alg-conv-trans-quot.lean
+leanfile: tests/corner-cases/alg-conv-trans-quot.lean
 export-decls: ["trans"]
 outcome: either

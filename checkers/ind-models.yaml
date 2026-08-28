@@ -15,6 +15,6 @@ description: |
   implementation bugs in the kernel's handling of inductives.
 url: https://github.com/nomeata/lean-inductive-models
 ref: main
-rev: cf97e271bc24b7f4e537d43e397b4ffd7a57bbea
+rev: b3df02dfc8a101769b1175e95f33a635bc7e587e
 build: lake build lean-inductive-models
 run: .lake/build/bin/lean-inductive-models --quiet --type-check-input --no-output "$IN"

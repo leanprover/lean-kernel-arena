@@ -14,8 +14,6 @@
             </tr>
 {% endmacro %}
 
-{% block static_path %}../../{% endblock %}
-
 {% block title %}{{ checker.name }} - Lean Kernel Arena{% endblock %}
 
 {% block h1 %}<a href="../../">Lean Kernel Arena</a> / {{ checker.name }}
@@ -78,25 +76,30 @@ section pre, details pre {
     <div class="row">
         <div class="col-4">
             <div class="card">
-                <header>Completeness (rightfully accepted tests)</header>
-                <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
-                </p>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card">
                 <header>Soundness (rightfully rejected tests)</header>
-                <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
+                <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
+                    <span title="Correctly rejected">{{ checker.stats.reject_correct }}&nbsp;✅</span>
+                    <span title="Wrongly accepted (unsound)">{{ checker.stats.reject_wrong }}&nbsp;❌</span>
+                    <span title="Declined to process or crashed">{{ checker.stats.reject_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
         <div class="col-4">
             <div class="card">
-                <header>Declined tests</header>
-                <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.declined_count }}
+                <header>Completeness (rightfully accepted tests)</header>
+                <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
+                    <span title="Correctly accepted">{{ checker.stats.accept_correct }}&nbsp;✅</span>
+                    <span title="Wrongly rejected (incomplete)">{{ checker.stats.accept_wrong }}&nbsp;❌</span>
+                    <span title="Declined to process or crashed">{{ checker.stats.accept_declined }}&nbsp;🚫</span>
+                </p>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card">
+                <header>Corner cases (no outcome prescribed)</header>
+                <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
+                    <span title="Accepted or rejected">{{ checker.stats.either_correct }}&nbsp;✅</span>
+                    <span title="Declined to process or crashed">{{ checker.stats.either_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
@@ -125,8 +128,8 @@ section pre, details pre {
                 <td><label title="Click to show the individual tests"><input type="checkbox" class="group-toggle"><span class="group-arrow"></span>{{ row.name }}/ <span class="text-muted">({{ row.count }} tests)</span></label></td>
                 <td class="spacer-col"></td>
                 <td class="text-center"></td>
-                <td class="text-center {% if row.incorrect > 0 %}bg-error{% elif row.declined > 0 %}bg-warning{% endif %}">
-                    <span title="{{ row.correct }} correct, {{ row.incorrect }} incorrect, {{ row.declined }} declined or crashed{% if row.either %}, {{ row.either }} either{% endif %}">{{ row.correct }}</span>
+                <td class="text-center {% if row.incorrect > 0 %}bg-error{% elif row.declined > 0 %}bg-warning{% elif row.correct > 0 %}bg-success{% endif %}">
+                    <span title="{{ row.correct }} correct, {{ row.unsound }} wrongly accepted, {{ row.incomplete }} wrongly rejected, {{ row.declined }} declined or crashed{% if row.either %}, {{ row.either }} either{% endif %}">{{ row.correct }}</span>
                 </td>
                 <td class="text-right">
                     {% if row.time_sum %}<span title="Total over all tests in the group">{{ format_duration(row.time_sum) }}</span>{% endif %}
@@ -185,7 +188,7 @@ section pre, details pre {
 
     <p>
       <b>Test result:</b>
-        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif (result.expected == 'accept' and result.status != 'accepted' and result.status != 'declined' and result.status != 'error') or (result.expected == 'reject' and result.status != 'rejected' and result.status != 'declined' and result.status != 'error') %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
+        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
             {% if result.status == 'accepted' %}👍 accepted{% elif result.status == 'rejected' %}✋ rejected{% elif result.status == 'declined' %}🚫 declined{% else %}💥 {{ result.status }}{% endif %}
         </span>
         · exit code {{ result.exit_code }}

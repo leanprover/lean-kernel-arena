@@ -200,6 +200,90 @@ If it is already known that a checker cannot handle a test, and running it would
 
 The arena does not automatically update the checkers; please submit new releases manually.
 
+## Rounds
+
+The arena runs in **rounds**. <https://arena.lean-lang.org> shows the round
+currently in progress, rebuilt whenever checkers or tests change. Closing a
+round archives it unchanged under
+<https://arena.lean-lang.org/round/>, so that results stay
+referenceable even as checkers, tests and the Lean version they are measured
+against move on.
+
+Rounds are named after a year and a month, e.g. `2026-10`, but are closed
+whenever it seems right rather than on a schedule.
+
+### Closing a round
+
+Push a tag `round-<name>`:
+
+```bash
+git tag round-2026-10
+git push origin round-2026-10
+```
+
+This runs the full CI build (no tests are skipped), and then:
+
+1. reserves a DOI on Zenodo,
+2. builds the site with the round name and DOI baked in,
+3. creates the GitHub release `round-2026-10` with three assets, each named
+   after the round: the whole site as `lean-arena-round-2026-10-site.tar.gz`,
+   the raw results as `lean-arena-round-2026-10-results.json`, and the test
+   suite as `lean-arena-round-2026-10-tests.tar.gz`,
+4. uploads those to Zenodo as a draft deposition,
+5. publishes the Zenodo record, which mints the DOI.
+
+A round build does not touch the live site. The round appears under
+`/round/2026-10/`, and the round index gains a row, with the next
+`workflow_dispatch` run, which assembles `/round/` from the release assets.
+So closing a round is: push the tag, wait for it to go green, then dispatch a
+run of the same workflow.
+
+Publishing cannot be undone, so it happens last, once everything else has
+succeeded. If an earlier step fails or the run is cancelled, both the draft
+deposition and the release are removed again and no DOI is minted. Retry with
+*Re-run all jobs* in the Actions UI — pushing the tag again does nothing, since
+the remote already has it. *Re-run failed jobs* does not work here: it reuses
+the discarded deposition and fails at the upload.
+
+If only the last step fails, the release exists but the DOI does not resolve
+yet. Re-run the `Publish DOI on Zenodo` job; do not close another round before
+it has succeeded, since the next round is built as a new version of this one's
+deposition.
+
+A round that closed successfully cannot be built again: the build refuses to
+start while a release for its tag exists, because a second run would mint a
+second DOI for the same round. Should a run ever die without cleaning up after
+itself, delete the release by hand and start the build again.
+
+Each round is deposited as a new version of the previous one, so all rounds
+share a concept DOI that resolves to the most recent round, next to their
+individual per-round DOIs. The deposition id needed for this is recorded in
+each round's own `results.json`.
+
+### Trying it out
+
+A tag `test-round-<name>` runs exactly the same thing, but against
+[sandbox.zenodo.org](https://sandbox.zenodo.org), and its release is marked as
+a pre-release. Do not read anything into the DOI of a test round: the sandbox
+pre-reserves DOIs under the production prefix (`10.5281`) and then publishes
+them under its own (`10.5072`), so the DOI printed on a test round's pages is
+not the DOI its sandbox record ends up with, and it resolves to whatever
+unrelated record happens to have that id on the real Zenodo. The build says so
+in the `Publish DOI on Zenodo` job; for a real round the same mismatch is an
+error, since the pages that cite the DOI are frozen by then. Delete the tag and the GitHub release afterwards and nothing
+remains; `/round/` only ever lists `round-*`, so a test round never shows up on
+the site even if its release is left in place.
+The tag does not have to be on `master`, so a change to the round machinery
+can be exercised end to end while it is still a pull request.
+
+CI needs two secrets: `ZENODO_TOKEN` and `ZENODO_SANDBOX_TOKEN`, each a
+personal access token with the `deposit:write` and `deposit:actions` scopes,
+from zenodo.org and sandbox.zenodo.org respectively.
+
+The deposition metadata (authors, license, keywords) lives in
+[`.zenodo.json`](.zenodo.json); title, version and publication date are filled
+in per round.
+
 ## Fair Play
 
 Checkers are not run in a sandbox. We assume good faith from all contributors. The goal is to collaboratively improve Lean kernel implementations, not to exploit the test environment. Malicious submissions will be rejected.

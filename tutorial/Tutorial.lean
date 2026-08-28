@@ -74,6 +74,19 @@ bad_decl (.thmDecl {
   value := arrow (.sort 0) (.bvar 0)
 })
 
+theorem pImpliesP (p : Prop) (h : p) : p := h
+
+/-- A theorem can refer to another theorem -/
+good_thm thmProof : ∀(p : Prop), (p → p) → (p → p) := fun p => pImpliesP (p → p)
+
+/-- A theorem cannot refer to itself -/
+bad_decl (.thmDecl {
+  name := `selfProof
+  levelParams := []
+  type := .forallE `p (.sort 0) (.bvar 0) .default
+  value := Lean.mkConst `selfProof
+})
+
 /-- Some level computation -/
 good_decl (.defnDecl {
     name := `levelComp1
@@ -145,14 +158,14 @@ good_def levelMaxAssoc.{u, v, w} :
 /--
 Level equality: `max` is idempotent (`max u u ≈ u`).
 -/
-good_decl 
+good_decl
   -- elaboration would simplify it if we just wrote
   -- def levelMaxIdem : Sort (u + 1) := Sort (max u u)
   (.defnDecl {
     name := `levelMaxIdem
     levelParams := [`u]
     type := .sort (.succ (.param `u))
-    value := .sort (.max (.param `u) (.param `u)) 
+    value := .sort (.max (.param `u) (.param `u))
     hints := .opaque
     safety := .safe
   })
@@ -1434,3 +1447,50 @@ bad_consts #[`DupInd]
 /-- An inductive with two constructors with the same name -/
 bad_consts #[`DupInd2]
   renaming #[(`DupInd2, `DupConCon), (`DupInd2.mk1, `dup_ind_con_con.mk), (`DupInd2.mk2, `dup_ind_con_con.mk)]
+
+/-! ## Safety
+
+Unsafe and partial declarations can't be used in theorems.
+
+Kernels are permitted to automatically reject or decline whenever they see an unsafe or partial declaration (nanoda does this).
+That's reasonable if you're using `lean4export` in the common way where you specify specific constants,
+and only the transitive dependencies of those constants are output.
+In that mode, if unsafe or partial declarations aren't used, they simply won't be output at all.
+Other kernels simply ignore unsafe and partial definitions, so any later use of them becomes an undefined constant.
+-/
+
+unsafe def unsafeLoop : False := unsafeLoop
+
+/-- Unsafe definitions cannot be used in theorems -/
+bad_decl (.thmDecl {
+  name := `falseFromUnsafe
+  levelParams := []
+  type := Lean.mkConst ``False
+  value := Lean.mkConst `unsafeLoop
+})
+
+/- We can't write this:
+
+```
+partial def partialLoop : False := partialLoop
+```
+
+The reason is that the Lean's *elaborator* only allows `partial def` to be an inhabited type.
+The kernel does not ensure that `.partial` types are inhabited.
+-/
+run_meta Lean.addDecl (.mutualDefnDecl [{
+  name := `partialLoop
+  levelParams := []
+  type := Lean.mkConst ``False
+  value := Lean.mkConst `partialLoop
+  hints := .opaque
+  safety := .partial
+}])
+
+/-- Partial definitions cannot be used in theorems -/
+bad_decl (.thmDecl {
+  name := `falseFromPartial
+  levelParams := []
+  type := Lean.mkConst ``False
+  value := Lean.mkConst `partialLoop
+})

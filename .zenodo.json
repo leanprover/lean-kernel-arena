@@ -1,0 +1,39 @@
+{
+  "upload_type": "dataset",
+  "license": "apache-2.0",
+  "access_right": "open",
+  "description": "<p>A round of the <a href=\"https://arena.lean-lang.org\">Lean Kernel Arena</a>: a snapshot of the benchmark results for proof checkers of the Lean theorem prover, comprising the rendered result site, the raw results as <tt>results.json</tt>, and the test suite the round was run against.</p><p>Results are only comparable within a round, since the checkers, the tests and the Lean version they are measured against all change between rounds.</p>",
+  "_comment_creators": [
+    "Zenodo requires at least one creator, so this cannot be left empty.",
+    "Naming the project rather than individuals sidesteps having to decide who",
+    "counts as an author of a round: the checkers being measured are written by",
+    "people who are not authors of the arena, and the reverse. A name without a",
+    "comma is passed through verbatim, so this renders as an organizational",
+    "author. Whoever closes a round is named below as its editor instead."
+  ],
+  "creators": [
+    {
+      "name": "The Lean Kernel Arena contributors"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Breitner, Joachim",
+      "type": "Editor"
+    }
+  ],
+  "keywords": [
+    "Lean",
+    "theorem prover",
+    "proof checking",
+    "kernel",
+    "benchmark"
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "https://github.com/leanprover/lean-kernel-arena",
+      "resource_type": "software"
+    }
+  ]
+}

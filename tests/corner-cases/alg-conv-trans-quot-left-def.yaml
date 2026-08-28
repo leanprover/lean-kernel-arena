@@ -1,6 +1,6 @@
 description: |
   `left` with `Quot.lift` behind a definition. WHNF does not unfold `lift`, so
   the arguments are compared and proof irrelevance applies.
-leanfile: tests/undecidability/alg-conv-trans-quot.lean
+leanfile: tests/corner-cases/alg-conv-trans-quot.lean
 export-decls: ["left'"]
 outcome: either

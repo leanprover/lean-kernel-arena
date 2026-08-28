@@ -1,7 +1,7 @@
 description: |
-  The mechanical half of `undecidability/alg-conv-trans-acc`. With a
+  The mechanical half of `corner-cases/alg-conv-trans-acc`. With a
   constructor in the major premise, `Acc.rec` fires and `step` descends to the
   predecessor `0`.
-leanfile: tests/undecidability/alg-conv.lean
+leanfile: tests/corner-cases/alg-conv.lean
 export-decls: ["right"]
-outcome: accept
+outcome: either

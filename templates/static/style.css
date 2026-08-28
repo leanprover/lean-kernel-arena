@@ -72,3 +72,42 @@ td.group-member {
 tbody.group:has(.group-toggle:checked) .group-arrow::before {
   content: "▾ ";
 }
+
+/* Citation box for a released round with a DOI */
+.citation {
+  background-color: var(--bg-secondary-color, #f3f3f6);
+  border-left: 4px solid var(--color-primary, #14854f);
+  padding: 0.6rem 1rem;
+  margin: 1rem 0;
+}
+.citation code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Narrow gap between column groups (e.g. the per-outcome stats on the index) */
+th.gap-col, td.gap-col {
+  padding-left: 0;
+  padding-right: 0;
+  min-width: 1em;
+}
+
+/* Header rows are not data rows: keep them out of the zebra striping
+   (the selector mirrors chota's striping rule to win on specificity) */
+table.striped thead tr:nth-of-type(2n) {
+  background-color: transparent;
+}
+
+/* Compact two-row header of the checker summary table */
+table.checker-summary thead th {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+/* Severity backgrounds for result cells: green marks a correct answer,
+   red a wrong one, yellow a declined or crashed test. These replace
+   chota's saturated .bg-error and .bg-success site-wide; chota marks
+   its rules !important, so these must be, too. */
+.bg-success { background-color: #d4edda !important; }
+.bg-error { background-color: #f8d7da !important; }
+.bg-warning { background-color: #fff3cd !important; }

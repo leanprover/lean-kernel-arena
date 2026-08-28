@@ -2,9 +2,6 @@
 
 {# CSS styles shared across detail pages #}
 {% macro detail_styles() %}
-.bg-success { background-color: #d4edda; }
-.bg-error { background-color: #f8d7da; }
-.bg-warning { background-color: #fff3cd; }
 .description {
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
@@ -22,7 +19,7 @@
 
 {# Result status cell with background color #}
 {% macro result_status_cell(expected, status) %}
-<td class="text-center {% if expected == 'either' %}{% elif (expected == 'accept' and status == 'accepted') or (expected == 'reject' and status == 'rejected') %}{% elif status == 'declined' or status == 'error' %}bg-warning{% else %}bg-error{% endif %}">
+<td class="text-center {% if expected == 'either' %}{% elif (expected == 'accept' and status == 'accepted') or (expected == 'reject' and status == 'rejected') %}bg-success{% elif status == 'declined' or status == 'error' %}bg-warning{% else %}bg-error{% endif %}">
     {% if status == 'accepted' %}👍{% elif status == 'rejected' %}✋{% elif status == 'declined' %}🚫{% else %}💥{% endif %}
 </td>
 {% endmacro %}
