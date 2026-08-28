@@ -77,24 +77,29 @@ section pre, details pre {
         <div class="col-4">
             <div class="card">
                 <header>Soundness (rightfully rejected tests)</header>
-                <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
+                <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
+                    <span title="Correctly rejected">{{ checker.stats.reject_correct }}&nbsp;✅</span>
+                    <span title="Wrongly accepted (unsound)">{{ checker.stats.reject_wrong }}&nbsp;❌</span>
+                    <span title="Declined to process or crashed">{{ checker.stats.reject_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
         <div class="col-4">
             <div class="card">
                 <header>Completeness (rightfully accepted tests)</header>
-                <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
+                <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
+                    <span title="Correctly accepted">{{ checker.stats.accept_correct }}&nbsp;✅</span>
+                    <span title="Wrongly rejected (incomplete)">{{ checker.stats.accept_wrong }}&nbsp;❌</span>
+                    <span title="Declined to process or crashed">{{ checker.stats.accept_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
         <div class="col-4">
             <div class="card">
-                <header>Declined tests</header>
-                <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.declined_count }}
+                <header>Corner cases (no outcome prescribed)</header>
+                <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
+                    <span title="Accepted or rejected">{{ checker.stats.either_correct }}&nbsp;✅</span>
+                    <span title="Declined to process or crashed">{{ checker.stats.either_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
