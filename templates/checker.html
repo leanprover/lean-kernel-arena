@@ -76,17 +76,17 @@ section pre, details pre {
     <div class="row">
         <div class="col-4">
             <div class="card">
-                <header>Completeness (rightfully accepted tests)</header>
+                <header>Soundness (rightfully rejected tests)</header>
                 <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
+                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
                 </p>
             </div>
         </div>
         <div class="col-4">
             <div class="card">
-                <header>Soundness (rightfully rejected tests)</header>
+                <header>Completeness (rightfully accepted tests)</header>
                 <p class="is-center" style="font-size: 2rem;">
-                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
+                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
                 </p>
             </div>
         </div>
