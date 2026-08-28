@@ -19,13 +19,7 @@
 <body>
     <div class="container">
         <header class="is-center">
-            <h1>{% block h1 %}Lean Kernel Arena{% endblock %}</h1>
-            {% block round_line %}
-            <p class="round-line">
-                {% if build_info.round %}Round {{ build_info.round }}{% else %}Round in progress{% endif %}
-                · <a href="{{ rounds_url }}">other rounds</a>
-            </p>
-            {% endblock %}
+            <h1>{% block h1 %}Lean Kernel Arena – {% if build_info.round %}Round {{ build_info.round }}{% else %}Round in progress{% endif %}{% endblock %}</h1>
         </header>
 
         <main>

@@ -73,17 +73,6 @@ tbody.group:has(.group-toggle:checked) .group-arrow::before {
   content: "▾ ";
 }
 
-/* Round indicator under the page title: either the tag of a released round
-   or "Round in progress" for the continuously updated site */
-.round-line {
-  font-size: 0.9em;
-  margin-top: -0.5rem;
-  color: var(--color-grey, #747681);
-}
-.round-line a {
-  color: var(--color-grey, #747681);
-}
-
 /* Citation box for a released round with a DOI */
 .citation {
   background-color: var(--bg-secondary-color, #f3f3f6);
