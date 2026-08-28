@@ -123,8 +123,8 @@ section pre, details pre {
                 <td><label title="Click to show the individual tests"><input type="checkbox" class="group-toggle"><span class="group-arrow"></span>{{ row.name }}/ <span class="text-muted">({{ row.count }} tests)</span></label></td>
                 <td class="spacer-col"></td>
                 <td class="text-center"></td>
-                <td class="text-center {% if row.incorrect > 0 %}bg-error{% elif row.declined > 0 %}bg-warning{% endif %}">
-                    <span title="{{ row.correct }} correct, {{ row.incorrect }} incorrect, {{ row.declined }} declined or crashed{% if row.either %}, {{ row.either }} either{% endif %}">{{ row.correct }}</span>
+                <td class="text-center {% if row.unsound > 0 %}bg-error{% elif row.incomplete > 0 %}bg-warning{% endif %}">
+                    <span title="{{ row.correct }} correct, {{ row.unsound }} wrongly accepted, {{ row.incomplete }} wrongly rejected, {{ row.declined }} declined or crashed{% if row.either %}, {{ row.either }} either{% endif %}">{{ row.correct }}</span>
                 </td>
                 <td class="text-right">
                     {% if row.time_sum %}<span title="Total over all tests in the group">{{ format_duration(row.time_sum) }}</span>{% endif %}
@@ -183,7 +183,7 @@ section pre, details pre {
 
     <p>
       <b>Test result:</b>
-        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif (result.expected == 'accept' and result.status != 'accepted' and result.status != 'declined' and result.status != 'error') or (result.expected == 'reject' and result.status != 'rejected' and result.status != 'declined' and result.status != 'error') %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
+        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif result.status == 'declined' or result.status == 'error' %}{% elif result.status == 'accepted' %}bg-error{% else %}bg-warning{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
             {% if result.status == 'accepted' %}👍 accepted{% elif result.status == 'rejected' %}✋ rejected{% elif result.status == 'declined' %}🚫 declined{% else %}💥 {{ result.status }}{% endif %}
         </span>
         · exit code {{ result.exit_code }}

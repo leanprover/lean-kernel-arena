@@ -1873,7 +1873,8 @@ def summarize_correctness(result_list: list[dict]) -> dict:
 
     Errors are counted as declined, matching the scoring elsewhere.
     """
-    counts = {"present": 0, "correct": 0, "incorrect": 0, "declined": 0, "either": 0}
+    counts = {"present": 0, "correct": 0, "incorrect": 0, "unsound": 0,
+              "incomplete": 0, "declined": 0, "either": 0}
     for result in result_list:
         if result is None:
             continue
@@ -1882,6 +1883,14 @@ def summarize_correctness(result_list: list[dict]) -> dict:
         if correctness == "error":
             correctness = "declined"
         counts[correctness] = counts.get(correctness, 0) + 1
+        # Split wrong answers by direction: accepting what should have been
+        # rejected is unsound, rejecting what should have been accepted is
+        # merely incomplete
+        if correctness == "incorrect":
+            if result.get("status") == "accepted":
+                counts["unsound"] += 1
+            else:
+                counts["incomplete"] += 1
     # Scored tests: those that count towards completeness/soundness plus declines
     counts["scored"] = counts["correct"] + counts["incorrect"] + counts["declined"]
     return counts

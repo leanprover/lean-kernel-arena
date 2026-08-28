@@ -9,7 +9,7 @@
                     {% if checker.name == 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}{% elif result.status == 'accepted' %}bg-error{% else %}bg-warning{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -35,7 +35,7 @@
                     {% if checker.name != 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status == 'declined' or result.status == 'error' %}{% elif result.status == 'accepted' %}bg-error{% else %}bg-warning{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -70,20 +70,17 @@
 
 {# Aggregated per-checker cell in a group summary row #}
 {% macro group_summary_cell(stats, official) %}
-                <td class="text-center {% if official %}official-column {% endif %}{% if stats.present == 0 %}{% elif stats.incorrect > 0 %}bg-error{% elif stats.declined > 0 %}bg-warning{% endif %}">
+                <td class="text-center {% if official %}official-column {% endif %}{% if stats.present == 0 %}{% elif stats.unsound > 0 %}bg-error{% elif stats.incomplete > 0 %}bg-warning{% endif %}">
                     {% if stats.present == 0 %}
                         -
                     {% else %}
-                        <span title="{{ stats.correct }} correct, {{ stats.incorrect }} incorrect, {{ stats.declined }} declined or crashed{% if stats.either %}, {{ stats.either }} either{% endif %}">{{ stats.correct }}</span>
+                        <span title="{{ stats.correct }} correct, {{ stats.unsound }} wrongly accepted, {{ stats.incomplete }} wrongly rejected, {{ stats.declined }} declined or crashed{% if stats.either %}, {{ stats.either }} either{% endif %}">{{ stats.correct }}</span>
                     {% endif %}
                 </td>
 {% endmacro %}
 
 {% block style %}
 .checker-name { font-weight: 600; }
-.bg-success { background-color: #d4edda; }
-.bg-danger { background-color: #f8d7da; }
-.bg-warning { background-color: #fff3cd; }
 .text-muted { color: #6c757d; }
 .banner {
     width: 100%;
@@ -242,11 +239,11 @@ details.page-details > summary h3 {
                 <td>{{ checker.version }}</td>
                 <td class="spacer-col"></td>
                 <td class="text-center">{{ checker.stats.reject_correct or '' }}</td>
-                <td class="text-center {% if checker.stats.reject_wrong > 0 %}bg-danger{% endif %}">{{ checker.stats.reject_wrong or '' }}</td>
+                <td class="text-center {% if checker.stats.reject_wrong > 0 %}bg-error{% endif %}">{{ checker.stats.reject_wrong or '' }}</td>
                 <td class="text-center">{{ checker.stats.reject_declined or '' }}</td>
                 <td class="gap-col"></td>
                 <td class="text-center">{{ checker.stats.accept_correct or '' }}</td>
-                <td class="text-center {% if checker.stats.accept_wrong > 0 %}bg-danger{% endif %}">{{ checker.stats.accept_wrong or '' }}</td>
+                <td class="text-center {% if checker.stats.accept_wrong > 0 %}bg-warning{% endif %}">{{ checker.stats.accept_wrong or '' }}</td>
                 <td class="text-center">{{ checker.stats.accept_declined or '' }}</td>
                 <td class="gap-col"></td>
                 <td class="text-center">{{ checker.stats.either_correct or '' }}</td>

@@ -103,3 +103,12 @@ table.checker-summary thead th {
   padding-top: 0.2rem;
   padding-bottom: 0.2rem;
 }
+
+/* Severity backgrounds for result cells: red marks unsound behaviour
+   (wrongly accepted), yellow incomplete behaviour (wrongly rejected),
+   green a correct answer. These replace chota's saturated .bg-error and
+   .bg-success site-wide; chota marks its rules !important, so these
+   must be, too. */
+.bg-success { background-color: #d4edda !important; }
+.bg-error { background-color: #f8d7da !important; }
+.bg-warning { background-color: #fff3cd !important; }
