@@ -1,0 +1,15 @@
+description: |
+  The same as `corner-cases/proj-maybe-prop`, for a projection that only has
+  to step over such a field.
+
+  `MaybeProp.tail` is a proof for every `u`, so the field asked for here is
+  unobjectionable even under the restrictive reading. But reaching it means
+  walking past `field`, which `proof` depends on, and that is where the check
+  on a genuine proposition (the tutorial's `projProp6`) fires. A checker that
+  rejects `corner-cases/proj-maybe-prop` therefore rejects this one as well,
+  at field 0 rather than at field 2, and that remains a reasonable choice for
+  the same reason. See <https://github.com/leanprover/lean4/issues/7637> for
+  discussion.
+leanfile: tests/corner-cases/proj-maybe-prop.lean
+export-decls: ["projMaybePropPast"]
+outcome: either
