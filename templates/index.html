@@ -121,7 +121,7 @@ table thead th {
     </header>
     {% if checkers %}
     <div style="overflow-x:auto">
-    <table class="striped">
+    <table class="striped checker-summary">
         <thead>
             <tr>
                 <th rowspan="2" style="vertical-align: bottom;">Checker</th>
@@ -137,13 +137,13 @@ table thead th {
                 <th rowspan="2" class="text-right" style="vertical-align: bottom;" title="Peak memory usage for mathlib test">🧠</th>
             </tr>
             <tr>
-                <th class="text-center" title="Correctly rejected">✋</th>
-                <th class="text-center" title="Wrongly accepted (unsound)">👍</th>
+                <th class="text-center" title="Correctly rejected">✅</th>
+                <th class="text-center" title="Wrongly accepted (unsound)">❌</th>
                 <th class="text-center" title="Declined to process or crashed">🚫</th>
-                <th class="text-center" title="Correctly accepted">👍</th>
-                <th class="text-center" title="Wrongly rejected (incomplete)">✋</th>
+                <th class="text-center" title="Correctly accepted">✅</th>
+                <th class="text-center" title="Wrongly rejected (incomplete)">❌</th>
                 <th class="text-center" title="Declined to process or crashed">🚫</th>
-                <th class="text-center" title="Accepted or rejected">👍✋</th>
+                <th class="text-center" title="Accepted or rejected">✅</th>
                 <th class="text-center" title="Declined to process or crashed">🚫</th>
             </tr>
         </thead>
@@ -154,11 +154,11 @@ table thead th {
                 <td>{{ checker.version }}</td>
                 <td class="spacer-col"></td>
                 <td class="text-center">{{ checker.stats.reject_correct or '' }}</td>
-                <td class="text-center {% if checker.stats.reject_wrong > 0 %}bg-error{% endif %}">{{ checker.stats.reject_wrong or '' }}</td>
+                <td class="text-center {% if checker.stats.reject_wrong > 0 %}bg-danger{% endif %}">{{ checker.stats.reject_wrong or '' }}</td>
                 <td class="text-center">{{ checker.stats.reject_declined or '' }}</td>
                 <td class="gap-col"></td>
                 <td class="text-center">{{ checker.stats.accept_correct or '' }}</td>
-                <td class="text-center {% if checker.stats.accept_wrong > 0 %}bg-error{% endif %}">{{ checker.stats.accept_wrong or '' }}</td>
+                <td class="text-center {% if checker.stats.accept_wrong > 0 %}bg-danger{% endif %}">{{ checker.stats.accept_wrong or '' }}</td>
                 <td class="text-center">{{ checker.stats.accept_declined or '' }}</td>
                 <td class="gap-col"></td>
                 <td class="text-center">{{ checker.stats.either_correct or '' }}</td>

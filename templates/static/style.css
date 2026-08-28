@@ -102,3 +102,15 @@ th.gap-col, td.gap-col {
   padding-right: 0;
   min-width: 1em;
 }
+
+/* Header rows are not data rows: keep them out of the zebra striping
+   (the selector mirrors chota's striping rule to win on specificity) */
+table.striped thead tr:nth-of-type(2n) {
+  background-color: transparent;
+}
+
+/* Compact two-row header of the checker summary table */
+table.checker-summary thead th {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
