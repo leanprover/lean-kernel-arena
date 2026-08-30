@@ -7,49 +7,22 @@ description: |
 
   - **One inductive type, one recursor.** Nested inductives are compiled to
     mutual blocks and every mutual block is then flattened to a single indexed
-    family, so the core never sees a nested occurrence or a mutual one. The
-    invented constants live in a namespace the export format cannot spell, so
-    "nothing the front end invented survives" is a check the kernel runs rather
-    than a naming convention.
+    family, so the core never sees a nested occurrence or a mutual one.
   - **Recursors are derived, not believed.** The eliminator and its iota rules
-    are reconstructed from the inductive specification and the exported ones
-    must match, so no export can smuggle in an unwarranted large elimination or
-    an extra reduction rule. Nor are they believed once derived: each rule is
-    typechecked against the type its own left-hand side has.
-  - **Mutual blocks whose types span universes can be derived.** Every other
-    kernel requires them to end in the same sort. This one can instead build the
-    block out of declarations that are already admissible — an all-`Prop`
-    shadow, the data members declared separately in topological order, the
-    recursors rebuilt over the two — and check every constructor type and iota
-    rule definitionally against that derivation. It is off here:
-    `--enforce-mutual-univ` is in the run line below, so what this entry
-    measures is the rule every other kernel follows. `lean4export` emits no such
-    block, so the setting changes no verdict on any of the arena's exports.
-  - **The arithmetic shortcuts want evidence.** `Nat.add` and friends are
-    computed on bignums only when the definition in the file is definitionally
-    the standard one, not because of what it is called. Kernels that trust the
-    name accept files this one rejects, and the divergence is deliberate.
+    are rebuilt from the inductive specification and the exported ones must
+    match, so no export can smuggle in an unwarranted large elimination or an
+    extra reduction rule.
   - **Clean room.** No Lean kernel source of any kind was read — not `lean4`,
     not `lean4lean`, not `trepplein`, not `nanoda`. The references were
     Carneiro's *The Type Theory of Lean*, the NDJSON format specification, and
-    this arena's accept/reject verdicts. The type theory it does implement is
-    written down normatively in `SPEC.md`, and every place it knowingly departs
-    from official Lean is argued in `SPEC.md` §12.
+    this arena's verdicts.
 
-  Checked in two passes on eight threads: the first reads each declaration into
-  the environment taking its statement on trust, the second makes both
-  judgements about it. Depends on the GHC boot libraries and nothing else, so
-  the build is one `ghc --make` with no package index to fetch.
-
-  Nothing is declined. `mathlib` is the tight one — one declaration in it holds
-  a 12.5 GB live set, all memo table, single-threaded or not — and it is checked
-  by naming a ceiling and letting the collector work out for itself when it has
-  to compact to stay under one: 12.8 GB against 21.1 GB with the ceiling raised
-  out of reach, and nothing at all charged to the three exports that never come
-  near it. `--mem` throttles how many threads work at once when a major
-  collection finds too much alive, so the other seven do not land on top of that
-  declaration. Over the ceiling the answer is a decline and not the runner's OOM
-  killer.
+  The type theory it does implement is written down normatively in `SPEC.md`,
+  and every place it knowingly departs from official Lean is argued in §12 —
+  including the one `--enforce-mutual-univ` turns off below, so that the
+  language scored here is the language every other checker is scored on.
+  Nothing is declined; `mathlib` fits by naming a heap ceiling rather than a
+  ratio.
 version: "1.1.2"
 url: https://github.com/Timeroot/eink0rn
 ref: v1.1.2
