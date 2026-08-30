@@ -1,13 +1,6 @@
-# The Lean Kernel Arena entry for eink0rn, to be copied to
-# checkers/eink0rn.yaml in leanprover/lean-kernel-arena.  Kept here so that the
-# recipe travels with the thing it builds.
-#
-# `rev` is left unfilled on purpose: a file cannot name the commit that
-# contains it.  The submitted copy carries the commit `ref` points at, which is
-# what the arena will clone --
-#
-#   sed "s/f01ab3cff7795227194463a09e443ef95c4e46a2/$(git rev-parse v1.1.2^{commit})/" \
-#     tools/arena-checker.yaml > ../lean-kernel-arena/checkers/eink0rn.yaml
+# Source of truth: https://github.com/Timeroot/eink0rn (tools/arena-checker.yaml),
+# so that the recipe travels with the thing it builds.  `rev` there is the
+# commit `ref` points at, filled in on the way here.
 description: |
   **eink0rn** — a Lean 4 kernel in Haskell, written clean-room, that normalises
   the surface language away before checking anything.
