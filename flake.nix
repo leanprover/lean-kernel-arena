@@ -27,6 +27,7 @@
           opam
           gmp
           zig
+          ghc
         ];
       };
     };
