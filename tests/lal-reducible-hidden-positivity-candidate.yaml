@@ -1,4 +1,0 @@
-description: |
-  Complete-recursor companion for a recursive occurrence hidden behind a reducible definition.
-file: tests/lal-reducible-hidden-positivity-candidate.ndjson
-outcome: reject

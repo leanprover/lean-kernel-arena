@@ -1,0 +1,6 @@
+description: |
+  A recursive occurrence appears in an unused argument of a reducible
+  definition in a constructor field. A checker may reject it syntactically or
+  accept it after reducing the field type.
+file: tests/corner-cases/positivity-whnf.ndjson
+outcome: either
