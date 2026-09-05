@@ -1,0 +1,5 @@
+description: |
+  Swaps two proof parameters in an inductive constructor result. Checkers may
+  either reject the swap or accept it using proof irrelevance.
+file: tests/corner-cases/proof-param-swap.ndjson
+outcome: either

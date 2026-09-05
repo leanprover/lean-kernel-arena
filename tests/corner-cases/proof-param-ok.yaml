@@ -1,0 +1,5 @@
+description: |
+  Keeps two proof parameters in their declared order in an inductive
+  constructor result.
+file: tests/corner-cases/proof-param-ok.ndjson
+outcome: accept
