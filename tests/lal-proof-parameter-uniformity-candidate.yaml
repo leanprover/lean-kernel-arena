@@ -1,0 +1,4 @@
+description: |
+  Ordinary constructor-result proof-parameter order characterization. The edited expressions are shared with the complete recursor motive and rule annotation.
+file: tests/lal-proof-parameter-uniformity-candidate.ndjson
+outcome: either
