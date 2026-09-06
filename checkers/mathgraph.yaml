@@ -20,7 +20,7 @@ description: |
   Developed by [Metalogic Labs](https://mathgraph.org/).
 url: https://github.com/metalogiclabs/mathgraph-lean-kernel
 ref: mathgraph
-rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd
+rev: a8e6886e417ce25320bee6e9a990fa72e44a7320
 build: |
   cat > config.json <<__END__
    {
