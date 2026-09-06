@@ -11,12 +11,7 @@ description: |
     | mk (f : Ignore Unit T -> T) : T
   ```
 
-  `Ignore` takes a second type argument but does not use it, so `Ignore
-Unit T` reduces to `Unit`. A checker that inspects the unreduced constructor
-field may reject the syntactic occurrence of `T` in the domain of the arrow. A
-checker that first weak-head-normalizes the field type may instead see `(Unit ->
-T) -> T` and accept it. The test therefore has outcome `eithe
-r`.
+  `Ignore` takes a second type argument but does not use it, so `Ignore Unit T` reduces to `Unit`. A checker that inspects the unreduced constructor field may reject the syntactic occurrence of `T` in the domain of the arrow. A checker that first weak-head-normalizes the field type may instead see `(Unit -> T) -> T` and accept it. The test therefore has outcome `eithe r`.
   
   A checker may reject it syntactically or accept it after reducing the field type.
 file: tests/corner-cases/positivity-whnf.ndjson
