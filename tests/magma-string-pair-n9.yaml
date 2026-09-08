@@ -1,0 +1,16 @@
+description: |
+  Countermodel certificate for an equational-theories implication, closed by
+  `decide`. A magma on `Fin 9` with the operation table encoded as a `String`
+  satisfies `x ◇ y = (((z ◇ w) ◇ y) ◇ x) ◇ y` but not
+  `x ◇ y = ((z ◇ (z ◇ y)) ◇ x) ◇ y`. Checking the certificate evaluates the
+  decidable instance over all 9^4 ≈ 6.5k four-tuples, decoding each table
+  entry out of the string on every lookup. The heaviest of the string-table
+  tests.
+
+  From a corpus of certificates generated for the SAIR math distillation
+  challenge (equational theories track). `magma-string-n4` is the same
+  workload at a smaller scale.
+leanfile: tests/magma-string-pair-n9.lean
+outcome: accept
+compare-perf: true
+export-decls: ["countermodel"]

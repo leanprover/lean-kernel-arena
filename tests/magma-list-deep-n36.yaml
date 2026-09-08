@@ -1,0 +1,15 @@
+description: |
+  Countermodel certificate for an equational-theories implication, closed by
+  `decide`. A magma on `Fin 36` with an inline `List` operation table satisfies
+  `x = y ◇ (y ◇ (x ◇ (y ◇ x)))` but not `x = x ◇ (x ◇ x)`. The search space is
+  only 36^2 tuples, but each side of the equation nests the operation five
+  deep, so every tuple expands into a long chain of linear list lookups. The
+  heaviest test of the magma family.
+
+  From a corpus of certificates generated for the SAIR math distillation
+  challenge (equational theories track). `magma-list-deep-n21` is the same
+  workload at a smaller scale.
+leanfile: tests/magma-list-deep-n36.lean
+outcome: accept
+compare-perf: true
+export-decls: ["countermodel"]

@@ -1,0 +1,14 @@
+description: |
+  Countermodel certificate for an equational-theories implication, closed by
+  `decide`. A magma on `Fin 21` with an inline `List` operation table satisfies
+  `x ◇ y = z ◇ w` but not `x = x ◇ x`. Checking the certificate evaluates the
+  decidable instance over all 21^4 ≈ 195k four-tuples; every `◇` unfolds to a
+  linear lookup into the list. The widest search space of the magma family.
+
+  From a corpus of certificates generated for the SAIR math distillation
+  challenge (equational theories track). `magma-list-pair-n7` is the same
+  workload at a smaller scale.
+leanfile: tests/magma-list-pair-n21.lean
+outcome: accept
+compare-perf: true
+export-decls: ["countermodel"]
