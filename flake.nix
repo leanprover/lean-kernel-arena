@@ -1,5 +1,5 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   outputs = { self, nixpkgs }:
     let
       system = "x86_64-linux";
@@ -9,15 +9,25 @@
       devShell.${system} = pkgs.stdenv.mkDerivation rec {
         name = "lean-kernel-arena";
         buildInputs = with pkgs; [
-          python3
-          python3Packages.jinja2
-          python3Packages.pyyaml
-          python3Packages.jsonschema
-          python3Packages.markdown
+          (python3.withPackages (p : with p; [ jinja2 pyyaml jsonschema markdown ]))
           elan
-          rustc 
+          rustc
           cargo
+          llvmPackages_21.libllvm
           perf
+          libffi
+          libffi.dev
+          pkg-config
+          jq
+          just
+          pypy
+          monolith
+          nodejs
+          ocaml
+          opam
+          gmp
+          zig
+          ghc
         ];
       };
     };

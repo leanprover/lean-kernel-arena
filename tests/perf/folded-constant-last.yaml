@@ -1,0 +1,14 @@
+description: |
+  The declaration to check compares
+
+      tagged (count #n)      and      (count #n, false)
+
+  where `tagged m = (m, isZero m)`: `folded-constant-first.lean` with the
+  components swapped, so the plain occurrences of `count #n` are compared
+  before anything forces the application.
+
+  N=1000 in the Lean source. From Courant and Leroy, POPL 2026, §10.
+leanfile: tests/perf/folded-constant-last.lean
+export-decls: ["kernel_folded_constant_last"]
+outcome: accept
+compare-perf: true

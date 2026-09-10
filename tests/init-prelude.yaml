@@ -1,7 +1,5 @@
 description: |
   The `Init.Prelude` module export.
-
-  It also includes `Init.Data.String.Bootstrap` as some kernels expect the `String.ofList` function
-  to exist to make sense of string literals.
 leanfile: tests/init_prelude_module.lean
 outcome: accept
+compare-perf: true

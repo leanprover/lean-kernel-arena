@@ -1,0 +1,15 @@
+name = "test-printer"
+leanOptions = [{name = "autoImplicit", value = false}]
+
+[[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso"
+rev = "main"
+
+[[lean_lib]]
+name = "TestPrinter"
+roots = ["TestPrinter.NdjsonParser", "TestPrinter.Types", "TestPrinter.Merge", "TestPrinter.PrettyPrint", "TestPrinter.Render", "TestPrinter.AddConstInfo"]
+
+[[lean_exe]]
+name = "test-printer"
+root = "Main"

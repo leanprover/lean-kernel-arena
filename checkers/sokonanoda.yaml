@@ -1,0 +1,29 @@
+description: |
+  sokonanoda: conversion checking uses closures.
+
+  A (distant) fork of
+  [nanoda](https://github.com/ammkrn/nanoda_lib).
+  Inspired by
+  [smalltt](https://github.com/AndrasKovacs/smalltt).
+url: https://github.com/intgrah/sokonanoda
+ref: master
+rev: 7b51784fe4ec9b82bf7a20c71ba6bf803a4ed7c0
+build: |
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init-prelude
+  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
+  target/release/sokonanoda config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+run: |
+  target/release/sokonanoda config.json < "$IN" || exit 1

@@ -1,0 +1,5 @@
+description: |
+  Quotient computation rule.
+leanfile: tests/corner-cases/alg-conv-trans-quot.lean
+export-decls: ["right"]
+outcome: either

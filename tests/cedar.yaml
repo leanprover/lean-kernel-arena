@@ -1,0 +1,16 @@
+description: |
+  Lean formalization of, and proofs about, [Cedar](https://www.cedarpolicy.com/).
+
+  Auto-generated documentation is available at https://cedar-policy.github.io/cedar-spec/docs/.
+
+  This test case exports the whole `Cedar` module and as such contains even unused parts `Init` and
+  `Batteries.`
+url: https://github.com/cedar-policy/cedar-spec/
+ref: main
+rev: f36af0f9fc038b9e6a340960fc24f3b610a84aee
+pre-build: |
+  shopt -s dotglob && find . -mindepth 1 -maxdepth 1 ! -name cedar-lean -exec rm -rf {} + && mv cedar-lean/* . && rmdir cedar-lean
+module: Cedar
+outcome: accept
+compare-perf: true
+skip-on-ci: true

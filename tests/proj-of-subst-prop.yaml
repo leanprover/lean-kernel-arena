@@ -1,0 +1,45 @@
+description: |
+  Proof of `False` by projecting the `Bool` field out of a proposition, reached by
+  substituting a proof of one proposition for a proof of a definitionally equal
+  one.
+
+  ### Mechanism
+
+  1.  *Definitional equality is not transitive here.*  `a`, `b` and `c` are three
+      `Bool`s built from `Acc.rec` such that a kernel reports `a ≡ b` and
+      `b ≡ c` — both by proof irrelevance on the `Acc` argument, the latter after
+      some iota steps — while `a ≢ c`, because there the two `Acc` proofs have
+      different types (`Acc (· < ·) 1` vs. `Acc (· < ·) 0`).
+
+  2.  *So `P := a = b` and `Q := a = c` are definitionally equal types whose
+      proofs behave differently.*  `gate h := Eq.rec (motive := fun _ _ => Type)
+      Prop h` K-reduces to `Prop` for `h : P`, because that reduction only needs
+      the type of `h` to be definitionally equal to the type `a = a` of
+      `Eq.refl a`, i.e. `b ≡ a`.  For the closed `witness : Q` it stays stuck,
+      since that would need `c ≡ a`.
+
+  3.  *An inductive family is declared over the reducing side and used on the
+      stuck one.*  `Owner : ∀ (h : P), gate h` is accepted as a family of
+      propositions — its recursor only eliminates into `Prop`.  `Owner witness`
+      is well-typed, since `Q ≡ P`, but its sort does not reduce to `Prop`, so
+      the projection `observe` is permitted to extract the `Bool` field from an
+      inhabitant.
+
+  Proof irrelevance then identifies two `Owner.mk` applications carrying
+  different `Bool` fields, and observing them yields `False`, with no axioms
+  involved.
+
+  Unlike `rec-missing-ih` and `proj-of-stuck-prop`, this needs no interference
+  from the definitional-equality cache: every comparison above comes out the same
+  way in a fresh type-checker session, so it is independent of whether, and how,
+  such a cache is keyed.  What it does need is that the sort of an inductive
+  family is re-examined after a substitution that definitional equality permits.
+
+  The projection in the last step is ruled out by
+  [leanprover/lean4#14807](https://github.com/leanprover/lean4/pull/14807), which
+  makes the kernel's `is_prop` check require the inferred type to reduce to a
+  sort: a stuck sort then raises `(kernel) type expected` instead of answering
+  that the type is not a proposition.
+leanfile: tests/proj-of-subst-prop.lean
+export-decls: ["inconsistent"]
+outcome: reject

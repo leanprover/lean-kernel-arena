@@ -1,0 +1,9 @@
+description: |
+  Universe-level normalization corner cases. The declarations use `imax u 1`
+  and `imax u (v + 1)` where their declared types use the corresponding
+  `max` levels. A checker may reject these hand-crafted exports using a more
+  conservative normalization, or accept them by recognizing that the right
+  operand is nonzero.
+leanfile: tests/corner-cases/imax-right-successor.lean
+export-decls: ["imaxRightOne", "imaxRightSucc"]
+outcome: either

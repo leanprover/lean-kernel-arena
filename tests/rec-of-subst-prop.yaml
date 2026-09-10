@@ -1,0 +1,43 @@
+description: |
+  Proof of `False` from a `Prop` that carries a `Type` field, recovered through
+  the recursor instead of a projection.
+
+  A second variant of `proj-of-subst-prop`, sharing its first two steps:
+
+  1.  Definitional equality is not transitive on three `Bool`s built from
+      `Acc.rec` — `gateA ≡ gateB` and `gateB ≡ gateC` by proof irrelevance on the
+      `Acc` argument, but `gateA ≢ gateC` — so `GateP := gateA = gateB` and
+      `GateQ := gateA = gateC` are definitionally equal types whose proofs behave
+      differently under `Eq.rec`.  `resultSort h` K-reduces to `Prop` for a
+      variable `h : GateP` and stays stuck for the closed `gateWitness : GateQ`.
+
+  2.  `Issue.Owner : ∀ (h : GateP), resultSort h` is therefore accepted as a
+      family of propositions whose constructor carries a field `A : Type`, while
+      `Owner gateWitness` — well-typed, since `GateQ ≡ GateP` — has a sort that
+      does not reduce to `Prop`.
+
+  Where `proj-of-subst-prop` then projects the field out, this variant eliminates
+  `Owner` with its own `Prop`-only recursor into `Fiber X := Acc emptyTypeRel X`,
+  which is a proposition, and recovers the data from there: `Acc.rec` eliminates
+  `Acc` into `Type`, and `propext` transports an `Acc` proof between two `Fiber`
+  types.  Proof irrelevance identifies `Owner.mk gateWitness Empty` with
+  `Owner.mk gateWitness Unit`, so the identity function of one type is applied to
+  a value of the other, and `Empty` becomes inhabited.  The proof of `False` uses
+  `propext` and no other axiom.
+
+  Because no projection is involved, the guard that stops `proj-of-subst-prop` —
+  refusing to project a data field out of a proposition — never fires here.  A
+  checker has to refuse the substitution, or the stuck result sort of
+  `Issue.Owner`, instead.
+
+  Both variants are ruled out by
+  [leanprover/lean4#14807](https://github.com/leanprover/lean4/pull/14807), which
+  makes the kernel's `is_prop` check require the inferred type to reduce to a
+  sort: `Issue.Owner` is then rejected with `(kernel) type expected`.
+
+  The exploit is by Daniel Selsam (OpenAI), generated with OpenAI's internal
+  models, and is the regression test added in
+  [leanprover/lean4#14847](https://github.com/leanprover/lean4/pull/14847).
+leanfile: tests/rec-of-subst-prop.lean
+export-decls: ["Issue.contradiction"]
+outcome: reject

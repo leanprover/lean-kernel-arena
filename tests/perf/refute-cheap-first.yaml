@@ -1,0 +1,18 @@
+description: |
+  The declaration to check claims
+
+      (false, count #n) = (true, count #(n+1))
+
+  and must be rejected. Both sides are constructor applications, so comparing
+  components is the only route, and either component refutes on its own:
+  `false` against `true` for **Θ(1)**, the numerals for **Θ(n²)** (`count #k`
+  evaluates to `#k` in Θ(k²) reductions). The test asks in which order a
+  checker visits the components. `refute-cheap-last.lean` swaps them, and the
+  ratio between the two files is what that order costs.
+
+  N=200 in the Lean source. From Courant and Leroy, POPL 2026, §10, where the
+  two orders cost Rocq 4 × 10⁻⁶ s and 0.61 s.
+leanfile: tests/perf/refute-cheap-first.lean
+export-decls: ["kernel_refute_cheap_first"]
+outcome: reject
+compare-perf: true

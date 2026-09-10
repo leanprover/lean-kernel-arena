@@ -3,4 +3,4 @@ dir: tutorial
 multiple: true
 run: |
   lake clean
-  lake build Tutorial
+  LEAN_ABORT_ON_PANIC=1 lake build Tutorial

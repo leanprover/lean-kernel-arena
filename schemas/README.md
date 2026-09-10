@@ -35,6 +35,7 @@ Validates checker configuration files in the `checkers/` directory.
 1. **Git repository checker** - Clone a repo and build/run checker
    - Required: `url`, `run`
    - Optional: `version`, `ref`, `rev`, `build`
+   - If `version` is omitted but both `ref` and `rev` are present, the arena will display the version as `ref (rev7)` where `rev7` is the last 7 characters of `rev`.
    
 2. **Local directory checker** - Use local directory source
    - Required: `dir`, `run`
@@ -52,14 +53,14 @@ Validates checker configuration files in the `checkers/` directory.
 - `ref`: Git branch or tag name
 - `rev`: Git commit hash (7-40 hex characters)
 - `dir`: Local directory path (relative to project root for tests, relative to `checkers/` for checkers)
-- `version`: Version identifier string
+- `version`: Version identifier string. If omitted for a checker and both `ref` and `rev` are present, the arena derives it as `ref (rev7)` where `rev7` is the last 7 characters of `rev`.
 
 ### Test-Specific Fields
 - `file`: Static file path relative to project root
 - `module`: Lean module name to export using lean4export
 - `run`: Shell command to generate test data (`$OUT` variable available)
 - `pre-build`: Command to run before building (e.g., `lake exe cache get`)
-- `outcome`: Expected test result (`"accept"` or `"reject"`)
+- `outcome`: Expected test result (`"accept"`, `"reject"`, or `"either"`). Use `"either"` for tests where it is not (yet) settled whether a checker should accept or reject; both behaviours count as acceptable, and the test is excluded from the completeness and soundness columns.
 
 ### Checker-Specific Fields
 - `build`: Shell command to build the checker (optional - only needed if compilation is required)

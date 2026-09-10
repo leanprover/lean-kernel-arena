@@ -1,0 +1,18 @@
+description: |
+  A closed proof of `False`, with no axioms, via a data projection out of a
+  proposition whose sort is `Prop` only up to universe level normalization.
+
+  `ImaxProp : Sort (imax 1 0)` is a proposition, since `imax 1 0` normalizes to `0`.
+  The exploit uses two definitionally equal spellings of that type. Proof
+  irrelevance is stated through `ImaxAsProp : Prop := ImaxProp`, whose type is the
+  literal `Sort 0`, so it is accepted; the data projection `imaxProjBool` is stated
+  on `ImaxProp`, whose type is the literal `Sort (imax 1 0)`. A kernel that tests
+  sorts for `Prop` syntactically does not recognize the latter as a proposition and
+  wrongly allows projecting its `Bool` field out of a proof. Congruence on the
+  proof-irrelevance equation then equates `false` and `true`, giving `False`.
+
+  This is <https://github.com/leanprover/lean4/pull/14613>, a bug in the official
+  kernel.
+leanfile: tests/proj-of-imax-prop.lean
+export-decls: ["badFalse"]
+outcome: reject

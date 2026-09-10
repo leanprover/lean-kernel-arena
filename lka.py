@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
+# /// script
+# dependencies = [
+#     "jinja2>=3.1.6",
+#     "jsonschema>=4.26.0",
+#     "markdown>=3.10",
+#     "pyyaml>=6.0.3",
+# ]
+# ///
 """Lean Kernel Arena - Tool for managing Lean kernel tests and checkers."""
 
 import argparse
 import datetime
+import filecmp
 import fnmatch
 import json
 import os
-import resource
 import shutil
 import subprocess
 import sys
@@ -20,8 +28,46 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import shlex
 
+
+def _configure_stdout_stderr_unbuffered() -> None:
+    """Best-effort: make stdout/stderr write through immediately.
+
+    This avoids relying on per-call `print(..., flush=True)`.
+    """
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is None:
+            continue
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(line_buffering=True, write_through=True)
+            except Exception:
+                pass
+
+
+_configure_stdout_stderr_unbuffered()
+
 # Global verbose flag
 VERBOSE = False
+
+# Tests with .ndjson files larger than this are excluded from the downloadable
+# test tarball.
+TEST_SIZE_LIMIT = 10 * 1024 * 1024
+
+# The canonical location of the published site. Used for the "other rounds"
+# link, which has to be absolute: archived rounds are served from
+# /round/<name>/ and are also distributed as standalone tarballs, so a
+# relative link back to the round index would not survive both.
+SITE_URL = "https://arena.lean-lang.org"
+ROUNDS_URL = f"{SITE_URL}/round/"
+
+# The GitHub repository, used for links to releases and source files.
+REPO_URL = "https://github.com/leanprover/lean-kernel-arena"
+
+# A round named "2026-10" is released as the tag "round-2026-10" and served
+# from "/round/2026-10/".
+ROUND_TAG_PREFIX = "round-"
 
 # Timing/measurement utilities
 
@@ -99,6 +145,22 @@ def format_unitless(count: int) -> str:
         return str(count)
 
 
+def format_relative_perf(current: float, baseline: float) -> str:
+    """Format performance relative to a baseline.
+
+    Changes between -50% and +100% are shown as a percentage; larger changes
+    as a factor (e.g. ÷3.5 for improvements, ×2.3 for regressions), which is
+    more legible than -99% or +470%.
+    """
+    ratio = current / baseline
+    if ratio < 0.5 or ratio > 2:
+        factor = 1 / ratio if ratio < 1 else ratio
+        factor_str = f"{factor:.0f}" if factor >= 10 else f"{factor:.1f}"
+        return ("÷" if ratio < 1 else "×") + factor_str
+    percent = round((ratio - 1) * 100)
+    return f"+{percent}%" if percent > 0 else f"{percent}%"
+
+
 def format_instructions(instruction_count: int) -> str:
     """Format instruction count to a human-readable string with SI prefixes."""
     if instruction_count >= 1_000_000_000:
@@ -122,7 +184,7 @@ def render_markdown(text: str) -> str:
     """Render markdown text to HTML."""
     if not text:
         return ""
-    
+
     # Configure markdown with extensions for better HTML output
     md = markdown.Markdown(extensions=['extra', 'codehilite', 'toc'])
     return md.convert(text.strip())
@@ -130,7 +192,7 @@ def render_markdown(text: str) -> str:
 
 def extract_ndjson_metadata(ndjson_file: Path) -> dict:
     """Extract metadata from the first line of an NDJSON file.
-    
+
     Returns a dict with extracted version information:
     - lean4export_version: Version of lean4export tool (if available)
     - lean_version: Version of Lean compiler (if available)
@@ -155,10 +217,10 @@ def extract_ndjson_metadata(ndjson_file: Path) -> dict:
                             metadata["lean_version"] = lean_info["version"]
                         if "githash" in lean_info:
                             metadata["lean_githash"] = lean_info["githash"]
-    except Exception as e:
+    except Exception:
         # Silently ignore metadata extraction errors
         pass
-    
+
     return metadata
 
 
@@ -170,10 +232,10 @@ def measure_perf_with_fallback(
     capture_output: bool = True,
 ) -> tuple[subprocess.CompletedProcess, dict]:
     """Run a command and measure performance metrics using perf + GNU time, with fallback.
-    
+
     Returns:
         Tuple of (subprocess result, metrics dict)
-        
+
     Metrics dict contains:
     - wall_time: Wall clock time in seconds
     - cpu_time: CPU time in seconds (measured via perf task-clock)
@@ -182,31 +244,31 @@ def measure_perf_with_fallback(
     """
     # Record wall time manually as fallback
     start_wall_time = time.time()
-    
+
     # Try to use perf if available
     metrics = {}
     use_perf = False
-    
+
     # Check if perf is available
     try:
         perf_check = subprocess.run(
-            ["perf", "--version"], 
-            capture_output=True, 
+            ["perf", "--version"],
+            capture_output=True,
             timeout=2
         )
         if perf_check.returncode == 0:
             use_perf = True
     except (FileNotFoundError, subprocess.TimeoutExpired):
         use_perf = False
-    
+
     if use_perf:
         # Use perf + GNU time for comprehensive measurements
         with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".perf") as perf_tmp:
             perf_tmp_path = perf_tmp.name
-        
+
         with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".time") as time_tmp:
             time_tmp_path = time_tmp.name
-        
+
         try:
             # Build nested command: perf stat ... -- time -f "..." -o tmpfile -- original_command
             perf_cmd = [
@@ -216,11 +278,11 @@ def measure_perf_with_fallback(
                 "-e", "instructions",   # instruction count
                 "--"
             ]
-            
+
             # Add GNU time wrapper for max RSS measurement
             time_fmt = "real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M"
             time_cmd = ["time", "-f", time_fmt, "-o", time_tmp_path, "--"]
-            
+
             if isinstance(cmd, list):
                 full_cmd = perf_cmd + time_cmd + cmd
             else:
@@ -228,11 +290,11 @@ def measure_perf_with_fallback(
                     full_cmd = perf_cmd + time_cmd + ["sh", "-c", cmd]
                 else:
                     full_cmd = perf_cmd + time_cmd + cmd.split()
-            
+
             # Set up environment
             perf_env = (env or os.environ).copy()
             perf_env["LC_ALL"] = "C"  # Ensure perf outputs valid JSON
-            
+
             # Run with nested perf + time
             result = subprocess.run(
                 full_cmd,
@@ -242,7 +304,7 @@ def measure_perf_with_fallback(
                 capture_output=capture_output,
                 text=True,
             )
-            
+
             # Parse perf output
             perf_metrics = {}
             try:
@@ -253,10 +315,12 @@ def measure_perf_with_fallback(
                             try:
                                 data = json.loads(line)
                                 if "event" in data and "counter-value" in data:
-                                    event = data["event"]
+                                    # Strip modifiers like ":u" that perf appends when it
+                                    # falls back to user-space-only counting (perf_event_paranoid=2)
+                                    event = data["event"].split(":")[0]
                                     value = float(data["counter-value"])
                                     unit = data.get("unit", "")
-                                    
+
                                     if event in ["duration_time", "task-clock"]:
                                         # Time events are in nanoseconds by default
                                         if unit == "msec":
@@ -271,7 +335,7 @@ def measure_perf_with_fallback(
                                 continue
             except Exception:
                 pass
-            
+
             # Parse GNU time output
             time_metrics = {}
             try:
@@ -285,30 +349,30 @@ def measure_perf_with_fallback(
                             time_metrics[k.strip()] = v.strip()
             except Exception:
                 pass
-            
+
             # Clean up temporary files
             try:
                 os.unlink(perf_tmp_path)
                 os.unlink(time_tmp_path)
-            except:
+            except Exception:
                 pass
-            
+
             # Extract metrics with fallbacks
             metrics["wall_time"] = perf_metrics.get("duration_time", time.time() - start_wall_time)
             metrics["cpu_time"] = perf_metrics.get("task-clock", 0.0)
             metrics["instructions"] = perf_metrics.get("instructions", 0)
-            
+
             # Extract max RSS from GNU time
             try:
                 max_rss_kb = int(time_metrics.get("max_rss_kb", "0"))
                 metrics["max_rss"] = max_rss_kb * 1024  # Convert KB to bytes
             except Exception:
                 metrics["max_rss"] = 0
-        
+
         except Exception:
             # If perf+time fails completely, fall back to basic measurement
             use_perf = False
-    
+
     if not use_perf:
         # Final fallback: run normally and measure wall time only
         result = subprocess.run(
@@ -323,7 +387,7 @@ def measure_perf_with_fallback(
         metrics["cpu_time"] = 0.0  # Not measured here
         metrics["max_rss"] = 0.0
         metrics["instructions"] = 0
-    
+
     return result, metrics
 
 
@@ -334,9 +398,10 @@ def run_cmd(
     shell: bool = False,
     capture_output: bool = True,
     measure_perf: bool = False,
+    print_on_failure: bool = False,
 ) -> subprocess.CompletedProcess:
     """Run a command with optional verbose output and performance measurement.
-    
+
     Args:
         cmd: Command to run (string for shell=True, list for shell=False)
         cwd: Working directory
@@ -344,7 +409,8 @@ def run_cmd(
         shell: Whether to run as shell command
         capture_output: Whether to capture stdout/stderr
         measure_perf: Whether to measure detailed performance metrics
-    
+        print_on_failure: Whether to print stdout/stderr when the command fails
+
     Returns:
         CompletedProcess instance with additional attributes:
         - wall_time: Wall clock time in seconds
@@ -353,29 +419,29 @@ def run_cmd(
         - instructions: Instruction count (if available)
     """
     global VERBOSE
-    
+
     # Format command for display
     if isinstance(cmd, list):
         cmd_str = " ".join(cmd)
     else:
         cmd_str = cmd
-    
+
     if VERBOSE:
         cwd_str = f" (in {cwd})" if cwd else ""
         print(f"    $ {cmd_str}{cwd_str}")
-    
+
     if measure_perf:
         # Use detailed performance measurement
         result, metrics = measure_perf_with_fallback(
             cmd, cwd=cwd, env=env, shell=shell, capture_output=capture_output
         )
-        
+
         # Add metrics as attributes to the result
         result.wall_time = metrics["wall_time"]
         result.cpu_time = metrics["cpu_time"]
         result.max_rss = metrics["max_rss"]
         result.instructions = metrics.get("instructions", 0)
-        
+
         if VERBOSE:
             status = "ok" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
             metrics_str = f"wall: {format_duration(result.wall_time)}"
@@ -390,7 +456,7 @@ def run_cmd(
     else:
         # Use simple timing
         start_time = time.time()
-        
+
         result = subprocess.run(
             cmd,
             cwd=cwd,
@@ -399,28 +465,40 @@ def run_cmd(
             capture_output=capture_output,
             text=True,
         )
-        
+
         elapsed = time.time() - start_time
-        
+
         # Add basic timing as attributes
         result.wall_time = elapsed
         result.cpu_time = 0.0  # Not measured
         result.max_rss = 0.0   # Not measured
         result.instructions = 0  # Not measured
-        
+
         if VERBOSE:
             status = "ok" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
             print(f"      -> {status} in {format_duration(elapsed)}")
-    
+
+    if VERBOSE:
+        if result.stdout:
+            print(f"      stdout: {result.stdout.replace('\n', '\n               ')}")
+        if result.stderr:
+            print(f"      stderr: {result.stderr.replace('\n', '\n               ')}")
+
+    if print_on_failure and result.returncode != 0:
+        if result.stdout:
+            print(f"  stdout: {result.stdout.replace('\n', '\n          ')}")
+        if result.stderr:
+            print(f"  stderr: {result.stderr.replace('\n', '\n          ')}")
+
     return result
 
 
 def get_lean_toolchain(directory: Path) -> str | None:
     """Read the lean-toolchain file from a directory and return the toolchain string.
-    
+
     Args:
         directory: Directory to look for lean-toolchain file
-        
+
     Returns:
         Toolchain string (e.g., 'leanprover/lean4:v4.27.0-rc1'), or None if not found
     """
@@ -456,42 +534,42 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
         cmd += f" -- {decls}"
     cmd += f" > {out_file}"
 
-    result = run_cmd(cmd, cwd=cwd, shell=True)
+    result = run_cmd(cmd, cwd=cwd, shell=True, print_on_failure=True)
     if result.returncode != 0:
-        print(f"  Export failed: {result.stderr}")
+        print(f"  Export failed")
         return False
     return True
 
 
 def setup_lean4export(toolchain: str) -> Path | None:
     """Clone and build lean4export for a specific Lean toolchain.
-    
+
     Args:
         toolchain: Lean toolchain string (e.g., 'leanprover/lean4:v4.27.0-rc1')
-        
+
     Returns:
         Path to lean4export directory for this toolchain, or None on failure
-        
+
     Note: Failed temporary directories are left in place for debugging purposes.
     """
     # Sanitize toolchain string for use in file paths
     toolchain_dir_name = toolchain.replace("/", "_").replace(":", "_")
     build_base_dir = get_project_root() / "_build"
     lean4export_dir = build_base_dir / "lean4export" / toolchain_dir_name
-    
+
     if not lean4export_dir.exists():
         print(f"  Cloning lean4export for toolchain {toolchain}...")
-        
+
         # Work in temporary directory first
         lean4export_tmp_dir = Path(str(lean4export_dir) + ".tmp")
-        
+
         # Clean up any existing temporary directory
         if lean4export_tmp_dir.exists():
             shutil.rmtree(lean4export_tmp_dir)
-        
+
         lean4export_tmp_dir.mkdir(parents=True, exist_ok=True)
-        
-        clone_cmd = ["git", "clone", "--branch", "arena_json_output",
+
+        clone_cmd = ["git", "clone", "--branch", "master",
                     "https://github.com/leanprover/lean4export",
                     str(lean4export_tmp_dir)]
         result = run_cmd(clone_cmd)
@@ -509,18 +587,18 @@ def setup_lean4export(toolchain: str) -> Path | None:
             return None
 
         print(f"  Building lean4export with toolchain {toolchain}...")
-        result = run_cmd("lake build", cwd=lean4export_tmp_dir, shell=True)
+        result = run_cmd("lake build", cwd=lean4export_tmp_dir, shell=True, print_on_failure=True)
         if result.returncode != 0:
-            print(f"  Error building lean4export: {result.stderr}")
+            print(f"  Error building lean4export")
             return None
-        
+
         # Move temporary directory to final location atomically
         try:
             lean4export_tmp_dir.rename(lean4export_dir)
         except Exception as e:
             print(f"  Error moving lean4export directory to final location: {e}")
             return None
-    
+
     return lean4export_dir
 
 
@@ -529,17 +607,45 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
     items = []
     if not directory.exists():
         return items
+
+    def _derive_checker_version(config: dict) -> str | None:
+        """Derive a checker version string.
+
+        If the checker YAML omits `version` but has both `ref` and `rev`, use
+        "<ref> (<first 7 of rev>)".
+        """
+        version = config.get("version")
+        if isinstance(version, str) and version.strip():
+            return version
+
+        ref = config.get("ref")
+        rev = config.get("rev")
+        if isinstance(ref, str) and ref.strip() and isinstance(rev, str) and rev.strip():
+            rev_short = rev.strip()[:7]
+            return f"{ref.strip()} ({rev_short})"
+
+        return None
+
     # Sort files alphabetically to avoid dependency on filesystem order
-    for file in sorted(directory.glob("*.yaml")):
+    # Search recursively so tests can be organized in subdirectories
+    for file in sorted(directory.rglob("*.yaml")):
         with open(file, "r") as f:
             data = yaml.safe_load(f)
-            
+
             # Validate against schema before processing
             validate_yaml_data(data, schema_name, file)
-            
+
             data["_file"] = file.name
-            # Derive name from filename (without .yaml extension)
-            data["name"] = file.stem
+            # Derive name from relative path (without .yaml extension)
+            # e.g. tests/perf/app-lam.yaml -> "perf/app-lam"
+            data["name"] = str(file.relative_to(directory).with_suffix(""))
+
+            # Backwards-compatible default: derive checker version from ref+rev.
+            if schema_name == "checker" and not data.get("version"):
+                derived_version = _derive_checker_version(data)
+                if derived_version:
+                    data["version"] = derived_version
+
             items.append(data)
     return items
 
@@ -550,8 +656,14 @@ def load_test_descriptions() -> list[dict]:
 
 
 def load_checkers() -> list[dict]:
-    """Load all checker definitions."""
-    return load_yaml_files(get_project_root() / "checkers", "checker")
+    """Load all checker definitions, filtering out disabled ones."""
+    all_checkers = load_yaml_files(get_project_root() / "checkers", "checker")
+    for checker in all_checkers:
+        # Normalize `declines` (a single test name or a list) to a list
+        declines = checker.get("declines", [])
+        checker["declines"] = [declines] if isinstance(declines, str) else declines
+    # Filter out disabled checkers
+    return [checker for checker in all_checkers if not checker.get("disable", False)]
 
 
 def find_test_by_name(name: str) -> dict | None:
@@ -568,11 +680,11 @@ def find_checker_by_name(name: str) -> dict | None:
 
 def find_items_by_pattern(pattern: str, item_type: str) -> list[dict]:
     """Find tests or checkers by glob pattern.
-    
+
     Args:
         pattern: Name or glob pattern to match against
         item_type: "tests" or "checkers"
-    
+
     Returns:
         List of matching items (tests or checkers)
     """
@@ -582,7 +694,7 @@ def find_items_by_pattern(pattern: str, item_type: str) -> list[dict]:
         items = load_checkers()
     else:
         raise ValueError(f"Invalid item_type: {item_type}")
-    
+
     # If pattern contains glob characters, use glob matching
     if any(char in pattern for char in ['*', '?', '[', ']']):
         return [item for item in items if fnmatch.fnmatch(item["name"], pattern)]
@@ -597,23 +709,23 @@ def find_items_by_pattern(pattern: str, item_type: str) -> list[dict]:
 
 
 def setup_source_directory(
-    config: dict, 
-    base_dir: Path, 
+    config: dict,
+    base_dir: Path,
     local_base_path: Path | None = None,
 ) -> Path | None:
     """Set up a source directory for tests or checkers.
-    
+
     Handles four cases:
     - url: Clone a git repository
     - dir: Use a local directory
     - leanfile: Set up a standalone Test module from a Lean file
     - neither: Create an empty directory
-    
+
     Args:
         config: Test or checker configuration dict with name, url, dir, ref, rev, leanfile
         base_dir: Base directory where the work/build directory should be created
         local_base_path: Base path for local directories (defaults to project root)
-    
+
     Returns the working directory path, or None on failure.
     """
     name = config["name"]
@@ -627,7 +739,7 @@ def setup_source_directory(
         local_base_path = get_project_root()
 
     work_dir = base_dir / name
-    
+
     # Clean up existing work directory
     if work_dir.exists():
         shutil.rmtree(work_dir)
@@ -663,7 +775,7 @@ def setup_source_directory(
         if not source_dir.exists():
             print(f"  Source directory not found: {source_dir}")
             return None
-        
+
         shutil.copytree(source_dir, src_dir)
         print(f"  Copied {source_dir} to {src_dir}")
         return src_dir
@@ -674,21 +786,21 @@ def setup_source_directory(
         if not source_file.exists():
             print(f"  Source file not found: {source_file}")
             return None
-        
+
         # Create src directory and copy the lean file as Test.lean
         src_dir.mkdir(parents=True, exist_ok=True)
         dest_file = src_dir / "Test.lean"
         shutil.copy(source_file, dest_file)
         print(f"  Copied {source_file} to {dest_file}")
-        
+
         # Copy lean-toolchain from tests/ directory to src directory (for consistency with url flow)
         tests_toolchain = get_project_root() / "tests" / "lean-toolchain"
         dest_toolchain = src_dir / "lean-toolchain"
         if tests_toolchain.exists():
             shutil.copy(tests_toolchain, dest_toolchain)
-            print(f"  Copied lean-toolchain from tests/ to src directory")
+            print("  Copied lean-toolchain from tests/ to src directory")
         else:
-            print(f"  Warning: No lean-toolchain file found in tests/ directory")
+            print("  Warning: No lean-toolchain file found in tests/ directory")
 
         # Create a trivial lakefile in the src directory
         lakefile_content = '''name = "test"
@@ -698,8 +810,8 @@ name = "Test"'''
         lakefile_path = src_dir / "lakefile.toml"
         with open(lakefile_path, "w") as f:
             f.write(lakefile_content)
-        print(f"  Created trivial lakefile")
-        
+        print("  Created trivial lakefile")
+
         return src_dir
 
     else:
@@ -711,6 +823,21 @@ name = "Test"'''
 # =============================================================================
 # build-test command
 # =============================================================================
+
+
+def _gather_ndjson_stats(ndjson_file: Path) -> dict:
+    """Gather size, line count, and metadata from an NDJSON file."""
+    file_size = ndjson_file.stat().st_size
+    with open(ndjson_file, "r") as f:
+        line_count = sum(1 for _ in f)
+    metadata = extract_ndjson_metadata(ndjson_file)
+    return {
+        "size": file_size,
+        "size_str": format_memory(file_size),
+        "lines": line_count,
+        "lines_str": format_unitless(line_count),
+        **metadata,
+    }
 
 
 def create_test(test: dict, output_dir: Path) -> bool:
@@ -753,9 +880,12 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Regular single test
         output_file = output_dir / f"{name}.ndjson"
         tmp_file = output_dir / f"{name}.ndjson.tmp"
+        # Ensure parent directories exist (for tests in subdirectories like perf/)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Handle static file case (no work directory needed)
+    # Produce .ndjson file(s) based on test type
     if file_path:
+        # Static file case (no work directory needed)
         if multiple:
             print(f"  Error: Test {name} cannot use 'multiple' flag with static file")
             return False
@@ -764,81 +894,82 @@ def create_test(test: dict, output_dir: Path) -> bool:
             print(f"  Source file not found: {source_file}")
             return False
         shutil.copy(source_file, tmp_file)
-        tmp_file.rename(output_file)
-        print(f"  Copied {source_file} to {output_file}")
-        return True
+        print(f"  Copied {source_file}")
 
-    # These test types require lean4export
-    lean4export_dir = None
-    if module or lean_file_path:
-        # First set up the work directory to get access to toolchain information
+    elif module or lean_file_path:
+        # Both module and leanfile variants use lean4export workflow
+        # leanfile is treated like module with hardcoded module name "Test"
         work_dir = setup_source_directory(test, output_dir / "work")
         if work_dir is None:
             return False
-        
+
         # Get the toolchain from the src directory (consistent for both leanfile and module tests)
         toolchain = get_lean_toolchain(work_dir)
-        
+
         if not toolchain:
             print(f"  Error: No lean-toolchain found in {work_dir}")
             return False
-        
+
         # Set up lean4export for this specific toolchain
         lean4export_dir = setup_lean4export(toolchain)
         if lean4export_dir is None:
             return False
-    else:
-        # Set up work directory (url, dir, or empty) for non-lean4export tests
-        work_dir = setup_source_directory(test, output_dir / "work")
-        if work_dir is None:
-            return False
 
-    # Run pre-build command if specified
-    if pre_build:
-        print(f"  Running pre-build: {pre_build}")
-        result = run_cmd(pre_build, cwd=work_dir, shell=True)
-        if result.returncode != 0:
-            print(f"  Pre-build failed: {result.stderr}")
-            return False
+        # Run pre-build command if specified
+        if pre_build:
+            print(f"  Running pre-build: {pre_build}")
+            result = run_cmd(pre_build, cwd=work_dir, shell=True, print_on_failure=True)
+            if result.returncode != 0:
+                print(f"  Pre-build failed")
+                return False
 
-    # Execute based on test type
-    if module or lean_file_path:
-        # Both module and leanfile variants use lean4export workflow
-        # leanfile is treated like module with hardcoded module name "Test"
         build_dir = work_dir
-        
+
         # Determine module name
         if lean_file_path:
             module_name = "Test"
         else:
             module_name = module
-        
+
         # Build the module
         print(f"  Building module {module_name}...")
-        result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True)
+        result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True, print_on_failure=True)
         if result.returncode != 0:
-            print(f"  Build failed: {result.stderr}")
+            print(f"  Build failed")
             return False
 
         # Export using lean4export
         if export_decls and not isinstance(export_decls, list):
-            print(f"  Error: export-decls must be a list of strings")
+            print("  Error: export-decls must be a list of strings")
             return False
-        
+
         if export_decls:
             decls_str = ", ".join(export_decls)
             print(f"  Exporting module {module_name} ({decls_str})...")
         else:
             print(f"  Exporting module {module_name} ...")
-        
+
         if not run_lean4export(lean4export_dir, module_name, export_decls, cwd=build_dir, out_file=tmp_file):
             return False
 
     elif run_cmd_str:
+        # Set up work directory (url, dir, or empty)
+        work_dir = setup_source_directory(test, output_dir / "work")
+        if work_dir is None:
+            return False
+
+        # Run pre-build command if specified
+        if pre_build:
+            print(f"  Running pre-build: {pre_build}")
+            result = run_cmd(pre_build, cwd=work_dir, shell=True, print_on_failure=True)
+            if result.returncode != 0:
+                print(f"  Pre-build failed")
+                return False
+
         # Run the script with $OUT environment variable
         print(f"  Running: {run_cmd_str}")
         env = os.environ.copy()
-        
+
         if multiple:
             # For multiple tests, $OUT points to a temporary directory
             tmp_output_dir.mkdir(parents=True, exist_ok=True)
@@ -847,9 +978,9 @@ def create_test(test: dict, output_dir: Path) -> bool:
             # For single tests, $OUT points to the output file
             env["OUT"] = str(tmp_file)
 
-        result = run_cmd(run_cmd_str, cwd=work_dir, shell=True, env=env)
+        result = run_cmd(run_cmd_str, cwd=work_dir, shell=True, env=env, print_on_failure=True)
         if result.returncode != 0:
-            print(f"  Script failed: {result.stderr}")
+            print(f"  Script failed")
             return False
 
     if multiple:
@@ -857,64 +988,41 @@ def create_test(test: dict, output_dir: Path) -> bool:
         if not tmp_output_dir.exists():
             print(f"  Error: Script did not create output directory {tmp_output_dir}")
             return False
-            
+
         # Check that we have good/ and/or bad/ subdirectories with .ndjson files
         good_dir = tmp_output_dir / "good"
         bad_dir = tmp_output_dir / "bad"
-        
+
         subtests_found = []
         if good_dir.exists():
             # Sort files alphabetically to avoid dependency on filesystem order
             for ndjson_file in sorted(good_dir.glob("*.ndjson")):
                 subtest_name = ndjson_file.stem
                 subtests_found.append((subtest_name, "good"))
-        
+
         if bad_dir.exists():
             # Sort files alphabetically to avoid dependency on filesystem order
             for ndjson_file in sorted(bad_dir.glob("*.ndjson")):
                 subtest_name = ndjson_file.stem
                 subtests_found.append((subtest_name, "bad"))
-        
+
         if not subtests_found:
             print(f"  Error: No .ndjson files found in {tmp_output_dir}/good/ or {tmp_output_dir}/bad/")
             return False
-        
+
         # Generate stats for each subtest
+        build_info = get_build_metadata()
         for subtest_name, outcome in subtests_found:
             subtest_file = tmp_output_dir / outcome / f"{subtest_name}.ndjson"
-            
-            # Gather stats about the subtest file
-            file_size = subtest_file.stat().st_size
-            with open(subtest_file, "r") as f:
-                line_count = sum(1 for _ in f)
-            
-            # Extract metadata from the NDJSON file
-            subtest_metadata = extract_ndjson_metadata(subtest_file)
-            
-            # Format file size and line count
-            size_str = format_memory(file_size)
-            lines_str = format_unitless(line_count)
-                
-            # Write stats JSON file
-            stats_file = tmp_output_dir / outcome / f"{subtest_name}.stats.json"
-            stats = {
-                "name": f"{name}/{subtest_name}",
-                "outcome": "accept" if outcome == "good" else "reject",
-                "size": file_size,
-                "size_str": size_str,
-                "lines": line_count,
-                "lines_str": lines_str,
-                "yaml_file": f"tests/{name}.yaml",
-            }
-            
-            # Add metadata from NDJSON file
-            stats.update(subtest_metadata)
-            
+
+            stats = _gather_ndjson_stats(subtest_file)
+            stats["name"] = f"{name}/{subtest_name}"
+            stats["outcome"] = "accept" if outcome == "good" else "reject"
+            stats["yaml_file"] = f"tests/{name}.yaml"
+
             # Generate and store source links from parent test
-            build_info = get_build_metadata()
-            source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
-            stats.update(source_links)
-            
+            stats.update(generate_source_links(test, "tests", build_info.get("git_revision")))
+
             # Check for subtest-name.info.json file with description
             info_file = tmp_output_dir / outcome / f"{subtest_name}.info.json"
             if info_file.exists():
@@ -925,64 +1033,47 @@ def create_test(test: dict, output_dir: Path) -> bool:
                         stats["description"] = info_data["description"]
                 except Exception as e:
                     print(f"  Warning: Could not read {info_file}: {e}")
-            
+
+            stats_file = tmp_output_dir / outcome / f"{subtest_name}.stats.json"
             with open(stats_file, "w") as f:
                 json.dump(stats, f, indent=2)
-        
+
         # Move to final location after writing statistics
         if final_output_dir.exists():
             shutil.rmtree(final_output_dir)
         tmp_output_dir.rename(final_output_dir)
-        
+
         print(f"  Created {len(subtests_found)} subtests in {final_output_dir}")
         return True
-    
+
     else:
         # Single test: move tmp file to final location and gather stats
         tmp_file.rename(output_file)
 
-        # Gather stats about the created file
-        file_size = output_file.stat().st_size
-        with open(output_file, "r") as f:
-            line_count = sum(1 for _ in f)
-        
-        # Extract metadata from the NDJSON file
-        test_metadata = extract_ndjson_metadata(output_file)
-        
-        # Format file size and line count
-        size_str = format_memory(file_size)
-        lines_str = format_unitless(line_count)
+        stats = _gather_ndjson_stats(output_file)
+        stats["name"] = name
+        stats["yaml_file"] = f"tests/{name}.yaml"
+        stats["outcome"] = test.get("outcome")
 
-        print(f"  Created {output_file} ({size_str}, {lines_str} lines)")
+        print(f"  Created {output_file} ({stats['size_str']}, {stats['lines_str']} lines)")
 
-        # Write stats JSON file
-        stats_file = output_dir / f"{name}.stats.json"
-        stats = {
-            "name": name,
-            "size": file_size,
-            "size_str": size_str,
-            "lines": line_count,
-            "lines_str": lines_str,
-            "yaml_file": f"tests/{name}.yaml",
-            "outcome": test.get("outcome"),
-        }
-        
-        # Add metadata from NDJSON file
-        stats.update(test_metadata)
-        
         # Add description from YAML if present
         if test.get("description"):
             stats["description"] = test["description"]
-        
-        # Add large field if present
-        if test.get("large"):
-            stats["large"] = test["large"]
-            
+
+        # Add compare-perf field if present
+        if test.get("compare-perf"):
+            stats["compare-perf"] = test["compare-perf"]
+
+        # Add skip-on-ci field if present
+        if test.get("skip-on-ci"):
+            stats["skip-on-ci"] = test["skip-on-ci"]
+
         # Generate and store source links
         build_info = get_build_metadata()
-        source_links = generate_source_links(test, "tests", build_info.get("git_revision"))
-        stats.update(source_links)
-        
+        stats.update(generate_source_links(test, "tests", build_info.get("git_revision")))
+
+        stats_file = output_dir / f"{name}.stats.json"
         with open(stats_file, "w") as f:
             json.dump(stats, f, indent=2)
 
@@ -1001,20 +1092,32 @@ def cmd_build_test(args: argparse.Namespace) -> int:
             tests = [test for test in base_tests if fnmatch.fnmatch(test["name"], args.name)]
         else:
             tests = [test for test in base_tests if test["name"] == args.name]
-        
+
         if not tests:
             print(f"No tests found matching pattern: {args.name}")
             return 1
     else:
         tests = load_test_descriptions()
 
-    # Filter out large tests if --no-large flag is set
-    if args.no_large:
+    # Filter out tests marked with skip-on-ci
+    if args.skip_ci:
         original_count = len(tests)
-        tests = [test for test in tests if not test.get("large", False)]
+        tests = [test for test in tests if not test.get("skip-on-ci", False)]
         skipped_count = original_count - len(tests)
         if skipped_count > 0:
-            print(f"Skipping {skipped_count} large test(s) due to --no-large flag")
+            print(f"Skipping {skipped_count} test(s) due to --skip-ci flag")
+
+    # Filter out tests that the given checker declaratively declines
+    if args.skip_declined_by:
+        checker = find_checker_by_name(args.skip_declined_by)
+        if checker is None:
+            print(f"No checker found: {args.skip_declined_by}")
+            return 1
+        declines = set(checker.get("declines", []))
+        skipped = [test["name"] for test in tests if test["name"] in declines]
+        if skipped:
+            tests = [test for test in tests if test["name"] not in declines]
+            print(f"Skipping {len(skipped)} test(s) declined by {checker['name']}: {', '.join(skipped)}")
 
     if not tests:
         print("No tests found.")
@@ -1070,10 +1173,10 @@ def build_checker(checker: dict, build_dir: Path) -> bool:
         else:
             # Single-line command
             print(f"  Building: {build_cmd}")
-        
-        result = run_cmd(build_cmd, cwd=actual_work_dir, shell=True)
+
+        result = run_cmd(build_cmd, cwd=actual_work_dir, shell=True, print_on_failure=True)
         if result.returncode != 0:
-            print(f"  Build failed: {result.stderr}")
+            print(f"  Build failed")
             return False
 
     print(f"  Checker {name} built successfully")
@@ -1109,8 +1212,31 @@ def cmd_build_checker(args: argparse.Namespace) -> int:
 
 
 # =============================================================================
-# run-checker command
+# run command
 # =============================================================================
+
+
+def write_declined_result(checker_name: str, test_name: str, results_dir: Path) -> dict:
+    """Record a declaratively declined (checker, test) pair without running the checker."""
+    result_data = {
+        "checker": checker_name,
+        "test": test_name,
+        "status": "declined",
+        "correctness": "declined",
+        "exit_code": 2,
+        "wall_time": 0,
+        "cpu_time": 0,
+        "max_rss": 0,
+        "instructions": 0,
+        "stdout": "",
+        "stderr": "Declined via the `declines` field in the checker configuration; the checker was not run.",
+    }
+    results_dir.mkdir(parents=True, exist_ok=True)
+    safe_test_name = test_name.replace("/", "_")
+    result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
+    with open(result_file, "w") as f:
+        json.dump(result_data, f, indent=2)
+    return result_data
 
 
 def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: Path, results_dir: Path) -> dict:
@@ -1119,14 +1245,19 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     test_name = test["name"]
     checker_run_cmd = checker["run"]
 
+    # Tests listed in the checker's `declines` are declined without running
+    if test_name in checker.get("declines", []):
+        return write_declined_result(checker_name, test_name, results_dir)
+
     # Use the file path stored in the test dict
-    test_file = test["file"]
-        
-    if not test_file.exists():
+    test_file = test.get("file")
+
+    if test_file is None or not test_file.exists():
         result_data = {
             "checker": checker_name,
             "test": test_name,
             "status": "error",
+            "correctness": "error",
             "message": f"Test file not found: {test_file}",
             "exit_code": -1,
             "wall_time": 0,
@@ -1157,7 +1288,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     # Set up environment with IN variable pointing to test file
     env = os.environ.copy()
     env["IN"] = str(test_file)
-    
+
     result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env, measure_perf=True)
 
     exit_code = result.returncode
@@ -1170,10 +1301,28 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     else:
         status = "error"
 
+    # Determine correctness based on expected outcome
+    expected_outcome = test.get("outcome")
+    if status == "declined":
+        correctness = "declined"
+    elif status == "error":
+        correctness = "error"
+    elif expected_outcome == "either":
+        # Not settled whether a checker should accept or reject this: both
+        # behaviours are acceptable. Excluded from the scoring columns.
+        correctness = "either"
+    elif expected_outcome == "accept" and status == "accepted":
+        correctness = "correct"
+    elif expected_outcome == "reject" and status == "rejected":
+        correctness = "correct"
+    else:
+        correctness = "incorrect"
+
     result_data = {
         "checker": checker_name,
         "test": test_name,
         "status": status,
+        "correctness": correctness,
         "exit_code": exit_code,
         "wall_time": result.wall_time,
         "cpu_time": result.cpu_time,
@@ -1194,7 +1343,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
 
 
 def cmd_run_checker(args: argparse.Namespace) -> int:
-    """Handle the run-checker command."""
+    """Handle the run command."""
     build_dir = get_project_root() / "_build" / "checkers"
     tests_dir = get_project_root() / "_build" / "tests"
     results_dir = get_project_root() / "_results"
@@ -1238,29 +1387,76 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
         print("No built tests found.")
         return 0
 
-    # Sort tests by line count for consistent processing order
-    tests = sort_tests_by_line_count(tests)
-
     results = []
     for checker in checkers:
         for test in tests:
-            print(f"Running {checker['name']} on {test['name']}...", end="\n" if VERBOSE else " ", flush=True)
+            print(f"Running {checker['name']} on {test['name']}...", end="\n" if VERBOSE else " ")
             result = run_checker_on_test(checker, test, build_dir, tests_dir, results_dir)
             results.append(result)
-            print(f"[{result['status']}, {format_duration(result['wall_time'])}]", flush=True)
+            
+            # Choose emoji based on status
+            status = result.get('status', 'error')
+            if status == 'accepted':
+                status_emoji = '👍'
+            elif status == 'rejected':
+                status_emoji = '👎'
+            elif status == 'declined':
+                status_emoji = '⊘'
+            else:  # error
+                status_emoji = '⚠️'
+            
+            # Choose emoji based on correctness
+            correctness = result.get('correctness', 'error')
+            if correctness == 'correct':
+                correctness_emoji = '✅'
+            elif correctness == 'incorrect':
+                correctness_emoji = '❌'
+            elif correctness == 'declined':
+                correctness_emoji = '⊘'
+            elif correctness == 'either':
+                correctness_emoji = '🤷'
+            else:  # error
+                correctness_emoji = '⚠️'
+            
+            print(f"[{status_emoji} {correctness_emoji} {format_duration(result['wall_time'])}]")
+
+        # Also record declaratively declined tests that are not among the
+        # built tests (e.g. because `build-test --skip-declined-by` skipped
+        # building them).
+        built_test_names = {test["name"] for test in tests}
+        for declined_name in checker.get("declines", []):
+            if declined_name in built_test_names:
+                continue
+            if args.test and not fnmatch.fnmatch(declined_name, args.test):
+                continue
+            print(f"Declining {declined_name} for {checker['name']} (declared in checker configuration) [⊘]")
+            results.append(write_declined_result(checker["name"], declined_name, results_dir))
 
     # Summary
     print("\n" + "=" * 60)
     print("Summary:")
     print("=" * 60)
 
-    status_counts = {"accepted": 0, "rejected": 0, "declined": 0, "error": 0}
+    correctness_counts = {"correct": 0, "incorrect": 0, "either": 0, "declined": 0, "error": 0}
     for r in results:
-        status_counts[r["status"]] = status_counts.get(r["status"], 0) + 1
+        correctness = r.get("correctness", "error")
+        correctness_counts[correctness] = correctness_counts.get(correctness, 0) + 1
 
-    for status, count in status_counts.items():
+    # Print in order: correct, incorrect, either, declined, error
+    for correctness in ["correct", "incorrect", "either", "declined", "error"]:
+        count = correctness_counts.get(correctness, 0)
         if count > 0:
-            print(f"  {status}: {count}")
+            if correctness == "correct":
+                emoji = "✅"
+            elif correctness == "incorrect":
+                emoji = "❌"
+            elif correctness == "either":
+                emoji = "🤷"
+            elif correctness == "declined":
+                emoji = "⊘"
+            else:  # error
+                emoji = "⚠️"
+            print(f"  {correctness}: {count} {emoji}")
 
     return 0
 
@@ -1272,80 +1468,85 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
 
 def load_results() -> dict:
     """Load all result JSON files from _results directory.
-    
+
     Returns a dict keyed by (checker_name, test_name) tuples.
     """
     results = {}
     results_dir = get_project_root() / "_results"
     if not results_dir.exists():
         return results
-    
+
     # Sort files alphabetically to avoid dependency on filesystem order
     for file in sorted(results_dir.glob("*.json")):
         with open(file, "r") as f:
             data = json.load(f)
             key = (data["checker"], data["test"])
             results[key] = data
-    
+
     return results
 
 
 def load_tests() -> list[dict]:
     """Load all built tests by recursively finding .stats.json files.
-    
+
     Returns a list of test dictionaries with all data from the stats files.
     Only returns tests that have been successfully built.
     """
     tests = []
     build_tests_dir = get_project_root() / "_build" / "tests"
-    
+
     if not build_tests_dir.exists():
         return tests
-    
+
     # Recursively find all .stats.json files, sorted alphabetically
     for stats_file in sorted(build_tests_dir.rglob("*.stats.json")):
         try:
             with open(stats_file, "r") as f:
                 test_data = json.load(f)
-                
-            # Determine the corresponding .ndjson file path based on stats file location
+
+            # Determine the corresponding .ndjson file path based on stats file location.
+            # The .ndjson file may be absent, e.g. when only the stats files were
+            # fetched from a CI artifact; such tests can still be shown on the
+            # website, but not be run or included in the tarball.
             ndjson_file = stats_file.parent / (stats_file.stem.replace('.stats', '') + '.ndjson')
-            if ndjson_file.exists():
-                # Add the file path that callers expect
-                test_data["file"] = ndjson_file
-                tests.append(test_data)
-            else:
-                print(f"Warning: No corresponding .ndjson file for {stats_file}")
-                
+            test_data["file"] = ndjson_file if ndjson_file.exists() else None
+            tests.append(test_data)
+
         except Exception as e:
             print(f"Warning: Could not read stats file {stats_file}: {e}")
-    
+
+    tests.sort(key=lambda t: t["name"])
     return tests
 
 
 def sort_tests_by_line_count(tests: list[dict]) -> list[dict]:
     """Sort tests by line count in ascending order.
-    
+
     Args:
         tests: List of test dictionaries with line count data
-        
+
     Returns:
         Sorted list of tests (ascending by line count)
     """
     def get_line_count(test):
         return test.get("lines", 0)
-    
+
     return sorted(tests, key=get_line_count)
 
 
 def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> dict:
     """Compute statistics for a checker across all tests.
-    
+
     Returns a dict with:
     - accept_correct: number of tests with outcome=accept that checker accepted
+    - accept_wrong: number of tests with outcome=accept that checker rejected
+    - accept_declined: number of tests with outcome=accept that checker declined
     - accept_total: number of tests with outcome=accept that weren't declined
     - reject_correct: number of tests with outcome=reject that checker rejected
-    - reject_total: number of tests with outcome=reject that weren't declined
+    - reject_wrong: number of tests with outcome=reject that checker accepted
+    - reject_declined: number of tests with outcome=reject that checker declined
+    - either_correct: number of tests with outcome=either that checker processed
+    - either_declined: number of tests with outcome=either that checker declined
     - declined_count: number of tests that checker declined
     - mathlib_time: wall time for the mathlib test (or None)
     - mathlib_cpu_time: CPU time for the mathlib test (or None)
@@ -1353,55 +1554,84 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
     - mathlib_instructions: instruction count for the mathlib test (or None)
     """
     checker_name = checker["name"]
-    
+
     accept_correct = 0
+    accept_wrong = 0
+    accept_declined = 0
     accept_total = 0
     reject_correct = 0
+    reject_wrong = 0
+    reject_declined = 0
     reject_total = 0
+    either_correct = 0
+    either_declined = 0
     declined_count = 0
     mathlib_time = None
     mathlib_cpu_time = None
     mathlib_max_rss = None
     mathlib_instructions = 0
-    
+
     for test in tests:
         test_name = test["name"]
         expected_outcome = test.get("outcome")
-        
+
         key = (checker_name, test_name)
         result = results.get(key)
-        
+
         if result is None:
             continue
-        
+
         status = result.get("status")
-        
+
         # Track mathlib performance metrics only if the test was accepted
         if test_name == "mathlib" and status == "accepted":
             mathlib_time = result.get("wall_time")
             mathlib_cpu_time = result.get("cpu_time")
             mathlib_max_rss = result.get("max_rss")
             mathlib_instructions = result.get("instructions", 0) or 0
-        
-        # Count declined tests
-        if status == "declined":
+
+        # Count declined and error tests
+        # Errors don't make any assertion about correctness, so treat them like declines
+        if status == "declined" or status == "error":
             declined_count += 1
+            if expected_outcome == "accept":
+                accept_declined += 1
+            elif expected_outcome == "reject":
+                reject_declined += 1
+            elif expected_outcome == "either":
+                either_declined += 1
             continue
-        
+
+        # 'either' tests have no settled expected outcome, so they are excluded
+        # from the completeness and soundness columns (neither behaviour counts).
+        if expected_outcome == "either":
+            either_correct += 1
+            continue
+
         if expected_outcome == "accept":
             accept_total += 1
             if status == "accepted":
                 accept_correct += 1
+            else:
+                accept_wrong += 1
         elif expected_outcome == "reject":
             reject_total += 1
             if status == "rejected":
                 reject_correct += 1
-    
+            else:
+                reject_wrong += 1
+
     return {
         "accept_correct": accept_correct,
+        "accept_wrong": accept_wrong,
+        "accept_declined": accept_declined,
         "accept_total": accept_total,
         "reject_correct": reject_correct,
+        "reject_wrong": reject_wrong,
+        "reject_declined": reject_declined,
         "reject_total": reject_total,
+        "either_correct": either_correct,
+        "either_declined": either_declined,
         "declined_count": declined_count,
         "mathlib_time": mathlib_time,
         "mathlib_cpu_time": mathlib_cpu_time,
@@ -1418,8 +1648,15 @@ def get_build_metadata() -> dict:
         "git_revision_short": None,
         "github_url": None,
         "github_action_url": None,
+        # Round metadata, filled in by build-site from its --round/--doi/
+        # --zenodo-deposition options. A build without a round name is the
+        # ongoing round ("Round in progress"); only a release build off a
+        # round-* tag names a round and carries a DOI.
+        "round": None,
+        "doi": None,
+        "zenodo_deposition": None,
     }
-    
+
     # Get git revision
     try:
         result = run_cmd(["git", "rev-parse", "HEAD"], capture_output=True)
@@ -1441,31 +1678,31 @@ def get_build_metadata() -> dict:
                         elif remote_url.startswith("https://"):
                             repo_path = remote_url.replace("https://github.com/", "").replace(".git", "")
                             metadata["github_url"] = f"https://github.com/{repo_path}/commit/{git_revision}"
-            except:
+            except Exception:
                 pass
-    except:
+    except Exception:
         pass
-    
+
     # Get GitHub Action info from environment variables
     github_server = os.environ.get("GITHUB_SERVER_URL")
     github_repo = os.environ.get("GITHUB_REPOSITORY")
     github_run_id = os.environ.get("GITHUB_RUN_ID")
-    
+
     if github_server and github_repo and github_run_id:
         metadata["github_run_id"] = github_run_id
         metadata["github_action_url"] = f"{github_server}/{github_repo}/actions/runs/{github_run_id}"
-    
+
     return metadata
 
 
 def generate_source_links(config: dict, config_type: str, git_revision: str | None = None) -> dict:
     """Generate Declaration and Source links for a test or checker configuration.
-    
+
     Args:
         config: Test or checker configuration dict
-        config_type: "tests" or "checkers" 
+        config_type: "tests" or "checkers"
         git_revision: Git revision for GitHub links
-        
+
     Returns dict with:
         declaration_url: Link to the YAML file in GitHub
         source_url: Link to the source (either URL or local dir in GitHub)
@@ -1474,21 +1711,20 @@ def generate_source_links(config: dict, config_type: str, git_revision: str | No
         "declaration_url": None,
         "source_url": None,
     }
-    
+
     if not git_revision:
         return links
-    
+
     # Generate declaration URL (YAML file in GitHub)
-    base_github_url = "https://github.com/leanprover/lean-kernel-arena"
     declaration_path = f"{config_type}/{config['name']}.yaml"
-    links["declaration_url"] = f"{base_github_url}/blob/{git_revision}/{declaration_path}"
-    
+    links["declaration_url"] = f"{REPO_URL}/blob/{git_revision}/{declaration_path}"
+
     # Generate source URL
     url = config.get("url")
     local_dir = config.get("dir")
     leanfile = config.get("leanfile")
     rev = config.get("rev")
-    
+
     if url:
         # External repository - check if it's a GitHub URL and we have a rev
         if rev and "github.com" in url:
@@ -1507,58 +1743,271 @@ def generate_source_links(config: dict, config_type: str, git_revision: str | No
             source_path = f"checkers/{local_dir}"
         else:
             source_path = local_dir
-        links["source_url"] = f"{base_github_url}/tree/{git_revision}/{source_path}"
+        links["source_url"] = f"{REPO_URL}/tree/{git_revision}/{source_path}"
     elif leanfile:
         # Lean file in this repository
-        links["source_url"] = f"{base_github_url}/blob/{git_revision}/{leanfile}"
-    
+        links["source_url"] = f"{REPO_URL}/blob/{git_revision}/{leanfile}"
+
     return links
 
 
 def create_test_tarball(tests: list, output_dir: Path) -> dict:
     """Create a tarball containing test files, organized by expected outcome.
-    
+
     Returns dict with tarball_size (in bytes), good_count, and bad_count.
     """
     import tarfile
-    import os
-    
+
     tarball_path = output_dir / "lean-arena-tests.tar.gz"
-    
+
     good_count = 0
     bad_count = 0
-    
+
     with tarfile.open(tarball_path, "w:gz") as tar:
         for test in tests:
-            # Skip large tests (by flag or by size > 1GB)
-            if test.get("large", False) or test.get("size", 0) > 1024*1024*1024:
+            # Skip tests larger than the size limit
+            if test.get("size", 0) > TEST_SIZE_LIMIT:
                 continue
-            
-            # Use the file path from test data
-            test_file = test["file"]
-            if not test_file.exists():
+
+            # Use the file path from test data (may be absent for tests whose
+            # stats came from a CI artifact without the .ndjson file)
+            test_file = test.get("file")
+            if test_file is None or not test_file.exists():
                 continue
-                
+
             outcome = test.get("outcome", "unknown")
             if outcome == "accept":
                 subdir = "good"
                 good_count += 1
-            else:
+            elif outcome == "reject":
                 subdir = "bad"
                 bad_count += 1
-            
+            else:
+                # 'either' (and any unclassified) tests have no expected good/bad
+                # bucket, so they are not included in the downloadable tarball.
+                continue
+
             # Add file to tarball with appropriate subdirectory
             arcname = f"{subdir}/{test['name']}.ndjson"
             tar.add(test_file, arcname=arcname)
-    
+
     # Get tarball size
     tarball_size = tarball_path.stat().st_size if tarball_path.exists() else 0
-    
+
     return {
         "tarball_size": tarball_size,
         "good_count": good_count,
         "bad_count": bad_count
     }
+
+
+def tarball_info_from_file(tarball_path: Path) -> dict:
+    """Derive tarball statistics (as returned by create_test_tarball) from an
+    existing tarball file."""
+    import tarfile
+
+    good_count = 0
+    bad_count = 0
+    with tarfile.open(tarball_path, "r:gz") as tar:
+        for member in tar:
+            if member.name.startswith("good/"):
+                good_count += 1
+            elif member.name.startswith("bad/"):
+                bad_count += 1
+
+    return {
+        "tarball_size": tarball_path.stat().st_size,
+        "good_count": good_count,
+        "bad_count": bad_count
+    }
+
+
+def cmd_build_tarball(args: argparse.Namespace) -> int:
+    """Handle the build-tarball command."""
+    output_dir = Path(args.outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tests = load_tests()
+    tarball_info = create_test_tarball(tests, output_dir)
+    print(f"Created {output_dir / 'lean-arena-tests.tar.gz'} "
+          f"({tarball_info['good_count']} good tests, {tarball_info['bad_count']} bad tests, "
+          f"{format_memory(tarball_info['tarball_size'])})")
+    return 0
+
+
+def result_virtual_time(result: dict, instructions_per_second: float) -> float:
+    """Virtual CPU time of a result: derived from the instruction count if
+    available, falling back to the measured CPU time."""
+    instructions = result.get("instructions") or 0
+    if instructions > 0 and instructions_per_second > 0:
+        return instructions / instructions_per_second
+    return result.get("cpu_time") or 0
+
+
+def group_rows(members: list, name_of) -> list[dict]:
+    """Group a list of table rows by test group for collapsible display.
+
+    Members whose test name has a directory component (e.g. "perf/app-lam")
+    are grouped by its first component. Returns a list of row dicts: first
+    {"is_group": False, "member": m} for the ungrouped members, then, at the
+    end of the table, {"is_group": True, "name": g, "members": [...]} for
+    each group.
+    """
+    rows = []
+    trailing_rows = []
+    groups = {}
+    for member in members:
+        name = name_of(member)
+        if "/" not in name:
+            rows.append({"is_group": False, "member": member})
+            continue
+        group_name = name.split("/", 1)[0]
+        if group_name not in groups:
+            groups[group_name] = {"is_group": True, "name": group_name, "members": []}
+            trailing_rows.append(groups[group_name])
+        groups[group_name]["members"].append(member)
+    return rows + trailing_rows
+
+
+def summarize_correctness(result_list: list[dict]) -> dict:
+    """Tally the correctness of a list of results (for group summary rows).
+
+    Errors are counted as declined, matching the scoring elsewhere.
+    """
+    counts = {"present": 0, "correct": 0, "incorrect": 0, "unsound": 0,
+              "incomplete": 0, "declined": 0, "either": 0}
+    for result in result_list:
+        if result is None:
+            continue
+        counts["present"] += 1
+        correctness = result.get("correctness", "error")
+        if correctness == "error":
+            correctness = "declined"
+        counts[correctness] = counts.get(correctness, 0) + 1
+        # Split wrong answers by direction: accepting what should have been
+        # rejected is unsound, rejecting what should have been accepted is
+        # merely incomplete
+        if correctness == "incorrect":
+            if result.get("status") == "accepted":
+                counts["unsound"] += 1
+            else:
+                counts["incomplete"] += 1
+    # Scored tests: those that count towards completeness/soundness plus declines
+    counts["scored"] = counts["correct"] + counts["incorrect"] + counts["declined"]
+    return counts
+
+
+def collect_results_data() -> dict:
+    """Collect checkers, tests, results and build metadata into a single
+    JSON-serializable structure.
+
+    This is the content of the published results.json file, and also the data
+    the website is rendered from, so it is a complete description of the
+    site's data.
+    """
+    checkers = load_checkers()
+    tests = load_tests()
+    results = load_results()
+    return {
+        "meta": get_build_metadata(),
+        "checkers": [
+            {k: v for k, v in checker.items() if k != "_file"}
+            for checker in checkers
+        ],
+        "tests": [
+            # The local .ndjson path is not meaningful outside this checkout
+            {k: v for k, v in test.items() if k != "file"}
+            for test in tests
+        ],
+        "results": [results[key] for key in sorted(results)],
+    }
+
+
+def cmd_write_results(args: argparse.Namespace) -> int:
+    """Handle the write-results command."""
+    out_file = Path(args.out)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    data = collect_results_data()
+    with open(out_file, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"Wrote {out_file} ({len(data['checkers'])} checkers, {len(data['tests'])} tests, {len(data['results'])} results)")
+    return 0
+
+
+def cmd_build_rounds_index(args: argparse.Namespace) -> int:
+    """Handle the build-rounds-index command.
+
+    Renders /round/index.html from the rounds already unpacked into the output
+    directory, one subdirectory per round. Everything shown is read from each
+    round's own results.json, so adding a round needs no changes here and the
+    archived rounds stay the single source of truth about themselves.
+    """
+    rounds_dir = Path(args.outdir)
+    if not rounds_dir.is_dir():
+        print(f"Rounds directory not found: {rounds_dir}")
+        return 1
+
+    rounds = []
+    for round_dir in sorted(rounds_dir.iterdir()):
+        if not round_dir.is_dir():
+            continue
+        results_file = round_dir / "results.json"
+        if not results_file.exists():
+            print(f"Error: {round_dir} has no results.json")
+            return 1
+        with open(results_file, "r") as f:
+            data = json.load(f)
+        meta = data.get("meta", {})
+        name = meta.get("round") or round_dir.name
+        if name != round_dir.name:
+            print(f"Error: {results_file} is for round {name}, but sits in {round_dir.name}/")
+            return 1
+        tarball = round_dir / "lean-arena-tests.tar.gz"
+        rounds.append({
+            "name": name,
+            "timestamp": meta.get("timestamp"),
+            "doi": meta.get("doi"),
+            "release_url": meta.get("release_url",
+                                    f"{REPO_URL}/releases/tag/{ROUND_TAG_PREFIX}{name}"),
+            "git_revision": meta.get("git_revision"),
+            "git_revision_short": meta.get("git_revision_short"),
+            "github_url": meta.get("github_url"),
+            "checker_count": len(data.get("checkers", [])),
+            "test_count": len(data.get("tests", [])),
+            "results_json_size": results_file.stat().st_size,
+            "tarball_size": tarball.stat().st_size if tarball.exists() else None,
+        })
+
+    # Newest round first
+    rounds.sort(key=lambda r: r["name"], reverse=True)
+
+    templates_dir = get_project_root() / "templates"
+    env = make_template_env(templates_dir)
+    template = env.get_template("rounds.html")
+    output_file = rounds_dir / "index.html"
+    template.stream({
+        "rounds": rounds,
+        "format_memory": format_memory,
+        "build_info": get_build_metadata(),
+        # /round/index.html sits one level below the site root
+        "root_path": "../",
+    }).dump(str(output_file))
+    print(f"Generated: {output_file} ({len(rounds)} rounds)")
+    return 0
+
+
+def make_template_env(templates_dir: Path) -> Environment:
+    """Create the Jinja environment used for all rendered pages.
+
+    Pages locate their assets through the `root_path` context variable (the
+    relative path from the page to the site root), so that the whole site
+    stays relocatable and can be unpacked under /round/<name>/.
+    """
+    env = Environment(
+        loader=FileSystemLoader(templates_dir),
+        autoescape=select_autoescape(),
+    )
+    env.globals["rounds_url"] = ROUNDS_URL
+    return env
 
 
 def cmd_build_site(args: argparse.Namespace) -> int:
@@ -1571,20 +2020,59 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         print(f"Templates directory not found: {templates_dir}")
         return 1
 
-    env = Environment(
-        loader=FileSystemLoader(templates_dir),
-        autoescape=select_autoescape(),
-    )
+    env = make_template_env(templates_dir)
+    env.globals["format_relative_perf"] = format_relative_perf
 
-    checkers = load_checkers()
-    results = load_results()
-    tests = load_tests()
-    
+    # The site is rendered from the results.json data structure, either read
+    # from a previously written file (--results) or collected now.
+    if args.results:
+        with open(args.results, "r") as f:
+            results_data = json.load(f)
+    else:
+        results_data = collect_results_data()
+
+    # Stamp the round this build belongs to into the metadata, so that
+    # results.json is self-describing and the round index can be built from
+    # the results.json files of the individual rounds alone.
+    meta = results_data.setdefault("meta", {})
+    for key in ("round", "doi", "zenodo_deposition"):
+        meta.setdefault(key, None)
+    if args.round:
+        meta["round"] = args.round
+    if args.doi:
+        meta["doi"] = args.doi
+    if args.zenodo_deposition:
+        meta["zenodo_deposition"] = int(args.zenodo_deposition)
+    if meta["round"]:
+        # The tag is passed in rather than derived: a test round is released
+        # under test-round-<name>, so reconstructing it from the round name
+        # would point at a release that does not exist.
+        tag = args.tag or f"{ROUND_TAG_PREFIX}{meta['round']}"
+        meta["release_url"] = f"{REPO_URL}/releases/tag/{tag}"
+
+    # Publish the raw data alongside the site
+    results_json_file = output_dir / "results.json"
+    with open(results_json_file, "w") as f:
+        json.dump(results_data, f, indent=2)
+    results_json_info = {"size": results_json_file.stat().st_size}
+    print(f"Generated: {results_json_file}")
+
+    checkers = results_data["checkers"]
+    tests = results_data["tests"]
+    results = {(r["checker"], r["test"]): r for r in results_data["results"]}
+    build_info = results_data.get("meta", {})
+
+    # Attach local .ndjson file paths where available (needed for the test
+    # tarball; deliberately not part of results.json)
+    test_files = {test["name"]: test.get("file") for test in load_tests()}
+    for test in tests:
+        test["file"] = test_files.get(test["name"])
+
     # Calculate global instructions per second from results with both cpu_time and instructions
     total_instructions = 0
     total_cpu_time = 0
     instruction_samples = 0
-    
+
     for result in results.values():
         cpu_time = result.get("cpu_time", 0)
         instructions = result.get("instructions", 0)
@@ -1592,7 +2080,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
             total_instructions += instructions
             total_cpu_time += cpu_time
             instruction_samples += 1
-    
+
     # Calculate observed instructions per second and report it
     if total_cpu_time > 0 and instruction_samples > 0:
         observed_instructions_per_second = total_instructions / total_cpu_time
@@ -1600,46 +2088,95 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     else:
         observed_instructions_per_second = 0
         print("No instruction count measurements available for conversion rate calculation")
-    
-    # Use fixed hardcoded conversion rate of 6 Tinst/s
-    instructions_per_second = 6_000_000_000_000  # 6 trillion instructions per second
-    
+
+    # Use fixed hardcoded conversion rate of 6 Ginst/s
+    instructions_per_second = 6_000_000_000  # 6 billion instructions per second
+
+    # For perf-compared tests, mark the fastest checker (bg-perf-best) and
+    # those at least 10% faster than the official checker (bg-perf-good);
+    # shown as cell backgrounds on the index page
+    for test in tests:
+        if not test.get("compare-perf"):
+            continue
+        times = {}
+        for checker in checkers:
+            result = results.get((checker["name"], test["name"]))
+            if result and result.get("status") == "accepted":
+                time = result_virtual_time(result, instructions_per_second)
+                if time > 0:
+                    times[checker["name"]] = time
+        if not times:
+            continue
+        best = min(times, key=times.get)
+        official_time = times.get("official")
+        for name, time in times.items():
+            if name == "official":
+                continue
+            if name == best:
+                results[(name, test["name"])]["perf_highlight"] = "bg-perf-best"
+            elif official_time and time < 0.9 * official_time:
+                results[(name, test["name"])]["perf_highlight"] = "bg-perf-good"
+
     # Compute stats for each checker
     for checker in checkers:
         checker["stats"] = compute_checker_stats(checker, tests, results)
 
     # Sort checkers by the specified criteria:
-    # 1. Number of bad tests not rejected (ascending - fewer mistakes is better)
-    # 2. Number of good tests accepted (descending - more is good)  
-    # 3. Number of good tests not accepted (ascending - fewer mistakes is better) 
-    # 4. Number of tests declined (ascending - fewer declines is better)
-    # 5. Instruction count for processing mathlib (ascending, with None/0 values last)
+    # 1. Number of bad tests not rejected (ascending - giving a bad response to a
+    #    negative test is the worst failure)
+    # 2. Number of good (non-declined) tests not accepted (ascending - wrongly
+    #    rejecting a good test is a serious bug; declines don't count here)
+    # 3. Instruction count for processing mathlib (ascending, with None/0 values
+    #    last - checkers that cope with mathlib rank on top, sorted by speed,
+    #    others below)
+    # 4. Number of tests declined (ascending - a final tie-breaker; serious
+    #    checkers may decline less important tests without being penalized)
     def sort_key(checker):
         stats = checker["stats"]
         bad_not_rejected = stats["reject_total"] - stats["reject_correct"]  # Should be low
-        good_accepted = stats["accept_correct"]  # Should be high
         good_not_accepted = stats["accept_total"] - stats["accept_correct"]  # Should be low
         declined_count = stats["declined_count"]  # Should be low
         mathlib_instructions = stats["mathlib_instructions"]
-        
+
         # For mathlib_instructions: None/0 values should be treated as infinity (sort last)
         instructions_sort_key = mathlib_instructions if mathlib_instructions and mathlib_instructions > 0 else float('inf')
-        
-        # Note: For descending sort on good_accepted, we negate it
-        return (bad_not_rejected, -good_accepted, good_not_accepted, declined_count, instructions_sort_key)
-    
+
+        return (bad_not_rejected, good_not_accepted, instructions_sort_key, declined_count)
+
     checkers.sort(key=sort_key)
 
-    # Get build metadata
-    build_info = get_build_metadata()
+    # Group tests (e.g. perf/, tutorial/) into collapsible table rows, with
+    # per-checker summary statistics for the group summary row
+    test_rows = group_rows(tests, lambda test: test["name"])
+    for row in test_rows:
+        if not row["is_group"]:
+            continue
+        row["count"] = len(row["members"])
+        row["size"] = sum(test.get("size", 0) for test in row["members"])
+        row["size_str"] = format_memory(row["size"])
+        row["checker_stats"] = {
+            checker["name"]: summarize_correctness(
+                [results.get((checker["name"], test["name"])) for test in row["members"]]
+            )
+            for checker in checkers
+        }
 
-    # Create test tarball
-    tarball_info = create_test_tarball(tests, output_dir)
+    # Create the test tarball, or take a pre-built one (see build-tarball)
+    tarball_file = output_dir / "lean-arena-tests.tar.gz"
+    if args.tarball:
+        tarball_src = Path(args.tarball)
+        if tarball_src.resolve() != tarball_file.resolve():
+            shutil.copy2(tarball_src, tarball_file)
+        tarball_info = tarball_info_from_file(tarball_file)
+    else:
+        tarball_info = create_test_tarball(tests, output_dir)
 
     # Build context data
     data = {
         "tests": tests,
+        "test_rows": test_rows,
         "checkers": checkers,
+        "test_results": results,  # Pass results dict with (checker, test) keys
         "format_duration": format_duration,
         "format_memory": format_memory,
         "format_instructions": format_instructions,
@@ -1648,6 +2185,8 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         "instructions_per_second": instructions_per_second,
         "build_info": build_info,
         "tarball_info": tarball_info,
+        "results_json_info": results_json_info,
+        "root_path": "",
     }
 
     # Render index.html
@@ -1666,10 +2205,10 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         for checker in checkers:
             checker_dir = output_dir / "checker" / checker["name"]
             checker_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Generate checker links
             checker_links = generate_source_links(checker, "checkers", build_info.get("git_revision"))
-            
+
             # Gather results for this checker
             checker_results = []
             for test in tests:
@@ -1687,25 +2226,106 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                         "declaration_url": test.get("declaration_url"),
                         "source_url": test.get("source_url")
                     }
-                    
+
                     # Add official checker results for comparison (if available)
                     official_key = ("official", test["name"])
                     official_result = results.get(official_key)
                     result["official"] = official_result
-                    
+
                     checker_results.append(result)
-            
+
             # Sort checker results by name (alphabetical order)
             checker_results.sort(key=lambda result: result.get("test", ""))
-            
+
+            # Group tests (e.g. perf/, tutorial/) into collapsible table rows
+            result_rows = group_rows(checker_results, lambda result: result["test"])
+            for row in result_rows:
+                if not row["is_group"]:
+                    continue
+                row["count"] = len(row["members"])
+                row.update(summarize_correctness(row["members"]))
+                row["time_sum"] = sum(result_virtual_time(r, instructions_per_second) for r in row["members"])
+                row["rss_max"] = max(r.get("max_rss") or 0 for r in row["members"])
+                # Overall performance relative to the official checker, summed
+                # over the tests that both checkers accepted
+                own_time = 0.0
+                official_time = 0.0
+                for r in row["members"]:
+                    official = r.get("official")
+                    if (r.get("expected") == "accept" and r.get("status") == "accepted"
+                            and official and official.get("status") == "accepted"):
+                        own_time += result_virtual_time(r, instructions_per_second)
+                        official_time += result_virtual_time(official, instructions_per_second)
+                if official_time > 0 and own_time > 0:
+                    row["relative_perf"] = format_relative_perf(own_time, official_time)
+                else:
+                    row["relative_perf"] = None
+
             # Create a copy of checker data with rendered description
             checker_with_rendered_desc = checker.copy()
             checker_with_rendered_desc["description"] = render_markdown(checker.get("description", ""))
-            
+
             checker_data = {
                 "checker": checker_with_rendered_desc,
                 "checker_links": checker_links,
                 "results": checker_results,
+                "result_rows": result_rows,
+                "format_duration": format_duration,
+                "format_memory": format_memory,
+                "format_instructions": format_instructions,
+                "format_unitless": format_unitless,
+                "convert_instructions_to_time": convert_instructions_to_time,
+                "instructions_per_second": instructions_per_second,
+                "build_info": build_info,
+                "root_path": "../../",
+            }
+
+            output_file = checker_dir / "index.html"
+            checker_template.stream(checker_data).dump(str(output_file))
+            print(f"Generated: {output_file}")
+    except Exception as e:
+        print(f"Error rendering checker template: {e}")
+        return 1
+
+    # Generate per-test pages
+    try:
+        test_template = env.get_template("test.html")
+        for test in tests:
+            test_dir = output_dir / "test" / test["name"]
+            test_dir.mkdir(parents=True, exist_ok=True)
+
+            # Generate test links
+            test_links = {
+                "declaration_url": test.get("declaration_url"),
+                "source_url": test.get("source_url")
+            }
+
+            # Gather results from all checkers for this test
+            test_results = []
+            for checker in checkers:
+                key = (checker["name"], test["name"])
+                if key in results:
+                    result = results[key].copy()
+                    result["checker"] = checker["name"]
+
+                    # Add official checker results for comparison
+                    official_key = ("official", test["name"])
+                    official_result = results.get(official_key)
+                    result["official"] = official_result
+
+                    test_results.append(result)
+
+            # Compute relative path to site root from test/name/index.html
+            # e.g. "app-lam" -> "../../", "perf/app-lam" -> "../../../"
+            depth = test["name"].count("/") + 2  # +2 for "test/" and trailing "/"
+            root_path = "../" * depth
+
+            test_data = {
+                "test": test,
+                "test_links": test_links,
+                "test_description": render_markdown(test.get("description", "")),
+                "results": test_results,
+                "root_path": root_path,
                 "format_duration": format_duration,
                 "format_memory": format_memory,
                 "format_instructions": format_instructions,
@@ -1714,12 +2334,12 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 "instructions_per_second": instructions_per_second,
                 "build_info": build_info,
             }
-            
-            output_file = checker_dir / "index.html"
-            checker_template.stream(checker_data).dump(str(output_file))
+
+            output_file = test_dir / "index.html"
+            test_template.stream(test_data).dump(str(output_file))
             print(f"Generated: {output_file}")
     except Exception as e:
-        print(f"Error rendering checker template: {e}")
+        print(f"Error rendering test template: {e}")
         return 1
 
     # Copy static files if they exist
@@ -1733,6 +2353,99 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
 
 # =============================================================================
+# CI support commands
+# =============================================================================
+
+
+def cmd_list_checkers(args: argparse.Namespace) -> int:
+    """Handle the list-checkers command."""
+    names = [checker["name"] for checker in load_checkers()]
+    if args.json:
+        print(json.dumps(names))
+    else:
+        for name in names:
+            print(name)
+    return 0
+
+
+def cmd_ci_pack(args: argparse.Namespace) -> int:
+    """Handle the ci-pack command.
+
+    Stages the selected data, preserving project-relative paths:
+    - --results: all result files from _results/
+    - --test-stats: all test .stats.json files from _build/tests/
+    """
+    if not (args.results or args.test_stats):
+        print("Error: nothing to stage; pass --results and/or --test-stats")
+        return 1
+
+    root = get_project_root()
+    outdir = Path(args.outdir)
+
+    files = []
+    if args.results:
+        results_dir = root / "_results"
+        if results_dir.exists():
+            files.extend(sorted(results_dir.glob("*.json")))
+
+    if args.test_stats:
+        tests_dir = root / "_build" / "tests"
+        if tests_dir.exists():
+            files.extend(sorted(tests_dir.rglob("*.stats.json")))
+
+    for file in files:
+        dest = outdir / file.relative_to(root)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file, dest)
+
+    print(f"Staged {len(files)} file(s) in {outdir}")
+    return 0
+
+
+def cmd_ci_merge(args: argparse.Namespace) -> int:
+    """Handle the ci-merge command.
+
+    Merges directories staged by ci-pack back into the project, copying each
+    file to its project-relative location. A file that already exists (from a
+    previous artifact or a local build) must be byte-identical; anything else
+    indicates that the CI jobs did not build the same test data, and the merge
+    fails.
+    """
+    root = get_project_root()
+    copied = 0
+    identical = 0
+    conflicts = []
+
+    for dir_str in args.dirs:
+        artifact_dir = Path(dir_str)
+        if not artifact_dir.is_dir():
+            print(f"Error: Not a directory: {artifact_dir}")
+            return 1
+        for file in sorted(path for path in artifact_dir.rglob("*") if path.is_file()):
+            rel = file.relative_to(artifact_dir)
+            dest = root / rel
+            if dest.exists():
+                if filecmp.cmp(file, dest, shallow=False):
+                    identical += 1
+                else:
+                    conflicts.append((rel, artifact_dir))
+            else:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(file, dest)
+                copied += 1
+
+    print(f"Merged {len(args.dirs)} artifact(s): {copied} file(s) copied, {identical} identical duplicate(s)")
+
+    if conflicts:
+        print("Error: The following files differ from an already present copy, but should be identical:")
+        for rel, artifact_dir in conflicts:
+            print(f"  {rel} (from {artifact_dir})")
+        return 1
+
+    return 0
+
+
+# =============================================================================
 # Main entry point
 # =============================================================================
 
@@ -1740,7 +2453,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 def main() -> int:
     """Main entry point."""
     global VERBOSE
-    
+
     parser = argparse.ArgumentParser(
         prog="lka",
         description="Lean Kernel Arena - Tool for managing Lean kernel tests and checkers",
@@ -1763,9 +2476,14 @@ def main() -> int:
         help="Name or glob pattern of the test to build (default: all tests)",
     )
     build_test_parser.add_argument(
-        "--no-large",
+        "--skip-ci",
         action="store_true",
-        help="Skip large tests (marked with 'large: true' in YAML)",
+        help="Skip tests marked with 'skip-on-ci: true' in YAML",
+    )
+    build_test_parser.add_argument(
+        "--skip-declined-by",
+        metavar="CHECKER",
+        help="Skip tests listed in the given checker's 'declines' field",
     )
 
     # build-checker command
@@ -1779,9 +2497,9 @@ def main() -> int:
         help="Name or glob pattern of the checker to build (default: all checkers)",
     )
 
-    # run-checker command
+    # run command
     run_checker_parser = subparsers.add_parser(
-        "run-checker",
+        "run",
         help="Run checkers on tests",
     )
     run_checker_parser.add_argument(
@@ -1803,9 +2521,113 @@ def main() -> int:
         default="_out",
         help="Output directory for the website (default: _out)",
     )
+    build_site_parser.add_argument(
+        "--results",
+        metavar="FILE",
+        help="Render the site from a previously written results.json instead of collecting the data (see write-results)",
+    )
+    build_site_parser.add_argument(
+        "--tarball",
+        metavar="FILE",
+        help="Use a pre-built test tarball instead of creating one (see build-tarball)",
+    )
+    build_site_parser.add_argument(
+        "--round",
+        metavar="NAME",
+        help="Name of the round this build closes, e.g. 2026-10 (default: no round, i.e. the ongoing round)",
+    )
+    build_site_parser.add_argument(
+        "--tag",
+        help=f"Tag this round is released under (default: {ROUND_TAG_PREFIX}<round>)",
+    )
+    build_site_parser.add_argument(
+        "--doi",
+        help="DOI of this round, shown for citation (pre-reserved on Zenodo before the build)",
+    )
+    build_site_parser.add_argument(
+        "--zenodo-deposition",
+        metavar="ID",
+        help="Zenodo deposition id of this round, recorded in results.json so the next round can be created as a new version of it",
+    )
+
+    # build-rounds-index command
+    build_rounds_index_parser = subparsers.add_parser(
+        "build-rounds-index",
+        help="Build the index page listing all archived rounds",
+    )
+    build_rounds_index_parser.add_argument(
+        "--outdir",
+        default="_out/round",
+        help="Directory holding the unpacked rounds, one subdirectory per round (default: _out/round)",
+    )
+
+    # build-tarball command
+    build_tarball_parser = subparsers.add_parser(
+        "build-tarball",
+        help="Create the downloadable test tarball from the built tests",
+    )
+    build_tarball_parser.add_argument(
+        "--outdir",
+        default="_out",
+        help="Output directory for the tarball (default: _out)",
+    )
+
+    # write-results command
+    write_results_parser = subparsers.add_parser(
+        "write-results",
+        help="Write all checker/test metadata and results into a single results.json file",
+    )
+    write_results_parser.add_argument(
+        "--out",
+        default="_build/results.json",
+        help="Output file (default: _build/results.json)",
+    )
+
+    # list-checkers command
+    list_checkers_parser = subparsers.add_parser(
+        "list-checkers",
+        help="List all enabled checkers",
+    )
+    list_checkers_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as a JSON array",
+    )
+
+    # ci-pack command
+    ci_pack_parser = subparsers.add_parser(
+        "ci-pack",
+        help="Stage results and test metadata for upload as a CI artifact",
+    )
+    ci_pack_parser.add_argument(
+        "--outdir",
+        required=True,
+        help="Directory to stage the files in",
+    )
+    ci_pack_parser.add_argument(
+        "--results",
+        action="store_true",
+        help="Stage the result files from _results/",
+    )
+    ci_pack_parser.add_argument(
+        "--test-stats",
+        action="store_true",
+        help="Stage the test .stats.json files from _build/tests/",
+    )
+
+    # ci-merge command
+    ci_merge_parser = subparsers.add_parser(
+        "ci-merge",
+        help="Merge CI artifact directories (created by ci-pack) back into the project, checking that duplicate files are identical",
+    )
+    ci_merge_parser.add_argument(
+        "dirs",
+        nargs="+",
+        help="Artifact directories to merge",
+    )
 
     args = parser.parse_args()
-    
+
     # Set global verbose flag
     VERBOSE = args.verbose
 
@@ -1817,10 +2639,22 @@ def main() -> int:
         return cmd_build_test(args)
     elif args.command == "build-checker":
         return cmd_build_checker(args)
-    elif args.command == "run-checker":
+    elif args.command == "run":
         return cmd_run_checker(args)
     elif args.command == "build-site":
         return cmd_build_site(args)
+    elif args.command == "build-rounds-index":
+        return cmd_build_rounds_index(args)
+    elif args.command == "write-results":
+        return cmd_write_results(args)
+    elif args.command == "build-tarball":
+        return cmd_build_tarball(args)
+    elif args.command == "list-checkers":
+        return cmd_list_checkers(args)
+    elif args.command == "ci-pack":
+        return cmd_ci_pack(args)
+    elif args.command == "ci-merge":
+        return cmd_ci_merge(args)
     else:
         parser.print_help()
         return 1

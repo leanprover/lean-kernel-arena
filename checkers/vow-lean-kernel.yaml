@@ -1,0 +1,84 @@
+# Lean Kernel Arena checker: a Lean 4 kernel written in Vow.
+# Source of truth: https://github.com/pmatos/vow-lean-kernel (arena/checker.yaml).
+#
+# `url`-type checker. The arena clones the kernel repo into `src/`, runs `build`
+# there, then `run` with `$IN` = the NDJSON test file. `build`/`run` are executed
+# via `/bin/sh -c`, so they stay POSIX-sh compatible (the internal scripts/*.sh
+# invoke bash explicitly).
+version: "0.1.0"
+description: |
+  A Lean 4 kernel (proof checker) written in [**Vow**](https://github.com/vow-lang/vow),
+  a young systems language. Reads `lean4export` NDJSON and verifies each
+  declaration is well-typed.
+
+  It accepts the full Arena tutorial suite and all of Lean core `Init`
+  (54,475 declarations). Nat arithmetic uses a base-2^32 bignum backend, so
+  reductions past 2^64 are exact. Declarations beyond the currently supported
+  fragment are **declined** (exit 2) rather than falsely rejected — the checker
+  is sound-by-construction on what it accepts and conservative elsewhere.
+
+  [Vow](https://vow-lang.com) is a language developed by Paulo Matos
+  ([github.com/pmatos](https://github.com/pmatos)) for agentic use — one of
+  several such languages currently emerging, alongside MoonBit, Vera-lang, and
+  Zerolang. This kernel, the first large program written in Vow, was undertaken
+  as a challenge: to have an agent develop a complete Lean kernel entirely in the
+  new language, and it doubles as a proving ground for it. The work was 100%
+  agentic, carried out with Claude Code.
+url: https://github.com/pmatos/vow-lean-kernel
+ref: main
+rev: 514ab33fc0262c491a0af1846cc3887f48411e36
+build: |
+  set -eu
+
+  # The kernel builds only with the self-hosted `vowc`, which must first be
+  # built from vow-lang/vow at this pinned commit (the base-2^32 bignum merge
+  # the kernel is developed against). Mirrors .github/workflows/ci.yml.
+  VOW_REF=15c1b933f87eed2b23c176665730baea37706daa
+  ROOT="$(pwd)"
+
+  git clone https://github.com/vow-lang/vow vow
+  git -C vow checkout "$VOW_REF"
+
+  # Stage 0: Rust bootstrap compiler. vow's Rust deps (cranelift 0.133) need
+  # rustc >= 1.94, provided by the arena's flake (nixpkgs nixos-26.05 → rustc
+  # 1.95). Only this stage needs cargo/rustc; the self-host and kernel builds
+  # use the produced binaries.
+  ( cd vow && cargo build --all )
+
+  # Stage 1: concatenate and self-host the Cranelift-backed `vowc`. The
+  # self-host build is memory-capped in a subshell so the cap does not leak into
+  # the kernel build that follows.
+  ( cd vow && bash scripts/concat_vow.sh clif > "$ROOT/compiler_clif.vow" )
+  ( cd vow && ulimit -v 2000000 \
+      && ./target/debug/vow build --no-verify --no-cache \
+           "$ROOT/compiler_clif.vow" -o "$ROOT/vowc" )
+  test -x "$ROOT/vowc"
+
+  # Stage 2: build the kernel with the freshly self-hosted vowc.
+  VOWC="$ROOT/vowc" bash scripts/build.sh
+  test -x lean_checker
+run: |
+  # lean_checker exits 0 accept / 1 reject / 2 decline. But the Vow runtime
+  # exits 1 on OutOfMemory, colliding with "reject" — which the arena would
+  # score as a false reject on an accept test. Detect that specific runtime OOM
+  # (a JSON marker on stderr) and remap it to exit 3 (error). An OOM is a
+  # resource-exhaustion abort, not a deliberate "outside my fragment" decline,
+  # so the arena's error bucket (crash / OOM / timeout) is its honest home.
+  # Genuine rejects (exit 1, no OOM marker), real declines (exit 2) and real
+  # crashes are left untouched.
+  #
+  # Cap = 12 GiB: the dry-run showed the `Init` accept run peaks at ~7.6 GB, so
+  # 8 GB left almost no headroom; 12 GB is comfortable yet stays below a normal
+  # arena host's RAM, so a genuine OOM still surfaces as Vow's graceful
+  # allocation failure (which we can detect) rather than an OS OOM-kill
+  # (SIGKILL, uncatchable).
+  #
+  # Time cap = 30s: unsupported performance cases should fail promptly instead
+  # of occupying an arena runner until the workflow-wide timeout.
+  err="$(mktemp)"
+  ( ulimit -v 12582912 && timeout 30s ./lean_checker "$IN" ) 2>"$err"
+  rc=$?
+  cat "$err" >&2
+  if [ "$rc" -ne 0 ] && grep -q '"error":"OutOfMemory"' "$err"; then rc=3; fi
+  rm -f "$err"
+  exit "$rc"

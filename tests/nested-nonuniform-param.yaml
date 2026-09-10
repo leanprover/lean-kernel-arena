@@ -1,0 +1,29 @@
+description: |
+  Checks that a parameter supplied to a nested inductive occurrence really acts
+  as the datatype's parameter, i.e. that it is the parameter itself and does not
+  change between recursive occurrences (as is already enforced for non-nested
+  occurrences).
+
+  The inductive `E : W → Type` has constructor
+  `E.mk : (w : W) → L (E ⟨false⟩) → E w`, where `L (α : Type)` is nested. The
+  occurrence `E ⟨false⟩` inside the nested `L` uses the constant `⟨false⟩` in
+  the position of `E`'s parameter, instead of the actual parameter `w`. That
+  argument is type-correct, so it is not caught by merely type-checking the
+  nested application (leanprover/lean4#14577); a correct checker must also
+  verify that it is the expected parameter.
+
+  This particular declaration is not known to yield a proof of `False`: here `L`
+  stores no value of type `α`, so the nested occurrence is phantom and `E w` is
+  isomorphic to `Unit` for every `w`. The variant where `L` actually stores an
+  `α` (so recursion would descend into an `E ⟨false⟩` while the motive is fixed
+  at `E w`) is already rejected by the kernel's positivity check ("non valid
+  occurrence"). Since it is not a demonstrated unsoundness, it is not settled
+  whether a checker should accept or reject it, so the expected outcome is
+  `either` and the test does not count towards completeness or soundness.
+
+  Origin: raised by @arthur-adjedj on leanprover/lean4#14577
+  (https://github.com/leanprover/lean4/pull/14577#issuecomment-5101819377) as a
+  case not covered by that PR's fix; related to leanprover/lean4#14576.
+leanfile: tests/nested-nonuniform-param.lean
+export-decls: ["E"]
+outcome: either

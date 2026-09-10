@@ -1,0 +1,20 @@
+description: |
+  nyaya -- an external Lean 4 kernel written in OCaml. 
+url: https://github.com/kodyvajjha/nyaya
+ref: master
+rev: a748f56ffd8fee099ad3a6a3e682156d42d51781
+build: |
+  export OPAMROOT="$PWD/.opam-root"
+  opam init --bare --disable-sandboxing -n
+  opam option --global depext=false
+  opam switch create . ocaml-system -y
+run: |
+  ulimit -v 1000000 -c 0
+  NYAYA_ARENA=1 timeout 30s ./_opam/bin/nyaya "$IN"
+# Cannot handle anything bigger than the init test
+# (init itself is kept to show that it explodes there)
+declines:
+  - std
+  - mathlib
+  - cedar
+  - cslib

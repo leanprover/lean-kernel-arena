@@ -1,0 +1,43 @@
+description: |
+  **Nanobruijn** - An experimental Lean 4 kernel using pure de Bruijn indices.
+
+  Forked from [nanoda_lib](https://github.com/ammkrn/nanoda_lib), this variant
+  replaces the locally-nameless binding representation with pure de Bruijn
+  indices. Written in Rust.
+
+  Key ideas:
+
+  - **Pure de Bruijn indices** instead of locally-nameless: entering a binder
+    requires no substitution — variables are shifted lazily when read from
+    the local context.
+  - **Lazy shifting via pointer+offset pairs**: instead of allocating shifted
+    expression nodes, each pointer carries an integer offset. Shifting is O(1)
+    "pointer arithmetic". Expressions that differ only by a uniform index shift
+    share a single DAG node.
+  - **Depth-stratified caching**: cache entries are bucketed by binding depth,
+    so results at one depth can be reused at another by adjusting the offset.
+    Closed (variable-free) expressions live in a global bucket that survives
+    all context changes.
+  - **Lazy frame invalidation**: when leaving a binder, the cache frame is
+    kept rather than discarded. If the next binder entry has the same type,
+    the frame (with all its cached results) is reused.
+
+  This is an experimental checker, not intended for production use. All code
+  modifications from the original nanoda_lib were written by Claude (Anthropic).
+url: https://github.com/nomeata/nanobruijn
+ref: master
+rev: 79048ed7587e9961c70cf745981b8a7d01062c58
+build: |
+  cargo build --release
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+run: |
+  timeout 3600 target/release/nanobruijn config.json < "$IN" || exit 1

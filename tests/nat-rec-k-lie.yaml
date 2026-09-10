@@ -1,0 +1,9 @@
+description: |
+  Proof of False via trusted `k` on `Nat.rec`.
+
+  Lie by claiming `Nat.rec` is K-like. Then replace the major premise by `Nat.zero`,
+  but nat literals bypasses K-like reduction, so two reduction rules disagree.
+
+  `∀ n, g n` holds by the first, and `g 1` is `False` by the second.
+file: tests/nat-rec-k-lie.ndjson
+outcome: reject

@@ -1,0 +1,18 @@
+description: |
+  The declaration to check compares
+
+      dropArg (count #n)      and      dropArg (count #(n+1))
+
+  where `count #k` evaluates to the numeral `#k` in Θ(k²) reductions, and
+  `dropArg` maps every numeral to `N.O`.
+
+  Unfolding `dropArg` leaves `N.O` against `N.O`, for **Θ(1)**. Comparing the
+  arguments first evaluates two numerals of different value, for **Θ(n²)**, and
+  then throws that answer away. The test asks whether a checker unfolds a
+  constant before looking at an argument the constant never uses.
+
+  N=200 in the Lean source. From Courant and Leroy, POPL 2026, §10.
+leanfile: tests/perf/discarded-argument.lean
+export-decls: ["kernel_discarded_argument"]
+outcome: accept
+compare-perf: true

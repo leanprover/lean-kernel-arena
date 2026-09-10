@@ -1,0 +1,10 @@
+description: |
+  The Lean Computer Science Library (CSLib). 
+url: https://github.com/leanprover/cslib
+ref: main
+rev: c7944a9fb44c3298f1a960a5e574ab23a6ab8ed5
+pre-build: lake exe cache get
+module: Cslib
+outcome: accept
+compare-perf: true
+skip-on-ci: true

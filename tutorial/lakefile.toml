@@ -4,7 +4,7 @@ defaultTargets = [ "Tutorial" ]
 [[require]]
 name = "Lean4Export"
 git = "https://github.com/leanprover/lean4export"
-rev = "arena_json_output"
+rev = "joachim/export-eq-with-qout"
 
 [[lean_lib]]
 name = "Tutorial"

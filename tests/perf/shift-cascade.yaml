@@ -1,0 +1,27 @@
+description: |
+  Stress test for cascading substitution overhead in kernel `let` processing.
+
+  N nested `let` bindings inside a lambda, where each value references the
+  outer lambda parameter and the previous binding:
+
+    fun (a : Nat → Nat) =>
+      let f₁ := fun x => a x
+      let f₂ := fun x => a (f₁ x)
+      ...
+      let fₙ := fun x => a (fₙ₋₁ x)
+      fₙ 0
+
+  The kernel processes each `let` by substituting the value into the body.
+  Each value has a free bvar (references `a`), so substitution under inner
+  binders creates shifted copies. In a de Bruijn kernel with deferred shifts,
+  these `Shift(val, offset)` wrappers accumulate: step k must traverse
+  through O(k) wrappers from previous steps, giving **O(N²) total** work.
+
+  A locally-nameless kernel substitutes fvars that need no shifting,
+  giving **O(N) total**.
+
+  N=1000 in the Lean source. Increase to stress further.
+leanfile: tests/perf/shift-cascade.lean
+export-decls: ["shift_cascade"]
+outcome: accept
+compare-perf: true

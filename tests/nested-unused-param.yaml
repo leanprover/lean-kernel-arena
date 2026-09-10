@@ -1,0 +1,25 @@
+description: |
+  Checks that the parameters of a nested inductive application are type-checked
+  even when they do not appear in the auxiliary type generated during
+  nested-inductive compilation.
+
+  When an inductive `E` has a constructor whose type contains a nested
+  application `L (E w) b`, the elaboration of nested inductives replaces that
+  occurrence with an auxiliary type. The argument `b` does not occur in the
+  auxiliary declaration, so a checker that only checks the auxiliary type never
+  sees `b`. A correct checker must still ensure `b` is well-typed; this test
+  rejects if it is not.
+
+  Here `b` is a malformed projection `C.0 (C.0 w)` (applying a `C` projection to
+  a value of the unrelated structure `W`), disguised by a hash collision. If the
+  parameter is not checked, the bogus projection slips through and the resulting
+  `E` can be used to build an axiom-free proof of `False` (`boom`). The
+  projection is merely the payload; the property under test is that the
+  nested-inductive parameter is checked.
+
+  Origin: reported as leanprover/lean4#14576 by @kiranandcode, with the original
+  source recorded by @xrchz (https://github.com/xrchz/collatzlean); fixed in
+  leanprover/lean4#14577.
+leanfile: tests/nested-unused-param.lean
+export-decls: ["boom"]
+outcome: reject

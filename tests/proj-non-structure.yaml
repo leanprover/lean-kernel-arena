@@ -1,0 +1,7 @@
+description: |
+  `Bad` has two constructors, so projections should not be allowed.
+  Prove false by using the second constructor, then projecting, hoping that the
+  first constructor is used when inferring the type of the projection.
+leanfile: tests/proj-non-structure.lean
+export-decls: ["bad"]
+outcome: reject

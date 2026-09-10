@@ -7,7 +7,7 @@
   "properties": {
     "version": {
       "type": "string",
-      "description": "Version identifier for the checker"
+      "description": "Version identifier for the checker. If omitted but both `ref` and `rev` are present, the arena will display `ref (rev7)` where `rev7` is the last 7 characters of `rev`."
     },
     "description": {
       "type": "string",
@@ -38,6 +38,26 @@
     "run": {
       "type": "string", 
       "description": "Shell command to run the checker. $IN variable points to input test file"
+    },
+    "disable": {
+      "type": "boolean",
+      "description": "If true, this checker will be ignored and not built or run"
+    },
+    "declines": {
+      "description": "Test name or list of test names that this checker declines without running them (recorded as declined, as if the checker had exited with code 2)",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      ]
+    },
+    "threads": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Worker threads the checker runs concurrently; the parallel runner reserves this many CPU slots to avoid oversubscribing (default: 1)"
     }
   },
   "required": ["run"],

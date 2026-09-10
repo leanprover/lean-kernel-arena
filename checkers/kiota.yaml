@@ -1,0 +1,11 @@
+description: |
+  **kiota** — a from-scratch Lean 4 kernel in Rust that re-derives
+  K-likeness and ι instead of trusting those export fields. Not a
+  nanoda fork. Init and Std export corpora typecheck; mathlib, cslib,
+  and cedar run on the nightly job (skip-on-ci).
+version: "0.1.0"
+url: https://github.com/sankalpsthakur/kiota
+ref: main
+rev: 2d2a9fa31cba31abdd49543c3bb667591207577e
+build: cargo build --release
+run: timeout 3600s ./target/release/kiota "$IN"

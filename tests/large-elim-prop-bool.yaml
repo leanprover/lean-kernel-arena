@@ -1,0 +1,9 @@
+description: |
+  Proof of `False` by allowing a `Prop` inductive to have the same recursor
+  that the corresponding `Type` inductive would have.
+
+  Proof irrelevance makes .tt = .ff, but `pick` distinguishes between them.
+
+leanfile: tests/large-elim-prop-bool.lean
+export-decls: ["boom"]
+outcome: reject

@@ -1,0 +1,23 @@
+description: |
+  The declaration to check compares
+
+      tagged (count #n)      and      (false, count #n)
+
+  where `tagged m = (isZero m, m)`, so unfolding the left side leaves the same
+  application `count #n` in both components, forced by `isZero` in one and
+  plain in the other.
+
+  The plain occurrences are identical, for **Θ(1)**; the forced one evaluates
+  `count #n` once. The order matters for a checker that leaves a constant
+  unfolded once it reduces it: reducing the forced component first replaces
+  `count #n` by its value on one side, and the plain comparison then faces a
+  folded application against an evaluated one. Here the forcing component
+  comes first; `folded-constant-last.lean` swaps them, and the ratio between
+  the two files is what that costs.
+
+  N=1000 in the Lean source. From Courant and Leroy, POPL 2026, §10, where
+  the two orders cost Rocq 3 × 10⁻⁵ s and 0.078 s.
+leanfile: tests/perf/folded-constant-first.lean
+export-decls: ["kernel_folded_constant_first"]
+outcome: accept
+compare-perf: true

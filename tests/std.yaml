@@ -13,4 +13,5 @@ description: |
   but smaller than Mathlib, making it useful for performance testing.
 leanfile: tests/std_module.lean
 outcome: accept
-large: true
+compare-perf: true
+skip-on-ci: true

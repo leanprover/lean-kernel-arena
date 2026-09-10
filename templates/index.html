@@ -1,12 +1,86 @@
 {% extends "base.html" %}
 
-{% block static_path %}{% endblock %}
+{# One test row in the Tests table; group members are shown indented, without the group prefix #}
+{% macro test_row(test, group) %}
+            <tr>
+                <td{% if group %} class="group-member"{% endif %}><a href="test/{{ test.name }}/">{% if group %}{{ test.name[(group | length) + 1:] }}{% else %}{{ test.name }}{% endif %}</a>{% if test.outcome == 'either' %} <span title="No expected outcome: accepting and rejecting are both acceptable">🤷</span>{% endif %}</td>
+                <td class="spacer-col"></td>
+                {% for checker in checkers %}
+                    {% if checker.name == 'official' %}
+                    {% set key = (checker.name, test.name) %}
+                    {% set result = test_results.get(key) %}
+                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                        {% if result %}
+                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
+                            {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
+                                {# Show absolute virtual time for perf-compared tests #}
+                                {% set official_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
+                                {% if official_cpu_time %}
+                                    {{ format_duration(official_cpu_time) }}
+                                {% else %}
+                                    👍
+                                {% endif %}
+                            {% else %}
+                                {# Show result status for other tests #}
+                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
+                            {% endif %}
+                        </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                {% endfor %}
+                {% for checker in checkers %}
+                    {% if checker.name != 'official' %}
+                    {% set key = (checker.name, test.name) %}
+                    {% set result = test_results.get(key) %}
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                        {% if result %}
+                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
+                            {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
+                                {# Show performance comparison for perf-compared tests #}
+                                {% set official_key = ('official', test.name) %}
+                                {% set official_result = test_results.get(official_key) %}
+                                {% if official_result and official_result.status == 'accepted' %}
+                                    {% set official_cpu_time = convert_instructions_to_time(official_result.get('instructions', 0), instructions_per_second) if official_result.get('instructions', 0) > 0 and instructions_per_second > 0 else official_result.cpu_time %}
+                                    {% set current_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
+                                    {% if official_cpu_time and current_cpu_time %}
+                                        {{ format_relative_perf(current_cpu_time, official_cpu_time) }}
+                                    {% else %}
+                                        👍
+                                    {% endif %}
+                                {% else %}
+                                    👍
+                                {% endif %}
+                            {% else %}
+                                {# Show result status for other tests #}
+                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
+                            {% endif %}
+                        </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                {% endfor %}
+                <td class="text-right">{{ test.size_str }}</td>
+            </tr>
+{% endmacro %}
+
+{# Aggregated per-checker cell in a group summary row #}
+{% macro group_summary_cell(stats, official) %}
+                <td class="text-center {% if official %}official-column {% endif %}{% if stats.present == 0 %}{% elif stats.incorrect > 0 %}bg-error{% elif stats.declined > 0 %}bg-warning{% endif %}">
+                    {% if stats.present == 0 %}
+                        -
+                    {% else %}
+                        <span title="{{ stats.correct }} correct, {{ stats.unsound }} wrongly accepted, {{ stats.incomplete }} wrongly rejected, {{ stats.declined }} declined or crashed{% if stats.either %}, {{ stats.either }} either{% endif %}">{{ stats.correct }}</span>
+                    {% endif %}
+                </td>
+{% endmacro %}
 
 {% block style %}
 .checker-name { font-weight: 600; }
-.bg-success { background-color: #d4edda; }
-.bg-danger { background-color: #f8d7da; }
-.bg-warning { background-color: #fff3cd; }
 .text-muted { color: #6c757d; }
 .banner {
     width: 100%;
@@ -16,11 +90,29 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+.rotated-header {
+    writing-mode: sideways-lr;
+    white-space: nowrap;
+}
+.official-column {
+    border-right: 2px solid #6c757d;
+}
+table thead th {
+    vertical-align: bottom;
+}
+details.page-details > summary {
+    cursor: pointer;
+}
+details.page-details > summary h3 {
+    /* keep the heading on one line with the disclosure marker */
+    display: inline-block;
+    margin: 0.35em 0;
+}
 {% endblock %}
 
 {% block content %}
 <section>
-    <img src="static/kernel-arena-banner-under-construction.jpg" alt="Lean Kernel Arena" class="banner">
+    <img src="static/kernel-arena-banner.jpg" alt="Lean Kernel Arena" class="banner">
     
     <p>
         The <strong>Lean Kernel Arena</strong> presents, tests and benchmarks proof checkers for the <a href="https://lean-lang.org/">Lean Theorem Prover</a>.
@@ -29,18 +121,115 @@
 </section>
 
 <section>
+    <details class="page-details">
+        <summary><h3>Details</h3></summary>
+
+        <h4>Scoring</h4>
+
+        <p>
+            The data below is generated by running each checker on a suite of test inputs. Test inputs are invalid proofs that should be rejected (columns ✋), valid proofs that should be accepted (columns 👍), or corner cases without an expected outcome (columns 🤷). Within each group, the columns count how often the checker answered correctly, wrongly, or declined the test (🚫). The checkers are scored based on their ability to correctly reject and accept these tests, and the table is sorted accordingly: first by the number of wrongly accepted invalid proofs, then by the number of wrongly rejected valid proofs, then by the time to check the <tt>mathlib</tt> test (checkers that do not manage that test rank below those that do), and finally by the number of declined tests.
+        </p>
+
+        <p>
+            Checkers that do not implement all features may choose to explicitly decline to process certain tests (column 🚫). These tests are not taken into account for correctness scoring. Tests that crash the checker (💥) also considered declined.
+        </p>
+
+        <p>
+            Tests can come without an expected outcome (shown as 🤷). These test corner cases that are not known to be soundness relevant and not typically relevant in practice, and where it is acceptable for a checker to accept or to reject. They are excluded from the completeness and soundness scoring.
+        </p>
+
+        <h4>Performance</h4>
+
+        <p>
+            The time and space measurements refer to the <tt>mathlib</tt> test case, the largest correct test in the suite.
+            The ⏱️ column shows virtual CPU time, calculated from instruction counts using a fixed rate of {{ format_unitless(instructions_per_second|round|int) }}instr/s.
+            This provides consistent performance comparison across different hardware, though it does not reflect parallel processing capabilities that some checkers may use.
+        </p>
+
+        <p>
+            For performance-compared tests (such as the <tt>perf/</tt> group), the cells show the runtime relative to the official checker. A dark green background marks the fastest checker for that test, and a light green background marks checkers that are at least 10% faster than the official checker.
+        </p>
+
+        <h4>Downloads</h4>
+
+        <p>
+            A tarball of the test suite (excluding tests larger than 10 MB) is available for download: <a href="lean-arena-tests.tar.gz"><tt>lean-arena-tests.tar.gz</tt></a> ({{ tarball_info.good_count }} good tests, {{ tarball_info.bad_count }} bad tests, {{ format_memory(tarball_info.tarball_size) }}).
+            The tarball contains subdirectories <tt>good/</tt> and <tt>bad/</tt> based on expected results, making it easy to test your own checker implementation.
+        </p>
+
+        <p>
+            The raw data behind this page is available as <a href="results.json"><tt>results.json</tt></a> ({{ format_memory(results_json_info.size) }}). It contains the checker metadata (<tt>checkers</tt>), the test metadata (<tt>tests</tt>) and the array of all individual results (<tt>results</tt>), and may be useful for further analysis of the data.
+        </p>
+
+        <h4>Contributing</h4>
+
+        <p>
+            For more details on the interface for external checks, and how to submit these, see the project's <a href="https://github.com/leanprover/lean-kernel-arena"><tt>README.md</tt> file</a>.
+        </p>
+
+        <p>
+            The test suite includes a set of <a href="tutorial/">tutorial test cases</a> that exercise individual features of the Lean type system step by step, from basic definitions through inductives, recursors, projections, definitional equality rules, and quotient types.
+            Each tutorial test is a small self-contained environment, making them a useful starting point for developing and debugging a new kernel checker.
+        </p>
+
+        <p>
+            We are interested in extending our test suite, in particular tests that should be rejected are a useful help for authors of new kernel checkers.
+        </p>
+
+        <h4>Rounds</h4>
+
+        <p>
+            {% if build_info.round %}
+            This page is the archived <strong>round {{ build_info.round }}</strong>, closed on {{ build_info.timestamp }}. It is not updated any more; the round currently in progress and all other rounds are listed on the <a href="{{ rounds_url }}">rounds page</a>.
+            {% else %}
+            The arena runs in rounds. This page shows the <strong>round currently in progress</strong>, rebuilt whenever checkers or tests change; results from earlier, closed rounds are archived on the <a href="{{ rounds_url }}">rounds page</a>.
+            {% endif %}
+            Results are only really comparable within a round, since checkers, tests and the Lean version they are measured against all move between rounds.
+        </p>
+
+        {% if build_info.doi %}
+        <div class="citation">
+            <p>
+                This round is archived on Zenodo and can be cited as:
+            </p>
+            <p>
+                <code>Lean Kernel Arena, Round {{ build_info.round }}. <a href="https://doi.org/{{ build_info.doi }}">https://doi.org/{{ build_info.doi }}</a></code>
+            </p>
+        </div>
+        {% endif %}
+    </details>
+</section>
+
+<section>
+    <header>
+        <h3>Checkers</h3>
+    </header>
     {% if checkers %}
     <div style="overflow-x:auto">
-    <table class="striped">
+    <table class="striped checker-summary">
         <thead>
             <tr>
-                <th>Checker</th>
-                <th>Version</th>
-                <th class="text-center" title="Correctly accepted valid proofs">✅</th>
-                <th class="text-center" title="Correctly rejected invalid proofs">❌</th>
-                <th class="text-center" title="Tests declined to process">🚫</th>
-                <th class="text-right" title="Virtual CPU time to process mathlib test">⏱️</th>
-                <th class="text-right" title="Peak memory usage for mathlib test">🧠</th>
+                <th rowspan="2" style="vertical-align: bottom;">Checker</th>
+                <th rowspan="2" style="vertical-align: bottom;">Version</th>
+                <th rowspan="2" class="spacer-col"></th>
+                <th colspan="3" class="text-center" title="Invalid proofs, expected to be rejected">✋</th>
+                <th rowspan="2" class="gap-col"></th>
+                <th colspan="3" class="text-center" title="Valid proofs, expected to be accepted">👍</th>
+                <th rowspan="2" class="gap-col"></th>
+                <th colspan="2" class="text-center" title="No expected outcome, accepting and rejecting are both acceptable">🤷</th>
+                <th rowspan="2" class="gap-col"></th>
+                <th rowspan="2" class="text-right" style="vertical-align: bottom;" title="Virtual CPU time to process mathlib test">⏱️</th>
+                <th rowspan="2" class="text-right" style="vertical-align: bottom;" title="Peak memory usage for mathlib test">🧠</th>
+            </tr>
+            <tr>
+                <th class="text-center" title="Correctly rejected">✅</th>
+                <th class="text-center" title="Wrongly accepted (unsound)">❌</th>
+                <th class="text-center" title="Declined to process or crashed">🚫</th>
+                <th class="text-center" title="Correctly accepted">✅</th>
+                <th class="text-center" title="Wrongly rejected (incomplete)">❌</th>
+                <th class="text-center" title="Declined to process or crashed">🚫</th>
+                <th class="text-center" title="Accepted or rejected">✅</th>
+                <th class="text-center" title="Declined to process or crashed">🚫</th>
             </tr>
         </thead>
         <tbody>
@@ -48,15 +237,18 @@
             <tr>
                 <td><a href="checker/{{ checker.name }}/">{{ checker.name }}</a></td>
                 <td>{{ checker.version }}</td>
-                <td class="text-center {% if checker.stats.accept_correct == checker.stats.accept_total and checker.stats.accept_total > 0 %}bg-success{% elif checker.stats.accept_correct < checker.stats.accept_total %}bg-error{% endif %}">
-                    {{ checker.stats.accept_correct }}/{{ checker.stats.accept_total }}
-                </td>
-                <td class="text-center {% if checker.stats.reject_correct == checker.stats.reject_total and checker.stats.reject_total > 0 %}bg-success{% elif checker.stats.reject_correct < checker.stats.reject_total %}bg-error{% endif %}">
-                    {{ checker.stats.reject_correct }}/{{ checker.stats.reject_total }}
-                </td>
-                <td class="text-center">
-                    {{ checker.stats.declined_count }}
-                </td>
+                <td class="spacer-col"></td>
+                <td class="text-center {% if checker.stats.reject_correct > 0 %}bg-success{% endif %}">{{ checker.stats.reject_correct or '' }}</td>
+                <td class="text-center {% if checker.stats.reject_wrong > 0 %}bg-error{% endif %}">{{ checker.stats.reject_wrong or '' }}</td>
+                <td class="text-center {% if checker.stats.reject_declined > 0 %}bg-warning{% endif %}">{{ checker.stats.reject_declined or '' }}</td>
+                <td class="gap-col"></td>
+                <td class="text-center {% if checker.stats.accept_correct > 0 %}bg-success{% endif %}">{{ checker.stats.accept_correct or '' }}</td>
+                <td class="text-center {% if checker.stats.accept_wrong > 0 %}bg-error{% endif %}">{{ checker.stats.accept_wrong or '' }}</td>
+                <td class="text-center {% if checker.stats.accept_declined > 0 %}bg-warning{% endif %}">{{ checker.stats.accept_declined or '' }}</td>
+                <td class="gap-col"></td>
+                <td class="text-center {% if checker.stats.either_correct > 0 %}bg-success{% endif %}">{{ checker.stats.either_correct or '' }}</td>
+                <td class="text-center {% if checker.stats.either_declined > 0 %}bg-warning{% endif %}">{{ checker.stats.either_declined or '' }}</td>
+                <td class="gap-col"></td>
                 <td class="text-right">
                     {% if checker.stats.get('mathlib_instructions', 0) > 0 and instructions_per_second > 0 %}
                         <span title="{{ format_instructions(checker.stats.get('mathlib_instructions', 0)) }} instructions">{{ format_duration(convert_instructions_to_time(checker.stats.get('mathlib_instructions', 0), instructions_per_second)) }}</span>
@@ -85,35 +277,56 @@
 
 <section>
     <header>
-        <h3>Details</h3>
+        <h3>Tests</h3>
     </header>
-
-    <p>
-        The data above is generated by running each checker on a suite of test inputs. Test inputs are either valid proofs that should be accepted (column ✅), or invalid proofs that should be rejected (column ❌). The checkers are scored based on their ability to correctly accept and reject these tests.
-    </p>
-
-    <p>
-        The time and space measurements refer to the <tt>mathlib</tt> test case, the largest correct test in the suite. 
-        The ⏱️ column shows virtual CPU time, calculated from instruction counts using a fixed rate of {{ format_unitless(instructions_per_second|round|int) }}instr/s. 
-        This provides consistent performance comparison across different hardware, though it does not reflect parallel processing capabilities that some checkers may use.
-    </p>
-
-    <p>
-        Checkers that do not implement all features may decline to process certain tests (column 🚫). These tests are not taken into account for correctness scoring.
-    </p>
-
-    <p>
-        For more details on the interface for external checks, and how to submit these, see the project's <a href="https://github.com/leanprover/lean-kernel-arena"><tt>README.md</tt> file</a>.
-    </p>
-
-    <p>
-        A tarball of the test suite (excluding large tests) is available for download: <a href="lean-arena-tests.tar.gz"><tt>lean-arena-tests.tar.gz</tt></a> ({{ tarball_info.good_count }} good tests, {{ tarball_info.bad_count }} bad tests, {{ format_memory(tarball_info.tarball_size) }}). 
-        The tarball contains subdirectories <tt>good/</tt> and <tt>bad/</tt> based on expected results, making it easy to test your own checker implementation.
-    </p>
-
-    <p>
-        We are interested in extending our test suite, in particular tests that should be rejected are a useful help for authors of new kernel checkers.
-    </p>
-
+    {% if tests %}
+    <div class="sticky-table">
+    <table class="striped">
+        <thead>
+            <tr>
+                <th style="vertical-align: bottom;">Name</th>
+                <th class="spacer-col"></th>
+                {% for checker in checkers %}
+                {% if checker.name == 'official' %}
+                <th class="text-center official-column" style="vertical-align: bottom;"><a href="checker/{{ checker.name }}/" class="rotated-header">{{ checker.name }}</a></th>
+                {% endif %}
+                {% endfor %}
+                {% for checker in checkers %}
+                {% if checker.name != 'official' %}
+                <th class="text-center" style="vertical-align: bottom;"><a href="checker/{{ checker.name }}/" class="rotated-header">{{ checker.name }}</a></th>
+                {% endif %}
+                {% endfor %}
+                <th class="text-right" style="vertical-align: bottom;">Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in test_rows if not row.is_group %}
+            {{ test_row(row.member, none) }}
+            {% endfor %}
+        </tbody>
+        {% for row in test_rows if row.is_group %}
+        <tbody class="group">
+            <tr class="group-summary">
+                <td><label title="Click to show the individual tests"><input type="checkbox" class="group-toggle"><span class="group-arrow"></span>{{ row.name }}/ <span class="text-muted">({{ row.count }} tests)</span></label></td>
+                <td class="spacer-col"></td>
+                {% for checker in checkers %}
+                {% if checker.name == 'official' %}{{ group_summary_cell(row.checker_stats[checker.name], true) }}{% endif %}
+                {% endfor %}
+                {% for checker in checkers %}
+                {% if checker.name != 'official' %}{{ group_summary_cell(row.checker_stats[checker.name], false) }}{% endif %}
+                {% endfor %}
+                <td class="text-right">{{ row.size_str }}</td>
+            </tr>
+            {% for test in row.members %}
+            {{ test_row(test, row.name) }}
+            {% endfor %}
+        </tbody>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p class="text-grey">No tests available.</p>
+    {% endif %}
 </section>
+
 {% endblock %}

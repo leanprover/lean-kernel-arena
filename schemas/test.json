@@ -54,12 +54,16 @@
     },
     "outcome": {
       "type": "string",
-      "enum": ["accept", "reject"],
-      "description": "Expected test outcome for correctness checking"
+      "enum": ["accept", "reject", "either"],
+      "description": "Expected test outcome for correctness checking. Use 'either' for tests where it is not (yet) settled whether a checker should accept or reject: both behaviours are treated as acceptable, and the test is excluded from the completeness and soundness columns."
     },
-    "large": {
+    "compare-perf": {
       "type": "boolean",
-      "description": "Mark test as large (resource-intensive). Can be skipped with --no-large flag"
+      "description": "Show performance comparison against official checker on index page"
+    },
+    "skip-on-ci": {
+      "type": "boolean",
+      "description": "Skip this test on CI runs (used with --skip-ci flag)"
     },
     "multiple": {
       "type": "boolean", 

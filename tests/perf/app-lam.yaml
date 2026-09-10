@@ -1,0 +1,22 @@
+description: |
+  A synthetically generated term with **n levels of alternating applications
+  and lambdas**, with **DAG sharing**.
+
+  At each level, a constant is applied to two identical lambda arguments. The
+  export format records these as a single shared expression (DAG). Each lambda
+  body grows with the nesting depth, referencing all enclosing binders.
+
+  This tests two aspects of checker performance:
+
+  **Infer cache**: Since both arguments at each level are the same expression,
+  a checker without an infer cache re-infers the type of each shared subterm,
+  doubling work at every level — **O(2ⁿ) total**.
+
+  **Substitution cost**: Even with a cache, type-inferring each lambda requires
+  substituting into its body (size O(n)) at each of the n levels, giving
+  **O(n²) total**. Whether this cost arises depends on the checker's binder
+  representation.
+leanfile: tests/perf/app-lam.lean
+export-decls: ["dag_app_binder"]
+outcome: accept
+compare-perf: true

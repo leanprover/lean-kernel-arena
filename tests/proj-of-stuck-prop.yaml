@@ -1,0 +1,73 @@
+description: |
+  Proof of `False` by projecting the `Bool` field out of a proposition, exploiting
+  that a kernel can disagree with itself about whether the structure lives in
+  `Prop`.
+
+  Same underlying defect as `rec-missing-ih`, but with a different consequence.
+
+  ### Mechanism
+
+  1.  *Definitional equality is not transitive here.*  Three functions
+      `Bool → Bool` are built from `Acc.rec` such that a kernel reports
+      `rcA ≡ rcB` and `rcB ≡ rcC` — both by proof irrelevance on the `Acc`
+      argument — while `rcA ≢ rcC`, because there the two `Acc` proofs have
+      different types.
+
+  2.  *In the affected kernels, the defeq cache closes that relation
+      transitively, but only for hash-equal terms.*  Established equalities are
+      kept in a union-find structure, and the comparison returns early, without
+      consulting it, when the hashes differ:
+
+      ~~~cpp
+      if (is_eqp(a, b))                      return true;
+      if (m_use_hash && hash(a) != hash(b))  return false;   // skips the union-find
+      ...
+      node_ref r1 = find(to_node(a));
+      node_ref r2 = find(to_node(b));
+      if (r1 == r2) return true;
+      ~~~
+
+      So whether `rcA ≡ rcC` holds depends on the hash of the surrounding term.
+      The constants and paddings are chosen so that the hashes collide exactly
+      when the argument is the free variable `_kernel_fresh.0`, and not for the
+      closed instantiation used later.
+
+  3.  *That comparison decides a result sort.*  `Native64ResultSortGate` is a
+      K-like inductive predicate, and its recursor is used as the result sort of
+      the inductive family `Native64ResultSortOwner`: the sort
+      `Gate.rec x … Prop requested h` reduces to `Prop` only if the requested
+      indices are definitionally equal to the ones of `Gate.intro`.  Hence
+      `Owner x h` is a proposition in one context and a stuck sort in another:
+
+      * `Native64ResultSort.asProp` is checked against a *constant* standing for
+        `∀ x h, Prop`, so the kernel introduces `_kernel_fresh.0` for `x`, the
+        hashes collide, `Owner x h : Prop` is accepted, and
+        `Native64ResultSortLeak.proposition` is a `Prop` for every later
+        declaration — including for proof irrelevance.
+      * `Native64ResultSortLeak.observe` projects field 0 out of that
+        proposition.  There the sort of the closed term `Owner false closedGate`
+        is needed, and that one is stuck — the affected kernels answer `false`
+        when asked whether it is definitionally equal to `Prop` — so they do not
+        see a proposition and permit projecting out the `Bool` field.
+
+  Proof irrelevance then identifies two `Owner.mk` applications carrying
+  different `Bool` fields, and observing them yields `False`.  The affected
+  kernels rejected `Native64ResultSortOwner` with `type expected` as soon as the
+  hashes no longer collided.
+
+  This was accepted by the official kernel at v4.28.0, v4.29.1, v4.33.0 and
+  nightly-2026-08-01.  Other kernels reject the export in one of two places:
+  either they refuse `Native64ResultSortOwner` because its result type does not
+  reduce to a sort, or they accept the type but refuse the projection of a data
+  field out of a proposition.
+
+  Both steps are ruled out now: the projection by
+  [leanprover/lean4#14807](https://github.com/leanprover/lean4/pull/14807), which
+  makes the kernel's `is_prop` check require the inferred type to reduce to a
+  sort, and the hash-gated transitivity of step 2 by
+  [leanprover/lean4#14806](https://github.com/leanprover/lean4/pull/14806), which
+  replaces the union-find defeq cache with an order-independent one.  The same
+  projection, reached without any help from that cache, is `proj-of-subst-prop`.
+leanfile: tests/proj-of-stuck-prop.lean
+export-decls: ["inconsistent"]
+outcome: reject

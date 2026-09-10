@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "macros.html" import detail_styles, result_status_cell, perf_cells, perf_header %}
+
+{% block title %}{{ test.name }} - Lean Kernel Arena{% endblock %}
+
+{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / {{ test.name }}
+{% endblock %}
+
+{% block style %}
+{{ detail_styles() }}
+{% endblock %}
+
+{% block content %}
+<section>
+    <header>
+        <h2>Test "{{ test.name }}"</h2>
+    </header>
+    <p>
+        <strong>Expected:</strong>
+        {% if test.outcome == 'accept' %}👍 accept{% elif test.outcome == 'reject' %}✋ reject{% elif test.outcome == 'either' %}🤷 either{% else %}⚠️ {{ test.outcome }}{% endif %}
+        · <strong>Size:</strong> {{ test.size_str }}
+        · <strong>Lines:</strong> {{ test.lines_str }}
+        {% if test.lean4export_version %}
+        · <strong>lean4export:</strong> {{ test.lean4export_version }}
+        {% endif %}
+        {% if test.lean_version %}
+        · <strong>Lean:</strong> {{ test.lean_version }}
+        {% endif %}
+        {% if test_links.declaration_url or test_links.source_url %} · {% endif %}
+        {% if test_links.declaration_url %}
+        <a href="{{ test_links.declaration_url }}" target="_blank">📄 Declaration</a>
+        {% endif %}
+        {% if test_links.declaration_url and test_links.source_url %} · {% endif %}
+        {% if test_links.source_url %}
+        <a href="{{ test_links.source_url }}" target="_blank">🔗 Source</a>
+        {% endif %}
+    </p>
+
+    {% if test_description %}
+    <div class="description">
+        {{ test_description | safe }}
+    </div>
+    {% endif %}
+</section>
+
+{% if results %}
+<section>
+    <div style="overflow-x:auto">
+    <table class="striped">
+        <thead>
+            <tr>
+                <th>Checker</th>
+                <th class="spacer-col"></th>
+                <th class="text-center">Result</th>
+                {{ perf_header() }}
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td><a href="{{ root_path }}checker/{{ result.checker }}/#test-{{ test.name }}">{{ result.checker }}</a></td>
+                <td class="spacer-col"></td>
+                {{ result_status_cell(test.outcome, result.status) }}
+                {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, test.get('compare-perf')) }}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% else %}
+<p class="text-grey">No checker results available for this test.</p>
+{% endif %}
+{% endblock %}
