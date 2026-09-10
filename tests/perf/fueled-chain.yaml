@@ -1,0 +1,23 @@
+description: |
+  Distilled from con-leche's fuel-bridge (`_datF`) lemmas, the declarations on
+  which nanobruijn times out on the `con-leche` test.
+
+  `Fueled α` packages a fuel-indexed family `p : Nat → Except Unit α` with a
+  proof whose type mentions `p` twice under binders. A `_datF` lemma states that
+  running a monadic function in `Fueled` and extracting at fuel `F` equals
+  running it in `Except Unit`, proved by unfolding and rewriting with the `atF`
+  lemmas for `bind`/`pure`/`throw`/`ite`. What is left for the kernel is a
+  definitional equality between two monadic programs that differ only in the
+  monad instance, under one binder per `bind` and a `do`-notation join point
+  per `unless … throw` guard.
+
+  `chainN` (N = 6, 9, 12) has N binds, each followed by a guard. A checker
+  that recognises the unfolded and the literal program as equal outright is
+  fast (nanoda: 2 ms, 18 ms, 32 ms); one that compares them structurally
+  unfolds `bind` to `Subtype.mk p h` and, through proof irrelevance on the
+  `h`s, re-compares the rest of the program twice per guard
+  (nanobruijn: 19 ms, 4.1 s, 256 s). Without the guards it is cheap for both.
+leanfile: tests/perf/fueled-chain.lean
+export-decls: ["chain6_datF", "chain9_datF", "chain12_datF"]
+outcome: accept
+compare-perf: true
