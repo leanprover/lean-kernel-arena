@@ -10,7 +10,7 @@ description: |
   From a corpus of certificates generated for the SAIR math distillation
   challenge (equational theories track). `magma-string-n4` is the same
   workload at a smaller scale.
-leanfile: tests/magma-string-pair-n9.lean
+leanfile: tests/perf/magma-string-pair-n9.lean
 outcome: accept
 compare-perf: true
 export-decls: ["countermodel"]

@@ -8,7 +8,7 @@ description: |
   From a corpus of certificates generated for the SAIR math distillation
   challenge (equational theories track). `magma-list-pair-n7` is the same
   workload at a smaller scale.
-leanfile: tests/magma-list-pair-n21.lean
+leanfile: tests/perf/magma-list-pair-n21.lean
 outcome: accept
 compare-perf: true
 export-decls: ["countermodel"]

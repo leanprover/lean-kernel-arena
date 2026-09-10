@@ -9,7 +9,7 @@ description: |
   From a corpus of certificates generated for the SAIR math distillation
   challenge (equational theories track). `magma-list-deep-n21` is the same
   workload at a smaller scale.
-leanfile: tests/magma-list-deep-n36.lean
+leanfile: tests/perf/magma-list-deep-n36.lean
 outcome: accept
 compare-perf: true
 export-decls: ["countermodel"]

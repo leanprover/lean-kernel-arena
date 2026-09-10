@@ -9,7 +9,7 @@ description: |
   From a corpus of certificates generated for the SAIR math distillation
   challenge (equational theories track). The small end of the string-table
   family; `magma-string-pair-n9` is the same workload at a larger scale.
-leanfile: tests/magma-string-n4.lean
+leanfile: tests/perf/magma-string-n4.lean
 outcome: accept
 compare-perf: true
 export-decls: ["countermodel"]
