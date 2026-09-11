@@ -13,7 +13,8 @@ description: |
   - **Lazy shifting via pointer+offset pairs**: instead of allocating shifted
     expression nodes, each pointer carries an integer offset. Shifting is O(1)
     "pointer arithmetic". Expressions that differ only by a uniform index shift
-    share a single DAG node.
+    share a single DAG node. Terms are kept in a canonical form with maximal
+    outermost shifts.
   - **Depth-stratified caching**: cache entries are bucketed by binding depth,
     so results at one depth can be reused at another by adjusting the offset.
     Closed (variable-free) expressions live in a global bucket that survives
@@ -26,7 +27,7 @@ description: |
   modifications from the original nanoda_lib were written by Claude (Anthropic).
 url: https://github.com/nomeata/nanobruijn
 ref: master
-rev: 79048ed7587e9961c70cf745981b8a7d01062c58
+rev: 3a86285c0829e410c2442d57d38d6003fb3993d4
 build: |
   cargo build --release
   cat > config.json <<__END__
