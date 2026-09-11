@@ -1,15 +1,17 @@
 description: |
   The [con-leche](https://github.com/leanprover/con-leche) development's
-  two theorems: the consistency proof of its verified checker
-  (`no_proof_of_False`: a set of declarations the checker accepts contains
-  no proof of `False`) and the equivalence of its byte-level parser with a
-  naive reference (`scanLineSpec_eq_scanLineFwd`), each with its
+  three theorems: the consistency proof of its verified checker —
+  `model_exists`, every environment the checker accepts has a
+  set-theoretic model, and its corollary `no_proof_of_False`, no proof of
+  `False` is accepted — and the equivalence of its byte-level parser with
+  a naive reference (`scanLineSpec_eq_scanLineFwd`), each with its
   dependency cone.
 url: https://github.com/leanprover/con-leche
 ref: master
-rev: 86cd20a65660d757cedc81561a44579099b565d0
+rev: 3e004805f2b919fd9d636901f80bf1ed87666099
 module: ConLecheTests
 export-decls:
+  - ConLeche.model_exists
   - ConLeche.no_proof_of_False
   - ConLeche.Frontend.scanLineSpec_eq_scanLineFwd
 outcome: accept

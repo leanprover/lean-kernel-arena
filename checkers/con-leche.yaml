@@ -2,7 +2,8 @@ description: |
   [**con-leche**](https://github.com/leanprover/con-leche) is an external
   Lean checker with a consistency proof: if it accepts a set of
   declarations, then they have a model in set theory (ZFC with enough
-  inaccessibles), and in particular no theorem of `False` is accepted.
+  inaccessibles) — one set per constant under which every constant is a
+  member of its type — and in particular no theorem of `False` is accepted.
   The proof is done directly against a set-theoretic model, not against
   an abstract typing relation; the parser and the Lean runtime are
   outside it.
@@ -14,7 +15,7 @@ description: |
   axioms and declines streams that use others.
 url: https://github.com/leanprover/con-leche
 ref: master
-rev: 86cd20a65660d757cedc81561a44579099b565d0
+rev: 2f53a7b68f84c133a6c44c05306bae8762e3f473
 build: lake build con-leche
 threads: 4
 run: .lake/build/bin/con-leche --verified --jobs=4 "$IN"
