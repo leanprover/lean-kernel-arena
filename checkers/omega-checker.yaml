@@ -1,0 +1,36 @@
+description: |
+  omega-checker: [sokonanoda](https://github.com/intgrah/sokonanoda) with
+  exact environment pruning past 64 loose variables (ported, with authorship
+  preserved, from [mathgraph](https://github.com/metalogiclabs/mathgraph-lean-kernel)),
+  and a rejection path that always names the failing declaration.
+  Apache-2.0. See NOTICE.md and RELEASE_MANIFEST.md.
+# Pre-publish URL strategy (repository not yet on GitHub):
+#   1. Push branch `omega` to https://github.com/repowazdogz-droid/omega-checker
+#      (or the chosen public owner/name documented in RELEASE_MANIFEST.md).
+#   2. Replace `url` below with that repository URL before Arena submission.
+#   3. Set `rev` to `release_commit` in RELEASE_MANIFEST.md (semantic checker
+#      unchanged since f6299d7; later commits are packaging/evidence only).
+# Until published, local Arena runs may use `dir: ../omega-checker` from the
+# arena checkout instead of cloning `url`.
+url: https://github.com/repowazdogz-droid/omega-checker
+ref: omega
+rev: 1a237eee4d3201d899ff0fc086b39f77b89fe6eb
+build: |
+  cat > config.json <<__END__
+   {
+     "use_stdin": true,
+     "nat_extension": true,
+     "string_extension": true,
+     "unpermitted_axiom_hard_error": false,
+     "unsafe_permit_all_axioms": true,
+     "num_threads": 4
+   }
+  __END__
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init-prelude
+  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
+  target/release/sokonanoda config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+run: |
+  target/release/sokonanoda config.json < "$IN" || exit 1
