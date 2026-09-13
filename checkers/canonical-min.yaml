@@ -1,0 +1,17 @@
+description: |
+  Canonical-min is a minimal inhabitation solver and type checker for dependent
+  type theory. This checker deserializes lean4export expressions, translates
+  them with CanonicalLean, and checks the supported fragment with
+  `CanonicalMin.check`.
+
+  The implementation is intentionally incomplete and declines declarations it
+  cannot translate or represent.
+url: https://github.com/FrederickPu/Canonical-min
+ref: kernel-arena
+rev: 0acb45dd44b724c7c5861f86106f03c63b7ca491
+build: |
+  lake build CanonicalMin.Data
+  mkdir -p .lake/packages/Canonical/.lake/build
+  lake build canonical-min-arena
+run: LD_LIBRARY_PATH="$PWD/.lake/packages/Canonical/.lake/build/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" lake env .lake/build/bin/canonical-min-arena "$IN"
+threads: 1
