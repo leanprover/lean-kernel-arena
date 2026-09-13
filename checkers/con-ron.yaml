@@ -1,0 +1,48 @@
+# con-ron is the Rust port of con-leche; the two entries are deliberately
+# parallel (same mode, same worker count, same exit-code convention), so that
+# the pair can be read as one measurement of the same checker in two languages.
+#
+# `rev` is con-ron master at the time of writing.  The repository is being
+# published as leanprover/con-ron; if its published history differs, repin.
+description: |
+  [**con-ron**](https://github.com/leanprover/con-ron) is
+  [con-leche](https://github.com/leanprover/con-leche) ported to Rust — closely
+  enough that [Aeneas](https://github.com/AeneasVerif/aeneas) translates the
+  Rust checker's core back into Lean and the port is proved *there* to refine
+  the original: where the Rust function succeeds, it computes what con-leche's
+  function computes.  So con-leche's consistency statement — if it accepts a
+  set of declarations then they have a model in set theory, and in particular
+  no theorem of `False` is accepted — carries over to what this binary accepts,
+  modulo Aeneas as a Rust-to-Lean translator, and modulo the parser, which is
+  outside the proof in both checkers.
+
+  That makes it less a high-assurance verification effort of its own than a
+  second body for the same verified checker: a proof accepted by both is
+  protected against a bug in Lean's compiler or runtime — the bignum library
+  included — which the Rust build does not share, while still resting on a
+  machine-checked consistency argument.
+
+  Like con-leche it runs in `--verified` mode here (the mode the theorem is
+  about), with four worker threads for the check phase; it ingests raw
+  `lean4export` NDJSON with no preprocessor and no subprocess, and an axiom it
+  does not recognise makes it decline the stream rather than reject it.  Exit
+  codes are the arena's: 0 accept, 1 reject, 2 decline, 3 error.  Running out of memory is
+  none of them — a failed allocation aborts the process (SIGABRT) — so
+  exhaustion can never be read as a rejection.
+
+  It retires slightly fewer instructions than con-leche for the same export
+  (about 11 % fewer on Mathlib) and spends them worse: ~1.6× the wall time
+  and ~1.8× the peak memory, the price
+  of following Lean data structures rather than Rust idiom.  Written by AI
+  under close human supervision from Joachim Breitner at the Lean FRO.
+url: https://github.com/leanprover/con-ron
+ref: master
+rev: cb54c9a4e5f604a678b0230f96b8358b9fd73c82
+threads: 4
+# Nothing but a Rust toolchain and a C compiler (for the mimalloc allocator the
+# unverified binaries use by default); every pin the checker needs — con-leche's
+# prelude and its `natOpPinSets` — is embedded in the binary, and the release
+# profile keeps arithmetic overflow checks on, because the checked-arithmetic
+# semantics is what the Lean model describes.
+build: cargo build --release
+run: ./target/release/con-ron --verified --jobs=4 "$IN"
