@@ -1,0 +1,19 @@
+description: |
+  A let has a mismatched annotation, but substitution removes the mismatch.
+
+  In readable notation, the exported declaration is:
+
+  ```text
+  def EcosystemCase : Sort 2 := let u : Sort 1 := Sort 1; u
+  ```
+
+  The value `Sort 1` has type `Sort 2`, rather than the annotated `Sort 1`.
+  Checking the supplied let can therefore reject it. Substituting its value
+  for `u` gives `def EcosystemCase : Sort 2 := Sort 1`, whose types match.
+
+  This records the choice to check the supplied annotation or first simplify
+  the let. The [discussion of this exact example](https://github.com/leanprover/lean4export/issues/48#issuecomment-5654286873)
+  supports allowing either outcome as practical checker policy, while leaving
+  a completely authoritative answer open. This is not a false-theorem example.
+file: tests/corner-cases/let-value-type-mismatch.ndjson
+outcome: either
