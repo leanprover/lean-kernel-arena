@@ -1,0 +1,15 @@
+description: |
+  Projecting a field from a single-constructor structure whose sort is the bare
+  `Sort (max u v)`. This is a proposition only when u = v = 0, and there its first
+  field `α : Sort u` is itself a proposition, so the projection is valid and
+  proof-irrelevance-consistent. The `structure` elaborator forbids this sort (it
+  forces `max 1 _`, which is why `PProd` is unaffected), so the type is built directly.
+
+  This is the accept-side counterpart of `proj-of-imax-prop`. A kernel that decides
+  whether a projection's structure is a proposition syntactically, treating "may be a
+  proposition for some universe assignment" as "is a proposition", rejects this valid
+  projection. At the time of writing, nanoda and nanobruijn fail it (both panic in
+  `infer_proj`); the official kernel, sokonanoda, still-nanoda and sonanoda accept it.
+leanfile: tests/proj-of-max-univ.lean
+export-decls: ["getFst"]
+outcome: accept
