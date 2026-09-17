@@ -7,7 +7,7 @@ description: |
   `∀ n, g n` holds by the first, and `g 1` is `False` by the second.
 
   Origin: a variant of `bugs/rec-k-lie`, a soundness bug found in nanoda and its
-  descendants (<https://github.com/leanprover/lean-kernel-arena/pull/83>). Nanoda
-  itself rejects this variant, as it has no literal path for `Nat.rec`.
+  descendants (<https://github.com/leanprover/lean-kernel-arena/pull/83>). At that
+  time, nanoda itself rejected this variant, as it had no literal path for `Nat.rec`.
 file: tests/bugs/nat-rec-k-lie.ndjson
 outcome: reject
