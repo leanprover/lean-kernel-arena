@@ -24,6 +24,6 @@ description: |
   Origin: raised by @arthur-adjedj on leanprover/lean4#14577
   (https://github.com/leanprover/lean4/pull/14577#issuecomment-5101819377) as a
   case not covered by that PR's fix; related to leanprover/lean4#14576.
-leanfile: tests/nested-nonuniform-param.lean
+leanfile: tests/corner-cases/nested-nonuniform-param.lean
 export-decls: ["E"]
 outcome: either
