@@ -13,5 +13,8 @@ build: |
 run: |
   ./rpylean-c check "$IN" || exit 1
 # rpylean does not pass on Mathlib yet; running it costs about an hour per
-# arena run for an already-known outcome.
-declines: mathlib
+# arena run for an already-known outcome. On navier-stokes-euler it ran for
+# nine hours without finishing.
+declines:
+  - mathlib
+  - navier-stokes-euler
