@@ -11,7 +11,8 @@ description: |
   Because of proof irrelevance we have `tt = ff`, so we can derive a
   contradiction.
 
-  Origin: found by Anthony Wang using Aristotle, breaking the `mini` checker for
-  the [T-shirt bounty](https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/T-Shirt.20bounty.20for.20breaking.20the.20.E2.80.9Cmini-kernel.E2.80.9D/near/597318744).
+  Found by Anthony Wang using Aristotle, breaking the `mini` checker for the
+  [T-shirt bounty](https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/T-Shirt.20bounty.20for.20breaking.20the.20.E2.80.9Cmini-kernel.E2.80.9D/near/597318744); it was
+  [fixed](https://github.com/nomeata/lean-mini-kernel/commit/d548ebc4) the same day.
 file: tests/bugs/large-elim-param.ndjson
 outcome: reject

@@ -9,8 +9,8 @@ description: |
   `MyBool` rather than `Bool` because a module that overwrites an imported constant
   cannot be re-imported by the exporter.
 
-  Origin: a soundness bug found in nanoda and its descendants
-  (<https://github.com/leanprover/lean-kernel-arena/pull/83>).
+  Nanoda and its descendants accepted this until it was
+  [fixed](https://github.com/ammkrn/nanoda_lib/pull/22).
 leanfile: tests/bugs/rec-k-lie.lean
 export-decls: ["bad"]
 outcome: reject

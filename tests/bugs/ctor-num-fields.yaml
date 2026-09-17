@@ -6,8 +6,8 @@ description: |
 
   Derive a contradiction from `S.mk false = S.mk true`.
 
-  Origin: a soundness bug found in nanoda and its descendants
-  (<https://github.com/leanprover/lean-kernel-arena/pull/82>).
+  Nanoda and its descendants accepted this until it was
+  [fixed](https://github.com/ammkrn/nanoda_lib/pull/22).
 leanfile: tests/bugs/ctor-num-fields.lean
 export-decls: ["bad"]
 outcome: reject
