@@ -3,7 +3,7 @@ description: |
   that a kernel can disagree with itself about whether the structure lives in
   `Prop`.
 
-  Same underlying defect as `rec-missing-ih`, but with a different consequence.
+  Same underlying defect as `bugs/rec-missing-ih`, but with a different consequence.
 
   ### Mechanism
 
@@ -67,7 +67,7 @@ description: |
   sort, and the hash-gated transitivity of step 2 by
   [leanprover/lean4#14806](https://github.com/leanprover/lean4/pull/14806), which
   replaces the union-find defeq cache with an order-independent one.  The same
-  projection, reached without any help from that cache, is `proj-of-subst-prop`.
-leanfile: tests/proj-of-stuck-prop.lean
+  projection, reached without any help from that cache, is `bugs/proj-of-subst-prop`.
+leanfile: tests/bugs/proj-of-stuck-prop.lean
 export-decls: ["inconsistent"]
 outcome: reject

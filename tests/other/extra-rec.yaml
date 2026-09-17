@@ -15,13 +15,13 @@ description: |
   checker that instead registers exported recursors as given ends up with an
   inhabitant of the genuine empty type.
 
-  This is a different gap from `nat-rec-rules`, which perturbs the *rules* of a
+  This is a different gap from `bugs/nat-rec-rules`, which perturbs the *rules* of a
   legitimate recursor: here an entire recursor constant is fabricated, so
   validating only the rules of the recursors one expects does not catch it.
 # Frozen as a static export file: the recursor is injected with the private,
 # kernel-bypassing `Environment.lakeAdd`, which is liable to change, whereas this
 # export is small and needs to stay exactly as it is.  It was produced by
-# tests/extra-rec.lean, kept next to it as the reproducer, with the toolchain
+# tests/other/extra-rec.lean, kept next to it as the reproducer, with the toolchain
 # from tests/lean-toolchain (v4.29.1).
-file: tests/extra-rec.ndjson
+file: tests/other/extra-rec.ndjson
 outcome: reject

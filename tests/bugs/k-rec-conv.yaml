@@ -5,6 +5,6 @@ description: |
   as convertible would accept the resulting theorem `bad`, which is true propositionally, but not definitionally.
 
   Regression test for sokonanoda.
-leanfile: tests/k-rec-conv.lean
+leanfile: tests/bugs/k-rec-conv.lean
 export-decls: ["bad"]
 outcome: reject

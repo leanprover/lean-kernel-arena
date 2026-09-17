@@ -9,7 +9,7 @@ description: |
   premises and no rules, and whose `all` field is the *empty* list.  The theorem
   `inconsistent : False` is then simply `rogue`.
 
-  This is the sibling of `extra-rec`, and it defeats the obvious fix for it.  A
+  This is the sibling of `other/extra-rec`, and it defeats the obvious fix for it.  A
   checker that associates each exported recursor with the inductive type named
   in its `all` field, and then requires the recursors so associated with an
   inductive type to be exactly the ones it derives from that declaration, still
@@ -20,7 +20,7 @@ description: |
   A checker must therefore reject any recursor it did not itself derive from an
   inductive declaration, rather than only checking the recursors that point at
   one.  The same hole is reachable by pointing `all` at a name that has no
-  declaration in the export (that variant is what `orphan-ctor` does on the
+  declaration in the export (that variant is what `other/orphan-ctor` does on the
   constructor side).
 
   Nanoda accepted this export until it was
@@ -28,8 +28,8 @@ description: |
 # Hand-written export file: `lean4export` cannot produce it.  It collects the
 # recursors of an inductive block from the `all` fields of the recursors in the
 # environment, so a recursor with an empty `all` is silently dropped from the
-# export.  This file is therefore tests/extra-rec.ndjson (produced with the
-# toolchain from tests/lean-toolchain, v4.29.1, see tests/extra-rec.lean) with
+# export.  This file is therefore tests/other/extra-rec.ndjson (produced with the
+# toolchain from tests/lean-toolchain, v4.29.1, see tests/other/extra-rec.lean) with
 # the `all` field of `rogue` emptied.
-file: tests/orphan-rec.ndjson
+file: tests/bugs/orphan-rec.ndjson
 outcome: reject

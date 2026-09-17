@@ -2,7 +2,7 @@
 Projecting data out of a `Prop`, exploiting that a kernel can disagree with
 itself about whether the structure lives in `Prop`.
 
-As in `rec-missing-ih.lean`, `RecClass.rcA`, `rcB` and `rcC` are three functions
+As in `bugs/rec-missing-ih.lean`, `RecClass.rcA`, `rcB` and `rcC` are three functions
 `Bool → Bool` for which definitional equality is not transitive (`rcA ≡ rcB` and
 `rcB ≡ rcC` by proof irrelevance on an `Acc` argument, but `rcA ≢ rcC`), and in
 the affected kernels the union-find defeq cache closes that relation

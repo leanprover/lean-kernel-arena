@@ -14,6 +14,6 @@ description: |
   because `Wrapper.mk True.intro` still formally inhabits `Wrapper` at
   the structural level, and the `p` projection is then read back out at
   the declared field type `False`.
-leanfile: tests/proj-of-prop.lean
+leanfile: tests/other/proj-of-prop.lean
 export-decls: ["badFalse"]
 outcome: reject

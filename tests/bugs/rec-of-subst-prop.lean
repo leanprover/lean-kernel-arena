@@ -1,5 +1,5 @@
 /-
-Second variant of `proj-of-subst-prop`: the same `Prop` with a `Type` field, but
+Second variant of `bugs/proj-of-subst-prop`: the same `Prop` with a `Type` field, but
 the field is recovered through the recursor rather than through a projection.
 
 `Issue.Owner : ∀ (h : GateP), resultSort h` is set up exactly as there —
@@ -16,7 +16,7 @@ proposition, and recovers the data from there: `Acc.rec` eliminates `Acc` into
 Empty` with `Owner.mk gateWitness Unit`, so the identity function of one type is
 handed a value of the other, and `Empty` gets inhabited.
 
-The guard that stops `proj-of-subst-prop`, refusing to project a data field out of
+The guard that stops `bugs/proj-of-subst-prop`, refusing to project a data field out of
 a proposition, therefore never fires here.
 
 The exploit is by Daniel Selsam (OpenAI), generated with OpenAI's internal

@@ -29,7 +29,7 @@ description: |
   different `Bool` fields, and observing them yields `False`, with no axioms
   involved.
 
-  Unlike `rec-missing-ih` and `proj-of-stuck-prop`, this needs no interference
+  Unlike `bugs/rec-missing-ih` and `bugs/proj-of-stuck-prop`, this needs no interference
   from the definitional-equality cache: every comparison above comes out the same
   way in a fresh type-checker session, so it is independent of whether, and how,
   such a cache is keyed.  What it does need is that the sort of an inductive
@@ -40,6 +40,6 @@ description: |
   makes the kernel's `is_prop` check require the inferred type to reduce to a
   sort: a stuck sort then raises `(kernel) type expected` instead of answering
   that the type is not a proposition.
-leanfile: tests/proj-of-subst-prop.lean
+leanfile: tests/bugs/proj-of-subst-prop.lean
 export-decls: ["inconsistent"]
 outcome: reject

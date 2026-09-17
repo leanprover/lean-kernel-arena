@@ -12,5 +12,5 @@ description: |
   arguments, this creates an inconsistency that yields a proof of False.
 
   Nanoda incorrectly accepted this proof until it was [fixed](https://github.com/ammkrn/nanoda_lib/commit/12838995ca232ced05cd5218e4975d03c5c44316).
-file: tests/nat-rec-rules.ndjson
+file: tests/bugs/nat-rec-rules.ndjson
 outcome: reject

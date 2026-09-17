@@ -5,6 +5,9 @@ description: |
   it look unit-like. Then definitional eta means all inhabitants are equal.
 
   Derive a contradiction from `S.mk false = S.mk true`.
-leanfile: tests/ctor-num-fields.lean
+
+  Origin: a soundness bug found in nanoda and its descendants
+  (<https://github.com/leanprover/lean-kernel-arena/pull/82>).
+leanfile: tests/bugs/ctor-num-fields.lean
 export-decls: ["bad"]
 outcome: reject

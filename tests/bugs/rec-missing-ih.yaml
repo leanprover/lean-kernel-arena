@@ -64,7 +64,7 @@ description: |
 # elaborator, so regenerating this test with a toolchain that no longer has the
 # defect would quietly produce a benign export (and the elaborator would not
 # accept `badProp` either, `debug.skipKernelTC` notwithstanding).  The export
-# below was produced by tests/rec-missing-ih.lean, kept next to it as the
+# below was produced by tests/bugs/rec-missing-ih.lean, kept next to it as the
 # reproducer, with the toolchain from tests/lean-toolchain (v4.29.1).
-file: tests/rec-missing-ih.ndjson
+file: tests/bugs/rec-missing-ih.ndjson
 outcome: reject

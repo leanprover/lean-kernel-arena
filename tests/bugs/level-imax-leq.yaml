@@ -10,5 +10,5 @@ description: |
   `True` and `False` via `Bool.rec` at `Sort (imax 0 0) = Prop`.
 
   Nanoda incorrectly accepted this proof until it was [fixed](https://github.com/ammkrn/nanoda_lib/commit/12838995ca232ced05cd5218e4975d03c5c44316).
-file: tests/level-imax-leq.ndjson
+file: tests/bugs/level-imax-leq.ndjson
 outcome: reject

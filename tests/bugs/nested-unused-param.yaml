@@ -20,6 +20,6 @@ description: |
   Origin: reported as leanprover/lean4#14576 by @kiranandcode, with the original
   source recorded by @xrchz (https://github.com/xrchz/collatzlean); fixed in
   leanprover/lean4#14577.
-leanfile: tests/nested-unused-param.lean
+leanfile: tests/bugs/nested-unused-param.lean
 export-decls: ["boom"]
 outcome: reject

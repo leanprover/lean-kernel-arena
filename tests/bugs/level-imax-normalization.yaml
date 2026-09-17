@@ -10,5 +10,7 @@ description: |
   `down.{v} : Sort (succ (imax 0 v)) → Sort (imax 0 v)`, and then
   `myProp : Prop := down.{0} Bool` (a Prop that is computationally Bool). Proof irrelevance on
   `myProp` equates `Bool.true` and `Bool.false`, and `Bool.rec` maps this into `False`.
-file: tests/level-imax-normalization.ndjson
+
+  Origin: an exploit found in lean4lean.
+file: tests/bugs/level-imax-normalization.ndjson
 outcome: reject

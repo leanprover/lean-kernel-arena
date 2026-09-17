@@ -9,5 +9,5 @@ description: |
   logic of the official kernel correctly handle this unfolding failure.
 
   The issue in the official kernel was originally reported as <https://github.com/leanprover/lean4/issues/10577>.
-file: tests/constlevels.ndjson
+file: tests/bugs/constlevels.ndjson
 outcome: reject

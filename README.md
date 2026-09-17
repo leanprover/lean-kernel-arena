@@ -94,7 +94,15 @@ Contributions are welcome! We especially encourage:
 
 **We need more tests with tricky corner cases!** Tests that expose bugs or edge cases in existing checkers are particularly valuable.
 
-To contribute a test, create a YAML file in the `tests/` directory.  See `schemas/test.json` for the complete specification.  Tests can be defined in several ways:
+To contribute a test, create a YAML file in the `tests/` directory.  See `schemas/test.json` for the complete specification.  Tests in a subdirectory are shown as a collapsible group on the website; the real-world corpora (`init`, `std`, `mathlib`, …) live at the top level, and the others are grouped as follows:
+
+* `bugs/`: soundness bugs (or crashes) that were actually found in a checker, including the official kernel; the description says where.
+* `corner-cases/`: inputs where the correct outcome is debatable (`outcome: either`), typically gaps between algorithmic and declarative conversion.
+* `perf/`: small inputs that expose algorithmic performance problems.
+* `tutorial/`: one small test per feature of the type theory, generated from `tutorial/Tutorial.lean`.
+* `other/`: synthetic tests of a specific check (accept or reject) that do not fit the above.
+
+Tests can be defined in several ways:
 
 
 #### Module-based test (from a Lean repository)
