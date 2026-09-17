@@ -17,3 +17,4 @@ leanfile: tests/perf/identical-nesting.lean
 export-decls: ["kernel_identical_nesting"]
 outcome: accept
 compare-perf: true
+timeout: 50

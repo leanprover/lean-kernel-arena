@@ -26,6 +26,9 @@
         {% if test.lean_version %}
         · <strong>Lean:</strong> {{ test.lean_version }}
         {% endif %}
+        {% if test.timeout %}
+        · <strong>Timeout:</strong> {{ format_duration(test.timeout) }}
+        {% endif %}
         {% if test_links.declaration_url or test_links.source_url %} · {% endif %}
         {% if test_links.declaration_url %}
         <a href="{{ test_links.declaration_url }}" target="_blank">📄 Declaration</a>

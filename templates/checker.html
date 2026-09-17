@@ -80,7 +80,7 @@ section pre, details pre {
                 <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
                     <span title="Correctly rejected">{{ checker.stats.reject_correct }}&nbsp;✅</span>
                     <span title="Wrongly accepted (unsound)">{{ checker.stats.reject_wrong }}&nbsp;❌</span>
-                    <span title="Declined to process or crashed">{{ checker.stats.reject_declined }}&nbsp;🚫</span>
+                    <span title="Declined to process, crashed or timed out">{{ checker.stats.reject_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
@@ -90,7 +90,7 @@ section pre, details pre {
                 <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
                     <span title="Correctly accepted">{{ checker.stats.accept_correct }}&nbsp;✅</span>
                     <span title="Wrongly rejected (incomplete)">{{ checker.stats.accept_wrong }}&nbsp;❌</span>
-                    <span title="Declined to process or crashed">{{ checker.stats.accept_declined }}&nbsp;🚫</span>
+                    <span title="Declined to process, crashed or timed out">{{ checker.stats.accept_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
@@ -99,7 +99,7 @@ section pre, details pre {
                 <header>Corner cases (no outcome prescribed)</header>
                 <p class="is-center" style="font-size: 2rem; gap: 0.75em;">
                     <span title="Accepted or rejected">{{ checker.stats.either_correct }}&nbsp;✅</span>
-                    <span title="Declined to process or crashed">{{ checker.stats.either_declined }}&nbsp;🚫</span>
+                    <span title="Declined to process, crashed or timed out">{{ checker.stats.either_declined }}&nbsp;🚫</span>
                 </p>
             </div>
         </div>
@@ -188,8 +188,8 @@ section pre, details pre {
 
     <p>
       <b>Test result:</b>
-        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
-            {% if result.status == 'accepted' %}👍 accepted{% elif result.status == 'rejected' %}✋ rejected{% elif result.status == 'declined' %}🚫 declined{% else %}💥 {{ result.status }}{% endif %}
+        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif result.status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
+            {% if result.status == 'accepted' %}👍 accepted{% elif result.status == 'rejected' %}✋ rejected{% elif result.status == 'declined' %}🚫 declined{% elif result.status == 'timeout' %}⌛ timeout{% else %}💥 {{ result.status }}{% endif %}
         </span>
         · exit code {{ result.exit_code }}
         {% if result.wall is not none %}

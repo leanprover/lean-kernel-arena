@@ -17,3 +17,4 @@ leanfile: tests/perf/irrelevance-before-evaluation.lean
 export-decls: ["kernel_irrelevance_before_evaluation"]
 outcome: accept
 compare-perf: true
+timeout: 50

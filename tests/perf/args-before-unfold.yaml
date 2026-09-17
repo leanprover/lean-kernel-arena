@@ -16,3 +16,4 @@ leanfile: tests/perf/args-before-unfold.lean
 export-decls: ["kernel_args_before_unfold"]
 outcome: accept
 compare-perf: true
+timeout: 50

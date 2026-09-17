@@ -6,3 +6,4 @@ leanfile: tests/perf/grind-ring-5.lean
 export-decls: ["thm", "String.ofList", "Char.ofNat"]
 outcome: accept
 compare-perf: true
+timeout: 60

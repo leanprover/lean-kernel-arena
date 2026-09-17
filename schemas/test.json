@@ -65,6 +65,11 @@
       "type": "boolean",
       "description": "Skip this test on CI runs (used with --skip-ci flag)"
     },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Time limit in seconds for running a checker on this test. A checker exceeding it is killed and the result is recorded with status 'timeout' (treated like an error, i.e. as declined). Use set-timeouts.py to derive these from the official checker's wall times."
+    },
     "multiple": {
       "type": "boolean", 
       "description": "Generate multiple tests from single test description. Only valid with 'run' field. Output directory contains good/ and bad/ subdirectories with .ndjson files"

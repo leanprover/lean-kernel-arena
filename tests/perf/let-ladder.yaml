@@ -20,3 +20,4 @@ leanfile: tests/perf/let-ladder.lean
 export-decls: ["kernel_quadratic_let_ladder"]
 outcome: accept
 compare-perf: true
+timeout: 50

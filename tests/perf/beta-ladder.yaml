@@ -16,3 +16,4 @@ leanfile: tests/perf/beta-ladder.lean
 export-decls: ["beta_ladder"]
 outcome: accept
 compare-perf: true
+timeout: 50

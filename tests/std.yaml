@@ -15,3 +15,4 @@ leanfile: tests/std_module.lean
 outcome: accept
 compare-perf: true
 skip-on-ci: true
+timeout: 590

@@ -19,3 +19,4 @@ leanfile: tests/perf/church-numerals.lean
 export-decls: ["kernel_church_numerals"]
 outcome: accept
 compare-perf: true
+timeout: 50
