@@ -1098,6 +1098,22 @@ are still definitionally equal. Just applying proof irrelevance at `Sort 0` isn'
 -/
 good_def proofIrrelevanceWhnf : ∀ (p : id Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
 
+axiom anElem : aType
+axiom anotherElem : aType
+axiom aPropFamily : aProp → Prop
+axiom aPropFamilyProof : ∀ h : aType → aProp, aPropFamily (h anotherElem)
+
+/--
+Proof irrelevance applies to any two terms of a proposition, not just to variables.
+Checking this definition needs `aPropFamily (h anElem) ≡ aPropFamily (h anotherElem)`,
+i.e. `h anElem ≡ h anotherElem`. Both are proofs of `aProp`, since `h : aType → aProp`,
+so they are definitionally equal even though their arguments are not. A checker that
+compares the two applications structurally, without first noticing that they are
+proofs, wrongly rejects this.
+-/
+good_def proofIrrelevanceUnderBinder : ∀ h : aType → aProp, aPropFamily (h anElem) :=
+  aPropFamilyProof
+
 /-- Unit eta -/
 good_def unitEta1 : ∀ (x y : Unit), x = y := fun _ _ => rfl
 
