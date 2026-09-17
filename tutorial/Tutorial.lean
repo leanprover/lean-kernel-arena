@@ -1444,6 +1444,8 @@ bad_consts #[`dupDef, `DupInd]
 bad_consts #[`DupInd]
   renaming #[(`DupInd, `dup_ctor_rec), (`DupInd.mk, `dup_ctor_rec.rec), (`DupInd.rec, `dup_ctor_rec.rec)]
 
+-- NB: both constructors end up with constructor index 0 in the export, as the exporter looks
+-- constructors up by the (now shared) name in the `ctors` field of the inductive type
 /-- An inductive with two constructors with the same name -/
 bad_consts #[`DupInd2]
   renaming #[(`DupInd2, `DupConCon), (`DupInd2.mk1, `dup_ind_con_con.mk), (`DupInd2.mk2, `dup_ind_con_con.mk)]
