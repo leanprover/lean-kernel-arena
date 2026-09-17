@@ -21,3 +21,4 @@ leanfile: tests/perf/fueled-chain.lean
 export-decls: ["chain6_datF", "chain9_datF", "chain12_datF"]
 outcome: accept
 compare-perf: true
+timeout: 50

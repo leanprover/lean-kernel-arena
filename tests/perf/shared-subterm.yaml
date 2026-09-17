@@ -18,3 +18,4 @@ leanfile: tests/perf/shared-subterm.lean
 export-decls: ["kernel_shared_subterm"]
 outcome: accept
 compare-perf: true
+timeout: 50

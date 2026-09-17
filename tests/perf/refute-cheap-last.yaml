@@ -12,3 +12,4 @@ leanfile: tests/perf/refute-cheap-last.lean
 export-decls: ["kernel_refute_cheap_last"]
 outcome: reject
 compare-perf: true
+timeout: 50

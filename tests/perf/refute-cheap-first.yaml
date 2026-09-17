@@ -16,3 +16,4 @@ leanfile: tests/perf/refute-cheap-first.lean
 export-decls: ["kernel_refute_cheap_first"]
 outcome: reject
 compare-perf: true
+timeout: 50

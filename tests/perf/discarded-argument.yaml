@@ -16,3 +16,4 @@ leanfile: tests/perf/discarded-argument.lean
 export-decls: ["kernel_discarded_argument"]
 outcome: accept
 compare-perf: true
+timeout: 50

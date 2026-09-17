@@ -16,3 +16,4 @@ leanfile: tests/perf/unroll-versus-evaluate.lean
 export-decls: ["kernel_unroll_versus_evaluate"]
 outcome: accept
 compare-perf: true
+timeout: 50

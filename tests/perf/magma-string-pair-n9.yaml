@@ -14,3 +14,4 @@ leanfile: tests/perf/magma-string-pair-n9.lean
 outcome: accept
 compare-perf: true
 export-decls: ["countermodel"]
+timeout: 130

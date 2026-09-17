@@ -12,3 +12,4 @@ leanfile: tests/perf/folded-constant-last.lean
 export-decls: ["kernel_folded_constant_last"]
 outcome: accept
 compare-perf: true
+timeout: 50

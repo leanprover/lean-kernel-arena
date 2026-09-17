@@ -21,3 +21,4 @@ leanfile: tests/perf/folded-constant-first.lean
 export-decls: ["kernel_folded_constant_first"]
 outcome: accept
 compare-perf: true
+timeout: 50

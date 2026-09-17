@@ -19,3 +19,4 @@ leanfile: tests/perf/repeated-subproblem.lean
 export-decls: ["kernel_repeated_subproblem"]
 outcome: accept
 compare-perf: true
+timeout: 50

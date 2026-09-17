@@ -14,3 +14,4 @@ module: Cedar
 outcome: accept
 compare-perf: true
 skip-on-ci: true
+timeout: 940
