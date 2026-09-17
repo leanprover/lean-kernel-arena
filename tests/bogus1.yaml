@@ -1,5 +1,0 @@
-description: |
-  A clearly bogus proof. Also serves as an example for how to write simple cases.
-leanfile: tests/bogus1.lean
-export-decls: ["thm"]
-outcome: reject
