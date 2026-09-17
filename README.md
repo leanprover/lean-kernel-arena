@@ -198,6 +198,16 @@ The `run` command receives the test file path via the `$IN` environment variable
 
 If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names). Such tests are recorded as declined without running the checker at all.
 
+**Timeouts:**
+
+Tests may specify a `timeout` (in seconds). A checker that takes longer than that on a test is killed, and the result is recorded with status `timeout`, which is scored like a crash (i.e. as declined). The timeouts are derived from the official checker's wall times on the live site; to update them, run
+
+```bash
+./set-timeouts.py
+```
+
+which fetches the latest `results.json` from <https://arena.lean-lang.org> and distributes a total budget of three times the official checker's total wall time over the real-world corpora and the `perf/` tests (those marked `compare-perf`), biased towards small tests: roughly 2× the official time for `mathlib`, 10× or more for small tests, and about a minute for tiny ones, and reports which checker runs in that data would have been affected by the new limits.
+
 The arena does not automatically update the checkers; please submit new releases manually.
 
 ## Rounds

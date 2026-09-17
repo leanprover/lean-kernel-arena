@@ -9,7 +9,7 @@
                     {% if checker.name == 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -22,7 +22,7 @@
                                 {% endif %}
                             {% else %}
                                 {# Show result status for other tests #}
-                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
+                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% elif result.status == 'timeout' %}⌛{% else %}💥{% endif %}
                             {% endif %}
                         </a>
                         {% else %}
@@ -35,7 +35,7 @@
                     {% if checker.name != 'official' %}
                     {% set key = (checker.name, test.name) %}
                     {% set result = test_results.get(key) %}
-                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status == 'declined' or result.status == 'error' %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
+                    <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
                         <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if test.outcome == 'accept' and result.status == 'accepted' and test.get('compare-perf') %}
@@ -55,7 +55,7 @@
                                 {% endif %}
                             {% else %}
                                 {# Show result status for other tests #}
-                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% else %}💥{% endif %}
+                                {% if result.status == 'accepted' %}👍{% elif result.status == 'rejected' %}✋{% elif result.status == 'declined' %}🚫{% elif result.status == 'timeout' %}⌛{% else %}💥{% endif %}
                             {% endif %}
                         </a>
                         {% else %}
@@ -131,7 +131,7 @@ details.page-details > summary h3 {
         </p>
 
         <p>
-            Checkers that do not implement all features may choose to explicitly decline to process certain tests (column 🚫). These tests are not taken into account for correctness scoring. Tests that crash the checker (💥) also considered declined.
+            Checkers that do not implement all features may choose to explicitly decline to process certain tests (column 🚫). These tests are not taken into account for correctness scoring. Tests that crash the checker (💥) or exceed the test's time limit (⌛) are also considered declined.
         </p>
 
         <p>
@@ -224,12 +224,12 @@ details.page-details > summary h3 {
             <tr>
                 <th class="text-center" title="Correctly rejected">✅</th>
                 <th class="text-center" title="Wrongly accepted (unsound)">❌</th>
-                <th class="text-center" title="Declined to process or crashed">🚫</th>
+                <th class="text-center" title="Declined to process, crashed or timed out">🚫</th>
                 <th class="text-center" title="Correctly accepted">✅</th>
                 <th class="text-center" title="Wrongly rejected (incomplete)">❌</th>
-                <th class="text-center" title="Declined to process or crashed">🚫</th>
+                <th class="text-center" title="Declined to process, crashed or timed out">🚫</th>
                 <th class="text-center" title="Accepted or rejected">✅</th>
-                <th class="text-center" title="Declined to process or crashed">🚫</th>
+                <th class="text-center" title="Declined to process, crashed or timed out">🚫</th>
             </tr>
         </thead>
         <tbody>

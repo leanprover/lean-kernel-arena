@@ -61,6 +61,7 @@ Validates checker configuration files in the `checkers/` directory.
 - `run`: Shell command to generate test data (`$OUT` variable available)
 - `pre-build`: Command to run before building (e.g., `lake exe cache get`)
 - `outcome`: Expected test result (`"accept"`, `"reject"`, or `"either"`). Use `"either"` for tests where it is not (yet) settled whether a checker should accept or reject; both behaviours count as acceptable, and the test is excluded from the completeness and soundness columns.
+- `timeout`: Time limit in seconds for running a checker on this test (optional). A checker that exceeds it is killed and recorded with status `timeout`, which is scored like an error (i.e. as declined). For `multiple` tests, the limit applies to each generated subtest individually. The `set-timeouts.py` script derives these limits from the official checker's wall times on the live site.
 
 ### Checker-Specific Fields
 - `build`: Shell command to build the checker (optional - only needed if compilation is required)

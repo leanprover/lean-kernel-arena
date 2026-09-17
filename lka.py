@@ -16,6 +16,7 @@ import fnmatch
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -224,12 +225,64 @@ def extract_ndjson_metadata(ndjson_file: Path) -> dict:
     return metadata
 
 
+def _run_process(
+    cmd: str | list[str],
+    cwd: Path | None = None,
+    env: dict | None = None,
+    shell: bool = False,
+    capture_output: bool = True,
+    timeout: float | None = None,
+) -> subprocess.CompletedProcess:
+    """Like subprocess.run, but with a timeout that kills the whole process group.
+
+    With a timeout, the command is started in a new session, so that on timeout
+    not only the direct child (which may be a `perf`/`time` wrapper or a shell)
+    but also everything it spawned is killed. The returned CompletedProcess has
+    an additional `timed_out` attribute.
+    """
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=env,
+        shell=shell,
+        stdout=subprocess.PIPE if capture_output else None,
+        stderr=subprocess.PIPE if capture_output else None,
+        text=True,
+        # Only detach from our process group when we need to kill the group
+        # ourselves; otherwise Ctrl-C would no longer reach the child.
+        start_new_session=timeout is not None,
+    )
+
+    def kill_group():
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    timed_out = False
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        kill_group()
+        stdout, stderr = proc.communicate()
+    except KeyboardInterrupt:
+        # In a new session the child does not see the terminal's SIGINT
+        if timeout is not None:
+            kill_group()
+        raise
+    result = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+    result.timed_out = timed_out
+    return result
+
+
 def measure_perf_with_fallback(
     cmd: str | list[str],
     cwd: Path | None = None,
     env: dict | None = None,
     shell: bool = False,
     capture_output: bool = True,
+    timeout: float | None = None,
 ) -> tuple[subprocess.CompletedProcess, dict]:
     """Run a command and measure performance metrics using perf + GNU time, with fallback.
 
@@ -241,6 +294,9 @@ def measure_perf_with_fallback(
     - cpu_time: CPU time in seconds (measured via perf task-clock)
     - max_rss: Maximum RSS in bytes (measured via GNU time)
     - instructions: Instruction count (measured via perf)
+
+    If `timeout` (in seconds) is given and exceeded, the command is killed and
+    the result has `timed_out` set to True.
     """
     # Record wall time manually as fallback
     start_wall_time = time.time()
@@ -296,13 +352,13 @@ def measure_perf_with_fallback(
             perf_env["LC_ALL"] = "C"  # Ensure perf outputs valid JSON
 
             # Run with nested perf + time
-            result = subprocess.run(
+            result = _run_process(
                 full_cmd,
                 cwd=cwd,
                 env=perf_env,
                 shell=False,
                 capture_output=capture_output,
-                text=True,
+                timeout=timeout,
             )
 
             # Parse perf output
@@ -375,13 +431,13 @@ def measure_perf_with_fallback(
 
     if not use_perf:
         # Final fallback: run normally and measure wall time only
-        result = subprocess.run(
+        result = _run_process(
             cmd,
             cwd=cwd,
             env=env,
             shell=shell,
             capture_output=capture_output,
-            text=True,
+            timeout=timeout,
         )
         metrics["wall_time"] = time.time() - start_wall_time
         metrics["cpu_time"] = 0.0  # Not measured here
@@ -399,6 +455,7 @@ def run_cmd(
     capture_output: bool = True,
     measure_perf: bool = False,
     print_on_failure: bool = False,
+    timeout: float | None = None,
 ) -> subprocess.CompletedProcess:
     """Run a command with optional verbose output and performance measurement.
 
@@ -410,6 +467,7 @@ def run_cmd(
         capture_output: Whether to capture stdout/stderr
         measure_perf: Whether to measure detailed performance metrics
         print_on_failure: Whether to print stdout/stderr when the command fails
+        timeout: Kill the command (and its process group) after this many seconds
 
     Returns:
         CompletedProcess instance with additional attributes:
@@ -417,6 +475,7 @@ def run_cmd(
         - cpu_time: CPU time in seconds (if available)
         - max_rss: Maximum RSS in bytes (if available)
         - instructions: Instruction count (if available)
+        - timed_out: Whether the command was killed due to the timeout
     """
     global VERBOSE
 
@@ -433,7 +492,7 @@ def run_cmd(
     if measure_perf:
         # Use detailed performance measurement
         result, metrics = measure_perf_with_fallback(
-            cmd, cwd=cwd, env=env, shell=shell, capture_output=capture_output
+            cmd, cwd=cwd, env=env, shell=shell, capture_output=capture_output, timeout=timeout
         )
 
         # Add metrics as attributes to the result
@@ -443,7 +502,10 @@ def run_cmd(
         result.instructions = metrics.get("instructions", 0)
 
         if VERBOSE:
-            status = "ok" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
+            if result.timed_out:
+                status = f"TIMEOUT (after {format_duration(timeout)})"
+            else:
+                status = "ok" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
             metrics_str = f"wall: {format_duration(result.wall_time)}"
             # Show real CPU time from perf (task-clock), not converted from instructions
             if result.cpu_time > 0:
@@ -457,13 +519,13 @@ def run_cmd(
         # Use simple timing
         start_time = time.time()
 
-        result = subprocess.run(
+        result = _run_process(
             cmd,
             cwd=cwd,
             env=env,
             shell=shell,
             capture_output=capture_output,
-            text=True,
+            timeout=timeout,
         )
 
         elapsed = time.time() - start_time
@@ -475,7 +537,10 @@ def run_cmd(
         result.instructions = 0  # Not measured
 
         if VERBOSE:
-            status = "ok" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
+            if result.timed_out:
+                status = f"TIMEOUT (after {format_duration(timeout)})"
+            else:
+                status = "ok" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
             print(f"      -> {status} in {format_duration(elapsed)}")
 
     if VERBOSE:
@@ -1019,6 +1084,8 @@ def create_test(test: dict, output_dir: Path) -> bool:
             stats["name"] = f"{name}/{subtest_name}"
             stats["outcome"] = "accept" if outcome == "good" else "reject"
             stats["yaml_file"] = f"tests/{name}.yaml"
+            if test.get("timeout"):
+                stats["timeout"] = test["timeout"]
 
             # Generate and store source links from parent test
             stats.update(generate_source_links(test, "tests", build_info.get("git_revision")))
@@ -1068,6 +1135,10 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Add skip-on-ci field if present
         if test.get("skip-on-ci"):
             stats["skip-on-ci"] = test["skip-on-ci"]
+
+        # Add timeout field if present
+        if test.get("timeout"):
+            stats["timeout"] = test["timeout"]
 
         # Generate and store source links
         build_info = get_build_metadata()
@@ -1289,10 +1360,15 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     env = os.environ.copy()
     env["IN"] = str(test_file)
 
-    result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env, measure_perf=True)
+    # Kill the checker if it exceeds the test's timeout (if any)
+    timeout = test.get("timeout")
+
+    result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env, measure_perf=True, timeout=timeout)
 
     exit_code = result.returncode
-    if exit_code == 0:
+    if result.timed_out:
+        status = "timeout"
+    elif exit_code == 0:
         status = "accepted"
     elif exit_code == 1:
         status = "rejected"
@@ -1305,7 +1381,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     expected_outcome = test.get("outcome")
     if status == "declined":
         correctness = "declined"
-    elif status == "error":
+    elif status == "error" or status == "timeout":
         correctness = "error"
     elif expected_outcome == "either":
         # Not settled whether a checker should accept or reject this: both
@@ -1331,6 +1407,13 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
         "stdout": result.stdout,
         "stderr": result.stderr,
     }
+    if timeout is not None:
+        result_data["timeout"] = timeout
+    if result.timed_out:
+        result_data["stderr"] = (
+            f"Killed after exceeding the test's timeout of {format_duration(timeout)}.\n"
+            + (result.stderr or "")
+        )
 
     # Write result to JSON file (replace "/" with "_" for valid filename)
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -1402,6 +1485,8 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
                 status_emoji = '👎'
             elif status == 'declined':
                 status_emoji = '⊘'
+            elif status == 'timeout':
+                status_emoji = '⌛'
             else:  # error
                 status_emoji = '⚠️'
             
@@ -1590,9 +1675,9 @@ def compute_checker_stats(checker: dict, tests: list[dict], results: dict) -> di
             mathlib_max_rss = result.get("max_rss")
             mathlib_instructions = result.get("instructions", 0) or 0
 
-        # Count declined and error tests
+        # Count declined, error and timed out tests
         # Errors don't make any assertion about correctness, so treat them like declines
-        if status == "declined" or status == "error":
+        if status in ("declined", "error", "timeout"):
             declined_count += 1
             if expected_outcome == "accept":
                 accept_declined += 1
