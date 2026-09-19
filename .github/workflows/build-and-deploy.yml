@@ -359,11 +359,12 @@ jobs:
   build-site:
     name: Build and deploy site
     needs: [round-info, check, tutorial, test-stats, zenodo-reserve]
-    # Run even if some checker jobs failed, so the site (including the failures)
-    # is still built and deployed; a final step below then fails this job if any
-    # checker failed. zenodo-reserve is skipped for non-round builds and may
-    # fail for a round, in which case this still builds the site, just without
-    # closing the round (see ROUND_READY).
+    # Run even if some checker jobs failed, so the site is still built and can
+    # be inspected in the uploaded artifact. It is only deployed if every
+    # checker succeeded, and a final step below then fails this job. zenodo-
+    # reserve is skipped for non-round builds and may fail for a round, in which
+    # case this still builds the site, just without closing the round (see
+    # ROUND_READY).
     if: ${{ !cancelled() && needs.check.result != 'skipped' }}
     runs-on: ubuntu-latest
 
@@ -557,8 +558,12 @@ jobs:
           name: github-pages-${{ github.run_attempt }}
           path: '_out'
 
+      # Only put a complete site live. A checker job that failed did not
+      # produce results, and the site does not distinguish a checker without
+      # results from one that was never run, so deploying would quietly drop
+      # that checker from the published page. Re-run the failed job instead.
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'workflow_dispatch'
+        if: ${{ github.event_name == 'workflow_dispatch' && needs.check.result == 'success' }}
         id: deployment
         uses: actions/deploy-pages@v5
         with:
@@ -582,12 +587,12 @@ jobs:
           ZENODO_TOKEN: ${{ needs.round-info.outputs.sandbox == 'true' && secrets.ZENODO_SANDBOX_TOKEN || secrets.ZENODO_TOKEN }}
 
       # The checker matrix uses fail-fast: false, so a failing checker does not
-      # stop the others and the site is still built and deployed above. Surface
-      # the failure by failing this final job once everything else is done.
+      # stop the others and the site is still built above. Surface the failure
+      # by failing this final job once everything else is done.
       - name: Fail if any checker job failed
-        if: ${{ always() && needs.check.result == 'failure' }}
+        if: ${{ always() && needs.check.result != 'success' }}
         run: |
-          echo "::error::One or more checker jobs failed; see the 'Checker: …' matrix jobs."
+          echo "::error::Checker jobs did not all succeed (${{ needs.check.result }}), so the site was not deployed; see the 'Checker: …' matrix jobs."
           exit 1
 
   zenodo-publish:
