@@ -1960,6 +1960,18 @@ def result_perf_tooltip(result: dict, instructions_per_second: float,
     )
 
 
+def outcome_matches(expected: str | None, status: str | None) -> bool:
+    """Whether a checker's result is the outcome the test expects.
+
+    Performance is only comparable between checkers that agree on the outcome,
+    for rejections as much as for acceptances: a checker that rejects a test
+    the moment it should has done the work the test measures. Tests with
+    outcome 'either' have no settled expectation and never match.
+    """
+    return ((expected == "accept" and status == "accepted")
+            or (expected == "reject" and status == "rejected"))
+
+
 def group_rows(members: list, name_of) -> list[dict]:
     """Group a list of table rows by test group for collapsible display.
 
@@ -2141,6 +2153,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
 
     env = make_template_env(templates_dir)
     env.globals["format_relative_perf"] = format_relative_perf
+    env.globals["outcome_matches"] = outcome_matches
 
     # The site is rendered from the results.json data structure, either read
     # from a previously written file (--results) or collected now.
@@ -2220,7 +2233,7 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         times = {}
         for checker in checkers:
             result = results.get((checker["name"], test["name"]))
-            if result and result.get("status") == "accepted":
+            if result and outcome_matches(test.get("outcome"), result.get("status")):
                 time = result_virtual_time(result, instructions_per_second)
                 if time > 0:
                     times[checker["name"]] = time
@@ -2368,15 +2381,18 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 row["wall_time_sum"] = sum(r.get("wall_time") or 0 for r in row["members"])
                 row["rss_max"] = max(r.get("max_rss") or 0 for r in row["members"])
                 # Overall performance relative to the official checker, summed
-                # over the tests that both checkers accepted
+                # over the perf-compared tests where both checkers gave the
+                # expected outcome
                 own_time = 0.0
                 own_instructions = 0
                 own_wall_time = 0.0
                 official_time = 0.0
                 for r in row["members"]:
                     official = r.get("official")
-                    if (r.get("expected") == "accept" and r.get("status") == "accepted"
-                            and official and official.get("status") == "accepted"):
+                    if (r.get("test_stats", {}).get("compare-perf")
+                            and outcome_matches(r.get("expected"), r.get("status"))
+                            and official
+                            and outcome_matches(r.get("expected"), official.get("status"))):
                         own_time += result_virtual_time(r, instructions_per_second)
                         own_instructions += r.get("instructions") or 0
                         own_wall_time += r.get("wall_time") or 0

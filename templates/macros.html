@@ -17,19 +17,23 @@
 }
 {% endmacro %}
 
+{# The glyph for a result status #}
+{% macro status_icon(status) %}{% if status == 'accepted' %}👍{% elif status == 'rejected' %}✋{% elif status == 'declined' %}🚫{% elif status == 'timeout' %}⌛{% else %}💥{% endif %}{% endmacro %}
+
 {# Result status cell with background color #}
 {% macro result_status_cell(expected, status) %}
 <td class="text-center {% if expected == 'either' %}{% elif (expected == 'accept' and status == 'accepted') or (expected == 'reject' and status == 'rejected') %}bg-success{% elif status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}">
-    {% if status == 'accepted' %}👍{% elif status == 'rejected' %}✋{% elif status == 'declined' %}🚫{% elif status == 'timeout' %}⌛{% else %}💥{% endif %}
+    {{ status_icon(status) }}
 </td>
 {% endmacro %}
 
 {# Performance cells: time, time%, memory, memory%.
-   Comparisons are shown for tests marked compare-perf. The time comparison
+   Comparisons are shown for tests marked compare-perf, whenever this checker
+   and the official one both gave the expected outcome. The time comparison
    cell gets a light green background when the checker is at least 10% faster
    than the official checker. #}
 {% macro perf_cells(result, expected, instructions_per_second, format_duration, format_memory, convert_instructions_to_time, compare_perf=false) %}
-{% set compared = expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
+{% set compared = outcome_matches(expected, result.status) and result.official and outcome_matches(expected, result.official.status) %}
 {% set official_cpu_time = (convert_instructions_to_time(result.official.get('instructions', 0), instructions_per_second) if result.official.get('instructions', 0) > 0 and instructions_per_second > 0 else result.official.cpu_time) if compared else none %}
 {% set current_cpu_time = (convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time) if compared else none %}
 {% set show_comparison = compare_perf and official_cpu_time and current_cpu_time %}
@@ -51,7 +55,7 @@
     {% endif %}
 </td>
 <td class="text-left">
-    {% if expected == 'accept' and result.status == 'accepted' and result.official and result.official.status == 'accepted' %}
+    {% if compared %}
         {% set official_memory = result.official.max_rss %}
         {% set current_memory = result.max_rss %}
         {% if compare_perf and official_memory and current_memory %}

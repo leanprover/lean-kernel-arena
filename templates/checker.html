@@ -135,7 +135,7 @@ section pre, details pre {
                     {% if row.time_sum %}<span title="{{ format_perf_tooltip(instructions=row.instructions_sum, wall_time=row.wall_time_sum, prefix='Total over all tests in the group') }}">{{ format_duration(row.time_sum) }}</span>{% endif %}
                 </td>
                 <td class="text-left">
-                    {% if row.relative_perf is not none %}<span title="{{ format_perf_tooltip(row.perf_time_sum, row.perf_instructions_sum, row.perf_wall_time_sum, prefix='Total over the tests both checkers accepted') }}">({{ row.relative_perf }})</span>{% endif %}
+                    {% if row.relative_perf is not none %}<span title="{{ format_perf_tooltip(row.perf_time_sum, row.perf_instructions_sum, row.perf_wall_time_sum, prefix='Total over the perf-compared tests both checkers got right') }}">({{ row.relative_perf }})</span>{% endif %}
                 </td>
                 <td class="text-right">
                     {% if row.rss_max %}<span title="Maximum over all tests in the group">{{ format_memory(row.rss_max) }}</span>{% endif %}
