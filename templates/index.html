@@ -16,7 +16,7 @@
                                 {# Show absolute virtual time for perf-compared tests #}
                                 {% set official_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
                                 {% if official_cpu_time %}
-                                    {{ format_duration(official_cpu_time) }}
+                                    <span title="{{ result_perf_tooltip(result, instructions_per_second) }}">{{ format_duration(official_cpu_time) }}</span>
                                 {% else %}
                                     👍
                                 {% endif %}
@@ -46,7 +46,7 @@
                                     {% set official_cpu_time = convert_instructions_to_time(official_result.get('instructions', 0), instructions_per_second) if official_result.get('instructions', 0) > 0 and instructions_per_second > 0 else official_result.cpu_time %}
                                     {% set current_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
                                     {% if official_cpu_time and current_cpu_time %}
-                                        {{ format_relative_perf(current_cpu_time, official_cpu_time) }}
+                                        <span title="{{ result_perf_tooltip(result, instructions_per_second, true) }}">{{ format_relative_perf(current_cpu_time, official_cpu_time) }}</span>
                                     {% else %}
                                         👍
                                     {% endif %}
@@ -144,6 +144,7 @@ details.page-details > summary h3 {
             The time and space measurements refer to the <tt>mathlib</tt> test case, the largest correct test in the suite.
             The ⏱️ column shows virtual CPU time, calculated from instruction counts using a fixed rate of {{ format_unitless(instructions_per_second|round|int) }}instr/s.
             This provides consistent performance comparison across different hardware, though it does not reflect parallel processing capabilities that some checkers may use.
+            Hovering over a time or a relative figure shows the numbers behind it: the virtual CPU time, the instruction count and the measured wall clock time.
         </p>
 
         <p>
@@ -250,10 +251,11 @@ details.page-details > summary h3 {
                 <td class="text-center {% if checker.stats.either_declined > 0 %}bg-warning{% endif %}">{{ checker.stats.either_declined or '' }}</td>
                 <td class="gap-col"></td>
                 <td class="text-right">
+                    {% set mathlib_tooltip = format_perf_tooltip(instructions=checker.stats.get('mathlib_instructions', 0), wall_time=checker.stats.mathlib_time) %}
                     {% if checker.stats.get('mathlib_instructions', 0) > 0 and instructions_per_second > 0 %}
-                        <span title="{{ format_instructions(checker.stats.get('mathlib_instructions', 0)) }} instructions">{{ format_duration(convert_instructions_to_time(checker.stats.get('mathlib_instructions', 0), instructions_per_second)) }}</span>
+                        <span title="{{ mathlib_tooltip }}">{{ format_duration(convert_instructions_to_time(checker.stats.get('mathlib_instructions', 0), instructions_per_second)) }}</span>
                     {% elif checker.stats.mathlib_cpu_time is not none %}
-                        {{ format_duration(checker.stats.mathlib_cpu_time) }}
+                        <span title="{{ mathlib_tooltip }}">{{ format_duration(checker.stats.mathlib_cpu_time) }}</span>
                     {% else %}
                         -
                     {% endif %}

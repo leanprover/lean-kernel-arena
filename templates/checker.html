@@ -10,7 +10,7 @@
                     {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}
                 </td>
                 {{ result_status_cell(result.expected, result.status) }}
-                {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, format_instructions, convert_instructions_to_time, result.test_stats.get('compare-perf')) }}
+                {{ perf_cells(result, result.expected, instructions_per_second, format_duration, format_memory, convert_instructions_to_time, result.test_stats.get('compare-perf')) }}
             </tr>
 {% endmacro %}
 
@@ -132,10 +132,10 @@ section pre, details pre {
                     <span title="{{ row.correct }} correct, {{ row.unsound }} wrongly accepted, {{ row.incomplete }} wrongly rejected, {{ row.declined }} declined or crashed{% if row.either %}, {{ row.either }} either{% endif %}">{{ row.correct }}</span>
                 </td>
                 <td class="text-right">
-                    {% if row.time_sum %}<span title="Total over all tests in the group">{{ format_duration(row.time_sum) }}</span>{% endif %}
+                    {% if row.time_sum %}<span title="{{ format_perf_tooltip(instructions=row.instructions_sum, wall_time=row.wall_time_sum, prefix='Total over all tests in the group') }}">{{ format_duration(row.time_sum) }}</span>{% endif %}
                 </td>
                 <td class="text-left">
-                    {% if row.relative_perf is not none %}({{ row.relative_perf }}){% endif %}
+                    {% if row.relative_perf is not none %}<span title="{{ format_perf_tooltip(row.perf_time_sum, row.perf_instructions_sum, row.perf_wall_time_sum, prefix='Total over the tests both checkers accepted') }}">({{ row.relative_perf }})</span>{% endif %}
                 </td>
                 <td class="text-right">
                     {% if row.rss_max %}<span title="Maximum over all tests in the group">{{ format_memory(row.rss_max) }}</span>{% endif %}

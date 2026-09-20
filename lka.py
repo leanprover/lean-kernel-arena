@@ -164,7 +164,9 @@ def format_relative_perf(current: float, baseline: float) -> str:
 
 def format_instructions(instruction_count: int) -> str:
     """Format instruction count to a human-readable string with SI prefixes."""
-    if instruction_count >= 1_000_000_000:
+    if instruction_count >= 1_000_000_000_000:
+        return f"{instruction_count / 1_000_000_000_000:.1f}\u202fT"
+    elif instruction_count >= 1_000_000_000:
         return f"{instruction_count / 1_000_000_000:.1f}\u202fG"
     elif instruction_count >= 1_000_000:
         return f"{instruction_count / 1_000_000:.1f}\u202fM"
@@ -1928,6 +1930,36 @@ def result_virtual_time(result: dict, instructions_per_second: float) -> float:
     return result.get("cpu_time") or 0
 
 
+def format_perf_tooltip(virtual_time: float | None = None, instructions: int = 0,
+                        wall_time: float | None = None, prefix: str | None = None) -> str:
+    """Tooltip text for a cell showing a performance figure, spelling out the
+    numbers behind it: the virtual CPU time, the instruction count it is
+    derived from, and the measured wall clock time. Numbers that are unknown
+    (or not interesting, such as the virtual time in a cell that shows it
+    already) are left out."""
+    parts = [prefix] if prefix else []
+    if virtual_time:
+        parts.append(f"virtual time: {format_duration(virtual_time)}")
+    if instructions:
+        parts.append(f"instructions: {format_instructions(instructions)}")
+    if wall_time:
+        parts.append(f"wall time: {format_duration(wall_time)}")
+    return "\n".join(parts)
+
+
+def result_perf_tooltip(result: dict, instructions_per_second: float,
+                        virtual_time: bool = False, prefix: str | None = None) -> str:
+    """Tooltip for a cell showing a performance figure of a single result.
+    Cells that display the virtual time itself pass virtual_time=False; cells
+    that show a relative figure pass virtual_time=True to include it."""
+    return format_perf_tooltip(
+        result_virtual_time(result, instructions_per_second) if virtual_time else None,
+        result.get("instructions") or 0,
+        result.get("wall_time"),
+        prefix,
+    )
+
+
 def group_rows(members: list, name_of) -> list[dict]:
     """Group a list of table rows by test group for collapsible display.
 
@@ -2092,6 +2124,8 @@ def make_template_env(templates_dir: Path) -> Environment:
         autoescape=select_autoescape(),
     )
     env.globals["rounds_url"] = ROUNDS_URL
+    env.globals["format_perf_tooltip"] = format_perf_tooltip
+    env.globals["result_perf_tooltip"] = result_perf_tooltip
     return env
 
 
@@ -2330,17 +2364,26 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 row["count"] = len(row["members"])
                 row.update(summarize_correctness(row["members"]))
                 row["time_sum"] = sum(result_virtual_time(r, instructions_per_second) for r in row["members"])
+                row["instructions_sum"] = sum(r.get("instructions") or 0 for r in row["members"])
+                row["wall_time_sum"] = sum(r.get("wall_time") or 0 for r in row["members"])
                 row["rss_max"] = max(r.get("max_rss") or 0 for r in row["members"])
                 # Overall performance relative to the official checker, summed
                 # over the tests that both checkers accepted
                 own_time = 0.0
+                own_instructions = 0
+                own_wall_time = 0.0
                 official_time = 0.0
                 for r in row["members"]:
                     official = r.get("official")
                     if (r.get("expected") == "accept" and r.get("status") == "accepted"
                             and official and official.get("status") == "accepted"):
                         own_time += result_virtual_time(r, instructions_per_second)
+                        own_instructions += r.get("instructions") or 0
+                        own_wall_time += r.get("wall_time") or 0
                         official_time += result_virtual_time(official, instructions_per_second)
+                row["perf_time_sum"] = own_time
+                row["perf_instructions_sum"] = own_instructions
+                row["perf_wall_time_sum"] = own_wall_time
                 if official_time > 0 and own_time > 0:
                     row["relative_perf"] = format_relative_perf(own_time, official_time)
                 else:
