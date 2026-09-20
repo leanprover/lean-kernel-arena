@@ -679,7 +679,8 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
         """Derive a checker version string.
 
         If the checker YAML omits `version` but has both `ref` and `rev`, use
-        "<ref> (<first 7 of rev>)".
+        "<ref> (<first 7 of rev>)". For the default branch (master/main) the
+        branch name carries no information, so just use the short revision.
         """
         version = config.get("version")
         if isinstance(version, str) and version.strip():
@@ -687,11 +688,16 @@ def load_yaml_files(directory: Path, schema_name: str) -> list[dict]:
 
         ref = config.get("ref")
         rev = config.get("rev")
-        if isinstance(ref, str) and ref.strip() and isinstance(rev, str) and rev.strip():
-            rev_short = rev.strip()[:7]
-            return f"{ref.strip()} ({rev_short})"
+        if not (isinstance(rev, str) and rev.strip()):
+            return None
+        rev_short = rev.strip()[:7]
 
-        return None
+        if not (isinstance(ref, str) and ref.strip()):
+            return rev_short
+        ref = ref.strip()
+        if ref in ("master", "main"):
+            return rev_short
+        return f"{ref} ({rev_short})"
 
     # Sort files alphabetically to avoid dependency on filesystem order
     # Search recursively so tests can be organized in subdirectories
