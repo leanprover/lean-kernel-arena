@@ -30,7 +30,7 @@ description: |
   exhaustion can never be read as a rejection.
 
   Although con-ron looks better than con-leche in terms of instructions,
-  wall-time and memory is actally worse. This is the price of following Lean
+  wall-time and memory is actually worse. This is the price of following Lean
   data structures rather than Rust idiom.  Written by AI under close human
   supervision from Joachim Breitner at the Lean FRO.
 url: https://github.com/leanprover/con-ron
