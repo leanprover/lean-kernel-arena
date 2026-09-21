@@ -13,8 +13,7 @@ description: |
   function computes.  So con-leche's consistency statement — if it accepts a
   set of declarations then they have a model in set theory, and in particular
   no theorem of `False` is accepted — carries over to what this binary accepts,
-  modulo Aeneas as a Rust-to-Lean translator, and modulo the parser, which is
-  outside the proof in both checkers.
+  modulo Aeneas as a Rust-to-Lean translator.
 
   That makes it less a high-assurance verification effort of its own than a
   second body for the same verified checker: a proof accepted by both is
@@ -30,14 +29,13 @@ description: |
   none of them — a failed allocation aborts the process (SIGABRT) — so
   exhaustion can never be read as a rejection.
 
-  It retires slightly fewer instructions than con-leche for the same export
-  (about 11 % fewer on Mathlib) and spends them worse: ~1.6× the wall time
-  and ~1.8× the peak memory, the price
-  of following Lean data structures rather than Rust idiom.  Written by AI
-  under close human supervision from Joachim Breitner at the Lean FRO.
+  Although con-ron looks better than con-leche in terms of instructions,
+  wall-time and memory is actally worse. This is the price of following Lean
+  data structures rather than Rust idiom.  Written by AI under close human
+  supervision from Joachim Breitner at the Lean FRO.
 url: https://github.com/leanprover/con-ron
 ref: master
-rev: 3f5ebd551eadd2794a32e0acefe9711b62d804bf
+rev: 613194b9ad00ffba701665e91ff786b70f51a740
 threads: 4
 # Nothing but a Rust toolchain and a C compiler (for the mimalloc allocator the
 # unverified binaries use by default); every pin the checker needs — con-leche's
