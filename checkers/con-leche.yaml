@@ -5,17 +5,15 @@ description: |
   inaccessibles) — one set per constant under which every constant is a
   member of its type — and in particular no theorem of `False` is accepted.
   The proof is done directly against a set-theoretic model, not against
-  an abstract typing relation; the parser and the Lean runtime are
-  outside it.
+  an abstract typing relation.
 
   Written in Lean, entirely by Claude under close human guidance. It
   runs in verified mode here (the mode the theorem is about) with four
-  worker threads for the check phase. Slower than the official kernel,
-  but fast enough for real proofs. It accepts only the three standard
+  worker threads for the check phase. It accepts only the three standard
   axioms and declines streams that use others.
 url: https://github.com/leanprover/con-leche
 ref: master
-rev: 08f5320f98639a32333a016c852cd15242488003
+rev: 78ded4b6fc9a4d9ab809e8ca2c75c56537c41bff
 build: lake build con-leche
 threads: 4
 run: .lake/build/bin/con-leche --verified --jobs=4 "$IN"
