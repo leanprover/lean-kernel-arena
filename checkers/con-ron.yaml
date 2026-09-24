@@ -6,14 +6,21 @@
 # published as leanprover/con-ron; if its published history differs, repin.
 description: |
   [**con-ron**](https://github.com/leanprover/con-ron) is
-  [con-leche](https://github.com/leanprover/con-leche) ported to Rust — closely
-  enough that [Aeneas](https://github.com/AeneasVerif/aeneas) translates the
-  Rust checker's core back into Lean and the port is proved *there* to refine
-  the original: where the Rust function succeeds, it computes what con-leche's
-  function computes.  So con-leche's consistency statement — if it accepts a
-  set of declarations then they have a model in set theory, and in particular
-  no theorem of `False` is accepted — carries over to what this binary accepts,
-  modulo Aeneas as a Rust-to-Lean translator.
+  [con-leche](https://github.com/leanprover/con-leche) ported to Rust: the
+  same checking algorithm, but with its own term representation — expressions
+  are hash-consed into per-constructor arrays and named by 32-bit handles, with
+  a persistent tier for the environment and a scratch tier per declaration.
+
+  The port is verified against con-leche in two steps.  A Lean *twin* of
+  con-leche's pure checker, written over the same data structures as the Rust,
+  is proved to refine con-leche's; and [Aeneas](https://github.com/AeneasVerif/aeneas)
+  translates the Rust checker back into Lean, where it is proved to refine the
+  twin: where the Rust function succeeds, it computes what the twin computes.
+  So con-leche's consistency statement — if it accepts a set of declarations
+  then they have a model in set theory, and in particular no theorem of
+  `False` is accepted — carries over to what this binary accepts, modulo Aeneas
+  as a Rust-to-Lean translator and the unverified driver (reading the file,
+  scheduling threads).
 
   That makes it less a high-assurance verification effort of its own than a
   second body for the same verified checker: a proof accepted by both is
@@ -25,17 +32,16 @@ description: |
   about), with four worker threads for the check phase; it ingests raw
   `lean4export` NDJSON with no preprocessor and no subprocess, and an axiom it
   does not recognise makes it decline the stream rather than reject it.  Exit
-  codes are the arena's: 0 accept, 1 reject, 2 decline, 3 error.  Running out of memory is
-  none of them — a failed allocation aborts the process (SIGABRT) — so
-  exhaustion can never be read as a rejection.
+  codes are the arena's: 0 accept, 1 reject, 2 decline, 3 error.  Running out
+  of memory is none of them — a failed allocation aborts the process (SIGABRT)
+  — so exhaustion can never be read as a rejection.
 
-  Although con-ron looks better than con-leche in terms of instructions,
-  wall-time and memory is actually worse. This is the price of following Lean
-  data structures rather than Rust idiom.  Written by AI under close human
+  Single-threaded it retires a little under half of con-leche's instructions,
+  and on Mathlib about two thirds of nanoda's.  Written by AI under close human
   supervision from Joachim Breitner at the Lean FRO.
 url: https://github.com/leanprover/con-ron
 ref: master
-rev: 613194b9ad00ffba701665e91ff786b70f51a740
+rev: 39de395e844d4e660b8bce41ddd9ec19b915d9d1
 threads: 4
 # Nothing but a Rust toolchain and a C compiler (for the mimalloc allocator the
 # unverified binaries use by default); every pin the checker needs — con-leche's
