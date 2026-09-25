@@ -1,0 +1,17 @@
+description: |
+  Verified typechecker designed for algorithmic simplicity over speed.
+  Declines to handle nat/string literals, or accelerated operations.
+  It also cannot handle nested inductives, but those are filtered out, so
+  it is possible that a test containing nested inductives will cause this checker to
+  incorrectly accept.
+url: https://github.com/intgrah/metalean
+ref: master
+rev: c50356543c18ff029f2d59ca8282890c1b36b9e2
+build: |
+  lake build metalean
+  cargo build --release --manifest-path scripts/filter/Cargo.toml
+run: |
+  FILTERED=$(mktemp --suffix=.ndjson)
+  trap 'rm -f "$FILTERED"' EXIT
+  scripts/filter/target/release/filter "$IN" "$FILTERED" || exit 3
+  .lake/build/bin/metalean slow "$FILTERED"
