@@ -6,7 +6,7 @@ description: |
   incorrectly accept.
 url: https://github.com/intgrah/metalean
 ref: master
-rev: c50356543c18ff029f2d59ca8282890c1b36b9e2
+rev: cc8ccb6036e30ed0510ef7bbdc9b0a5dc85b2f9d
 build: |
   lake build metalean
   cargo build --release --manifest-path scripts/filter/Cargo.toml
