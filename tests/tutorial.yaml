@@ -1,6 +1,8 @@
 description: Multiple tutorial tests generated from a Lean project in the tutorial directory.
 dir: tutorial
 multiple: true
+# Run with `lake env lean` rather than built with `lake build`, as a build that
+# Lake finds in its artifact cache would not run it at all.
 run: |
-  lake clean
-  LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+  lake build Tutorial.Meta
+  LEAN_ABORT_ON_PANIC=1 lake env lean Tutorial.lean
