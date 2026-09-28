@@ -199,3 +199,31 @@ def dummyRecInfo (indName : Lean.Name) : Lean.ConstantInfo :=
       k := false
       isUnsafe := false
   }
+
+/-! Inductive types that the kernel rejects -/
+
+/--
+Computes the constants of an inductive declaration that the kernel rejects.
+
+The kernel does all the work of generating the types, constructors and recursors (including the
+auxiliary recursors of nested inductives), but it is handed `wellFormed`, a variant of the
+declaration that it accepts, in a scratch environment. `patch` then turns each of the resulting
+constants into its counterpart for the rejected declaration.
+
+This produces what a kernel lacking the check that rejects the declaration would have produced.
+-/
+def patchedInductive (wellFormed : Declaration) (patch : ConstantInfo → ConstantInfo) :
+    CoreM (Array ConstantInfo) := do
+  let env ← getEnv
+  try
+    addDecl wellFormed
+    -- Everything the kernel added: whatever the names of the auxiliary recursors are
+    let added := (← getEnv).constants.map₂.toArray.filter (!env.contains ·.1)
+    return added.map (patch ·.2)
+  finally
+    setEnv env
+
+/-- Adds the constants of an inductive declaration that the kernel rejects; see `patchedInductive`. -/
+def addPatchedInductive (wellFormed : Declaration) (patch : ConstantInfo → ConstantInfo) :
+    CoreM Unit := do
+  addConstInfos (← patchedInductive wellFormed patch)

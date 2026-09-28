@@ -9,3 +9,9 @@ rev = "joachim/export-eq-with-qout"
 [[lean_lib]]
 name = "Tutorial"
 root = "Tutorial"
+# Tests that are built bypassing the kernel, one module each, exported like any
+# other module (see `module` in tests/*.yaml)
+[[lean_lib]]
+name = "Tests"
+roots = []
+globs = ["Bugs.+", "CornerCases.+"]

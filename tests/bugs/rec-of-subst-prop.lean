@@ -128,7 +128,7 @@ private def definitionDecl (name : Name) (type value : Expr)
   .defnDecl {name, levelParams := [], type, value, hints, safety := .safe}
 private def checkBudget (env : Environment) (decl : Declaration) :
     CoreM (Except Kernel.Exception Environment) := do
-  let task := Task.spawn (fun _ => env.addDeclCore 1800000 decl none (doCheck := false))
+  let task := Task.spawn (fun _ => env.addDeclCore 1800000 10000 decl none (doCheck := false))
     Task.Priority.dedicated
   return task.get
 private def checked (env : Environment) (decl : Declaration) : CoreM Environment := do

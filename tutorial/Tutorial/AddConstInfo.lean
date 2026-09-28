@@ -24,3 +24,15 @@ public def insertConstInfo (env : Environment) (ci : Lean.ConstantInfo) (key : N
 public def addConstInfos [Monad m] [MonadEnv m] (cis : Array Lean.ConstantInfo) : m Unit := do
   for ci in cis do
     modifyEnv (insertConstInfo · ci)
+
+/-- Applies `f` to every expression of a constant: its type, its value and its recursor rules. -/
+public def mapConstInfoExprs (f : Expr → Expr) : ConstantInfo → ConstantInfo
+  | .axiomInfo v => .axiomInfo { v with type := f v.type }
+  | .quotInfo v => .quotInfo { v with type := f v.type }
+  | .defnInfo v => .defnInfo { v with type := f v.type, value := f v.value }
+  | .thmInfo v => .thmInfo { v with type := f v.type, value := f v.value }
+  | .opaqueInfo v => .opaqueInfo { v with type := f v.type, value := f v.value }
+  | .inductInfo v => .inductInfo { v with type := f v.type }
+  | .ctorInfo v => .ctorInfo { v with type := f v.type }
+  | .recInfo v => .recInfo { v with
+      type := f v.type, rules := v.rules.map fun r => { r with rhs := f r.rhs } }
