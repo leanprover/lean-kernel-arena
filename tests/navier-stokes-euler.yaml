@@ -1,0 +1,26 @@
+description: |
+  OpenAI's Lean formalization of finite-time blowup for the three-dimensional
+  incompressible Navier–Stokes equations with smooth forcing (on Euclidean space
+  and on the periodic torus), and of unforced Euler blowup.
+  See <https://github.com/openai/NavierStokesAndEuler/>.
+
+  This test exports the main results listed in the project's `formalization.yaml`,
+  together with their dependencies.
+url: https://github.com/openai/NavierStokesAndEuler/
+ref: main
+rev: f9e8bc5b38b6e212696e8a30e3e91517af887bbd
+pre-build: |
+  lake exe cache get
+  # The declarations of interest live in two separate modules, so we join them
+  # into one module (below the `NavierStokes.+` library glob) to export.
+  printf 'import NavierStokes.ComparatorSolution\nimport Euler.Solution\n' > NavierStokes/Arena.lean
+module: NavierStokes.Arena
+export-decls:
+  - NavierStokes.Comparator.navier_stokes_breakdown_R3
+  - NavierStokes.Comparator.navier_stokes_breakdown_periodic
+  - Euler.euler_breakdown_R3
+  - Euler.exists_compact_smooth_euler_singularity
+outcome: accept
+compare-perf: true
+skip-on-ci: true
+timeout: 2400
