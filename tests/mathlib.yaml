@@ -6,8 +6,8 @@ description: |
   in the Lean kernel arena.
 
 url: https://github.com/leanprover-community/mathlib4
-ref: v4.29.1
-rev: 5e932f97dd25535344f80f9dd8da3aab83df0fe6
+ref: v4.34.1
+rev: d13f23b723b8a846827a245b89c10fc7d3f11612
 pre-build: lake exe cache get
 module: Mathlib
 outcome: accept
