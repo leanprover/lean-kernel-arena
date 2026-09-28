@@ -16,6 +16,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -580,7 +581,27 @@ def get_lean_toolchain(directory: Path) -> str | None:
     return None
 
 
-def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list | None, cwd: Path, out_file: Path) -> bool:
+def lake_cache_env(toolchain: str | None) -> dict:
+    """The environment to build and export a test with, given its toolchain.
+
+    CI enables Lake's artifact cache (LAKE_ARTIFACT_CACHE) and asks for cached
+    build outputs to be copied into .lake/build (LAKE_RESTORE_ARTIFACTS), where
+    `lake env` and thus lean4export look for .olean files. Lake only knows the
+    latter from v4.31 on; before, a cache hit leaves no .olean in .lake/build
+    and the export fails. So for older (or unrecognized) toolchains, turn the
+    artifact cache off.
+    """
+    env = os.environ.copy()
+    if "LAKE_ARTIFACT_CACHE" not in env:
+        return env
+    m = re.search(r":v(\d+)\.(\d+)", toolchain or "")
+    if not (m and (int(m[1]), int(m[2])) >= (4, 31)):
+        print(f"  Lake artifact cache disabled for toolchain {toolchain}")
+        env.pop("LAKE_ARTIFACT_CACHE")
+    return env
+
+
+def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list | None, cwd: Path, out_file: Path, env: dict | None = None) -> bool:
     """Run lean4export (via lake env) to export a module.
 
     lean4export_dir: path to the checked-out/build lean4export repo
@@ -588,6 +609,7 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
     export_decls: optional list of declaration names to pass after --
     cwd: working directory to run lake env from
     out_file: output path for NDJSON
+    env: environment to run in (default: inherited)
     """
     lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
     if not lean4export_bin.exists():
@@ -602,7 +624,7 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
         cmd += f" -- {decls}"
     cmd += f" > {out_file}"
 
-    result = run_cmd(cmd, cwd=cwd, shell=True, print_on_failure=True)
+    result = run_cmd(cmd, cwd=cwd, shell=True, env=env, print_on_failure=True)
     if result.returncode != 0:
         print(f"  Export failed")
         return False
@@ -1001,10 +1023,12 @@ def create_test(test: dict, output_dir: Path) -> bool:
         if lean4export_dir is None:
             return False
 
+        lake_env = lake_cache_env(toolchain)
+
         # Run pre-build command if specified
         if pre_build:
             print(f"  Running pre-build: {pre_build}")
-            result = run_cmd(pre_build, cwd=work_dir, shell=True, print_on_failure=True)
+            result = run_cmd(pre_build, cwd=work_dir, shell=True, env=lake_env, print_on_failure=True)
             if result.returncode != 0:
                 print(f"  Pre-build failed")
                 return False
@@ -1019,7 +1043,7 @@ def create_test(test: dict, output_dir: Path) -> bool:
 
         # Build the module
         print(f"  Building module {module_name}...")
-        result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True, print_on_failure=True)
+        result = run_cmd(f"lake build {module_name}", cwd=build_dir, shell=True, env=lake_env, print_on_failure=True)
         if result.returncode != 0:
             print(f"  Build failed")
             return False
@@ -1035,7 +1059,7 @@ def create_test(test: dict, output_dir: Path) -> bool:
         else:
             print(f"  Exporting module {module_name} ...")
 
-        if not run_lean4export(lean4export_dir, module_name, export_decls, cwd=build_dir, out_file=tmp_file):
+        if not run_lean4export(lean4export_dir, module_name, export_decls, cwd=build_dir, out_file=tmp_file, env=lake_env):
             return False
 
     elif run_cmd_str:
@@ -1044,17 +1068,19 @@ def create_test(test: dict, output_dir: Path) -> bool:
         if work_dir is None:
             return False
 
+        # The script may well export .olean files, just like module tests
+        env = lake_cache_env(get_lean_toolchain(work_dir))
+
         # Run pre-build command if specified
         if pre_build:
             print(f"  Running pre-build: {pre_build}")
-            result = run_cmd(pre_build, cwd=work_dir, shell=True, print_on_failure=True)
+            result = run_cmd(pre_build, cwd=work_dir, shell=True, env=env, print_on_failure=True)
             if result.returncode != 0:
                 print(f"  Pre-build failed")
                 return False
 
         # Run the script with $OUT environment variable
         print(f"  Running: {run_cmd_str}")
-        env = os.environ.copy()
 
         if multiple:
             # For multiple tests, $OUT points to a temporary directory
