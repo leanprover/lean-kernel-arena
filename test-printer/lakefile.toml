@@ -4,7 +4,7 @@ leanOptions = [{name = "autoImplicit", value = false}]
 [[require]]
 name = "verso"
 git = "https://github.com/leanprover/verso"
-rev = "main"
+rev = "v4.34.0"
 
 [[lean_lib]]
 name = "TestPrinter"
