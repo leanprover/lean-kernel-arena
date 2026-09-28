@@ -56,7 +56,14 @@ jobs:
     needs: select-checkers
     # Namespace runner: unlike GitHub-hosted runners it exposes a vPMU,
     # so perf instruction counts work (user-space-only at paranoid=2)
-    runs-on: nscloud-ubuntu-22.04-amd64-8x16
+    runs-on:
+      # The cache volume is shared by all jobs that build tests. Bump the tag's
+      # suffix to start over with an empty volume.
+      - nscloud-ubuntu-22.04-amd64-8x16-with-cache
+      - nscloud-cache-tag-lka-tests-v1
+      - nscloud-cache-size-100gb
+      # Only master writes the volume back; pull requests read it
+      - nscloud-cache-allow-commit-from-master
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -71,6 +78,9 @@ jobs:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Mount cache volume
+        uses: ./.github/actions/cache-volume
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -127,6 +137,10 @@ jobs:
         run: ./lka.py run --checker "$CHECKER"
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
+      - name: Cache volume stats
+        if: always()
+        run: .github/cache-stats.sh "${{ matrix.checker }}"
+
       - name: Stage results for upload
         run: ./lka.py ci-pack --outdir /tmp/artifact --results
         shell: 'nix develop -c bash -euxo pipefail {0}'
@@ -142,7 +156,14 @@ jobs:
 
   tutorial:
     name: Build tutorial page
-    runs-on: ubuntu-latest
+    runs-on:
+      # The cache volume is shared by all jobs that build tests. Bump the tag's
+      # suffix to start over with an empty volume.
+      - nscloud-ubuntu-22.04-amd64-4x16-with-cache
+      - nscloud-cache-tag-lka-tests-v1
+      - nscloud-cache-size-100gb
+      # Only master writes the volume back; pull requests read it
+      - nscloud-cache-allow-commit-from-master
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -150,6 +171,9 @@ jobs:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Mount cache volume
+        uses: ./.github/actions/cache-volume
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -171,6 +195,10 @@ jobs:
           lake exe test-printer ../_build/tests/tutorial/ ../_out/tutorial/index.html
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
+      - name: Cache volume stats
+        if: always()
+        run: .github/cache-stats.sh "tutorial"
+
       # This and the other artifacts a round is built from (see
       # release-round.yml) overwrite their namesakes from earlier attempts, so
       # that a run has exactly one of each
@@ -183,7 +211,14 @@ jobs:
 
   test-stats:
     name: Build test stats and tarball
-    runs-on: ubuntu-latest
+    runs-on:
+      # The cache volume is shared by all jobs that build tests. Bump the tag's
+      # suffix to start over with an empty volume.
+      - nscloud-ubuntu-22.04-amd64-8x16-with-cache
+      - nscloud-cache-tag-lka-tests-v1
+      - nscloud-cache-size-100gb
+      # Only master writes the volume back; pull requests read it
+      - nscloud-cache-allow-commit-from-master
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -191,6 +226,9 @@ jobs:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Mount cache volume
+        uses: ./.github/actions/cache-volume
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -208,6 +246,10 @@ jobs:
       - name: Build test tarball
         run: ./lka.py build-tarball
         shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Cache volume stats
+        if: always()
+        run: .github/cache-stats.sh "test-stats"
 
       - name: Stage test stats for upload
         run: ./lka.py ci-pack --outdir /tmp/artifact --test-stats
