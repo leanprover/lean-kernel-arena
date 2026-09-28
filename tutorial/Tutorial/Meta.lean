@@ -42,7 +42,7 @@ def elabAndAddTestCaseDecl (descr? : Option (TSyntax ``plainDocComment)) (name :
   let descrStr? := descrStr?.map (·.trimAscii.copy)
   let (declName, lparams) ← match name with
     | `(declId| $n:ident) => pure (n.getId, [])
-    | `(declId| $n:ident .{ $[$ls:ident],* }) => pure (n.getId, ls.toList.map (·.getId))
+    | `(declId| $n:ident.{ $[$ls:ident],* }) => pure (n.getId, ls.toList.map (·.getId))
     | _ => throwUnsupportedSyntax
   withLevelNames lparams do
     let typeExpr ← elabTermAndSynthesize type none
