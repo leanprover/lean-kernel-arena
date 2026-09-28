@@ -821,7 +821,25 @@ def setup_source_directory(
 
     src_dir = work_dir / "src"
 
-    if url:
+    if url and rev:
+        # Fetch just the pinned revision, without the history of the repository
+        # (GitHub serves any commit by its hash). This still gives a git checkout
+        # with an `origin` remote, which some builds rely on: Mathlib's
+        # `lake exe cache get` asks git for the remote and the current commit.
+        print(f"  Fetching {url} at {rev}...")
+        src_dir.mkdir()
+        for cmd in (["git", "init", "--quiet"],
+                    ["git", "remote", "add", "origin", url],
+                    ["git", "fetch", "--depth", "1", "origin", rev],
+                    ["git", "checkout", "--quiet", "FETCH_HEAD"]):
+            result = run_cmd(cmd, cwd=src_dir)
+            if result.returncode != 0:
+                print(f"  Error running {' '.join(cmd)}: {result.stderr}")
+                return None
+
+        return src_dir
+
+    elif url:
         # Clone from git repository
         print(f"  Cloning {url}...")
         clone_cmd = ["git", "clone"]
@@ -833,13 +851,6 @@ def setup_source_directory(
         if result.returncode != 0:
             print(f"  Error cloning: {result.stderr}")
             return None
-
-        # Checkout specific revision if specified
-        if rev:
-            result = run_cmd(["git", "checkout", rev], cwd=src_dir)
-            if result.returncode != 0:
-                print(f"  Error checking out {rev}: {result.stderr}")
-                return None
 
         return src_dir
 
