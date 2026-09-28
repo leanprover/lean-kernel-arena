@@ -69,7 +69,7 @@ theorem observedProofsFalse (T : Prop) (observe : T → Bool) (p q : T)
   exact Bool.noConfusion (onFalse.symm.trans ((congrArg observe same).trans onTrue))
 
 private def checked (env : Environment) (decl : Declaration) : CoreM Environment := do
-  match env.addDeclCore 0 decl none (doCheck := false) with
+  match env.addDeclCore 0 10000 decl none (doCheck := false) with
   | .ok next => return next
   | .error err => throwError "{err.toMessageData (← getOptions)}"
 

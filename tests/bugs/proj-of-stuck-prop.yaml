@@ -68,6 +68,9 @@ description: |
   [leanprover/lean4#14806](https://github.com/leanprover/lean4/pull/14806), which
   replaces the union-find defeq cache with an order-independent one.  The same
   projection, reached without any help from that cache, is `bugs/proj-of-subst-prop`.
-leanfile: tests/bugs/proj-of-stuck-prop.lean
+# Lean rejects this declaration by now, so it is produced bypassing the kernel,
+# by tutorial/Bugs/ProjOfStuckProp.lean.
+dir: tutorial
+module: Bugs.ProjOfStuckProp
 export-decls: ["inconsistent"]
 outcome: reject

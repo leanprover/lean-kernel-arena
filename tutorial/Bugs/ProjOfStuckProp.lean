@@ -1,4 +1,7 @@
-/-
+import Tutorial.Meta
+/-!
+The test `bugs/proj-of-stuck-prop`.
+
 Projecting data out of a `Prop`, exploiting that a kernel can disagree with
 itself about whether the structure lives in `Prop`.
 
@@ -28,8 +31,12 @@ made to happen in one context and to fail in another:
 
 Proof irrelevance then identifies two `Owner.mk` applications with different
 `Bool` fields, and observing them gives `False`.
+
+Since leanprover/lean4#14806 and #14807, the kernel rejects `Native64ResultSortOwner`, as its result
+sort no longer reduces to a sort. So the kernel is handed a variant whose result sort is `Prop`
+itself, and in what it generates, the type of `Native64ResultSortOwner` gets its actual result sort.
+Under Lean v4.29.1, whose kernel accepted the declaration, this reproduces its export exactly.
 -/
-import Lean
 
 open Lean
 
@@ -87,7 +94,7 @@ private def owner : Name := `Native64ResultSortOwner
 private def bool := mkConst ``Bool
 
 private def checked (env : Environment) (decl : Declaration) : CoreM Environment := do
-  match env.addDeclCore 800000 decl none (doCheck := false) with
+  match env.addDeclCore 800000 10000 decl none (doCheck := false) with
   | .ok next => return next
   | .error err => throwError "{err.toMessageData (← getOptions)}"
 
@@ -138,6 +145,25 @@ private def ownerDecl : Declaration :=
     ctors := [{name := .str owner "mk", type := ctorType}]
   }] false
 
+/-- The variant of `ownerDecl` that the kernel accepts: its result sort is `Prop` itself. -/
+private def wellFormedOwnerDecl : Declaration :=
+  match ownerDecl with
+  | .inductDecl lps nps [t] isUnsafe =>
+    let type := mkForall `x .default bool <|
+      mkForall `h .default (gateType (.bvar 0)) (mkSort 0)
+    .inductDecl lps nps [{ t with type }] isUnsafe
+  | d => d
+
+/-- Gives `Native64ResultSortOwner` its actual type, with the stuck result sort. -/
+private def patchOwner : ConstantInfo → ConstantInfo
+  | .inductInfo v =>
+    if v.name == owner then
+      match ownerDecl with
+      | .inductDecl _ _ [t] _ => .inductInfo { v with type := t.type }
+      | _ => .inductInfo v
+    else .inductInfo v
+  | ci => ci
+
 private def symm (left right proof : Expr) : Expr :=
   mkAppN (mkConst ``Eq.symm [(Level.succ Level.zero)]) #[bool, left, right, proof]
 private def trans (left middle right first second : Expr) : Expr :=
@@ -164,7 +190,10 @@ run_meta do
       name, levelParams := [], type := mkForall `x .default bool bool,
       value := mkConst value, hints := .regular 1021, safety := .safe })
   env ← checked env gateDecl
-  env ← checked env ownerDecl
+  -- The kernel rejects `ownerDecl`, whose result sort only reduces to `Prop` thanks to the defect
+  setEnv env
+  for ci in ← patchedInductive wellFormedOwnerDecl patchOwner do
+    env := insertConstInfo env ci
 
   -- Check the generic Prop alias while its first local is _kernel_fresh.0.
   -- Hiding its function type behind a constant preserves that local numbering.

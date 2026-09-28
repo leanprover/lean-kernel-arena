@@ -20,6 +20,9 @@ description: |
   Origin: reported as leanprover/lean4#14576 by @kiranandcode, with the original
   source recorded by @xrchz (https://github.com/xrchz/collatzlean); fixed in
   leanprover/lean4#14577.
-leanfile: tests/bugs/nested-unused-param.lean
+# Lean rejects this declaration by now, so it is produced bypassing the kernel,
+# by tutorial/Bugs/NestedUnusedParam.lean.
+dir: tutorial
+module: Bugs.NestedUnusedParam
 export-decls: ["boom"]
 outcome: reject

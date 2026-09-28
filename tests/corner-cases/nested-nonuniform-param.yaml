@@ -24,6 +24,9 @@ description: |
   Origin: raised by @arthur-adjedj on leanprover/lean4#14577
   (https://github.com/leanprover/lean4/pull/14577#issuecomment-5101819377) as a
   case not covered by that PR's fix; related to leanprover/lean4#14576.
-leanfile: tests/corner-cases/nested-nonuniform-param.lean
+# Lean rejects this declaration by now, so it is produced bypassing the kernel,
+# by tutorial/CornerCases/NestedNonuniformParam.lean.
+dir: tutorial
+module: CornerCases.NestedNonuniformParam
 export-decls: ["E"]
 outcome: either

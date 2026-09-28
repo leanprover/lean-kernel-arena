@@ -1,5 +1,20 @@
-import Lean
-open Lean Elab Command
+import Tutorial.Meta
+/-!
+The test `bugs/nested-unused-param`: a nested inductive whose nested occurrence has a parameter
+that is not type-correct, and does not occur in the auxiliary type of the nested occurrence.
+
+    inductive E : W → Type where
+      | mk : (w : W) → L (E w) (C.0 (C.0 w)) → E w
+
+Here `C.0 (C.0 w)` projects out of `w : W` as if it were a `C`. The kernel rejects this since
+leanprover/lean4#14577, so the kernel is handed a well-formed variant with `placeholder w` in place
+of that projection, and in what it generates, `placeholder w` is replaced by it. Under Lean
+v4.29.1, whose kernel accepted the declaration, this reproduces its export exactly.
+
+A hash collision between `pad false 78670` and `pad true 24083` then disguises the bogus projection
+enough to make `E` yield a proof of `False`, `boom`.
+-/
+open Lean
 
 inductive P : Prop where | mk (b : Bool)
 structure C where b : Bool
@@ -7,14 +22,35 @@ inductive W : Type where | mk (p : P)
 inductive L (α : Type) (b : Bool) : Type where | mk
 inductive T : Bool → Prop where | mk : T true
 
+opaque placeholder : W → Bool
+
 def pad (e : Expr) (n : Nat) : Expr :=
   mkApp (mkLambda `x .default (mkConst ``Nat) e) (.lit (.natVal n))
 
-meta def build : CommandElabM Unit := do
-  -- Skip the kernel type-check so that test generation still produces the
-  -- malformed declarations (and hence the export) even on a toolchain whose
-  -- kernel correctly rejects them. The point of the test is to feed the export
-  -- to the arena checkers, not to rely on this kernel accepting it.
+/-- The well-formed variant: `E.mk : (w : W) → L (E w) (placeholder w) → E w` -/
+def wellFormed : Declaration :=
+  let w := mkBVar 0
+  .inductDecl [] 1 [{
+    name := `E
+    type := mkForall `w .default (mkConst ``W) (mkSort 1)
+    ctors := [{
+      name := `E.mk
+      type := mkForall `w .default (mkConst ``W) <|
+        mkForall `l .default
+          (mkApp2 (mkConst ``L) (mkApp (mkConst `E) w) (mkApp (mkConst ``placeholder) w)) <|
+          mkApp (mkConst `E) (mkBVar 1) }] }] false
+
+/-- `placeholder w` becomes `C.0 (C.0 w)` -/
+def patch : ConstantInfo → ConstantInfo :=
+  mapConstInfoExprs <| Expr.replace fun
+    | .app (.const ``placeholder _) w => some (mkProj ``C 0 (mkProj ``C 0 w))
+    | _ => none
+
+run_meta addPatchedInductive wellFormed patch
+
+open Elab Command in
+elab "mkbug" : command => do
+  -- Skip the kernel type-check of the declarations using `E`, which is not well-formed
   let add (d : Declaration) : CommandElabM Unit :=
     liftCoreM <| withOptions (debug.skipKernelTC.set · true) <| addDecl d
   let f := pad (mkConst ``Bool.false) 78670
@@ -23,15 +59,6 @@ meta def build : CommandElabM Unit := do
     throwError "hash collision failed"
   let fw := mkApp (mkConst ``W.mk) (mkApp (mkConst ``P.mk) f)
   let tw := mkApp (mkConst ``W.mk) (mkApp (mkConst ``P.mk) t)
-  let w := mkBVar 0
-  let Ew := mkApp (mkConst `E) w
-  let b := mkProj ``C 0 (mkProj ``C 0 w)
-  let l := mkApp2 (mkConst ``L) Ew b
-  let Et := mkForall `w .default (mkConst ``W) (mkSort 1)
-  let ct := mkForall `w .default (mkConst ``W) <|
-    mkForall `l .default l (mkApp (mkConst `E) (mkBVar 1))
-  add <| .inductDecl [] 1 [{
-    name := `E, type := Et, ctors := [{ name := `E.mk, type := ct }] }] false
   let Et := mkApp (mkConst `E) tw
   let l := mkApp2 (mkConst ``L.mk) Et (mkConst ``Bool.true)
   add <| .defnDecl {
@@ -59,6 +86,5 @@ meta def build : CommandElabM Unit := do
     name := `bad, levelParams := [],
     type := mkApp (mkConst ``T) f, value := v }
 
-elab "mkbug" : command => build
 mkbug
 theorem boom : False := nomatch (bad : T false)
