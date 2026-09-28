@@ -28,13 +28,16 @@ private def renderMarkdown (s : String) : String :=
 
 /-- CSS class for a token kind (matches Verso naming). -/
 private def tokenKindClass : Token.Kind → String
-  | .var .. => "var"
+  | .var .. | .wildcard .. => "var"
   | .str .. => "literal string"
+  | .num .. => "literal number"
+  | .char .. => "literal char"
+  | .lineComment | .blockComment | .commentDelim => "comment"
   | .sort .. => "sort"
   | .const .. => "const"
   | .option .. => "option"
   | .docComment => "doc-comment"
-  | .keyword .. => "keyword"
+  | .keyword .. | .delim .. | .operator .. | .bracket .. | .separator .. => "keyword"
   | .anonCtor .. => "unknown"
   | .unknown => "unknown"
   | .withType .. => "typed"
@@ -45,10 +48,11 @@ private def tokenKindClass : Token.Kind → String
 
 /-- Data-binding attribute value for binding highlighting on hover. -/
 private def tokenKindData : Token.Kind → String
-  | .const n _ _ _ | .anonCtor n _ _ => "const-" ++ toString n
-  | .var ⟨v⟩ _ => "var-" ++ toString v
+  | .const n _ _ _ _ | .anonCtor n _ _ _ => "const-" ++ toString n
+  | .var ⟨v⟩ _ _ => "var-" ++ toString v
   | .option n _ _ => "option-" ++ toString n
-  | .keyword _ (some occ) _ => "kw-occ-" ++ toString occ
+  | .keyword _ (some occ) _ | .delim _ (some occ) _ | .operator _ (some occ) _
+  | .bracket _ (some occ) _ | .separator _ (some occ) _ => "kw-occ-" ++ toString occ
   | .sort (some d) => s!"sort-{hash d}"
   | .levelVar x => s!"level-var-{x}"
   | .levelConst i => s!"level-const-{i}"
@@ -67,14 +71,14 @@ partial def highlightedToHtml (hl : Highlighted)
     let binding := tokenKindData t.kind
     let bindAttr := if binding.isEmpty then "" else s!" data-binding=\"{escapeHtml binding}\""
     let sigAttr := match t.kind with
-      | .const _ sig _ _ => if sig.isEmpty then "" else s!" data-sig=\"{escapeHtml sig}\""
-      | .var _ ty => if ty.isEmpty then "" else s!" data-sig=\"{escapeHtml ty}\""
+      | .const _ sig _ _ _ => if sig.isEmpty then "" else s!" data-sig=\"{escapeHtml sig}\""
+      | .var _ ty _ | .wildcard ty _ => if ty.isEmpty then "" else s!" data-sig=\"{escapeHtml ty}\""
       | .sort (some doc) => s!" data-sig=\"{escapeHtml doc}\""
       | _ => ""
     let spanHtml := s!"<span class=\"{cls}\"{bindAttr}{sigAttr}>{escapeHtml t.content}</span>"
     -- Wrap const tokens in a link if the constant has a definition on the page
     match t.kind with
-    | .const name _ _ isDef =>
+    | .const name _ _ isDef _ =>
       if !isDef && declOrigin.contains name then
         let target := nameToId name
         s!"<a href=\"#{escapeHtml target}\" class=\"const-ref\">{spanHtml}</a>"
@@ -101,7 +105,7 @@ private def renderPrettyDecl (decl : PrettyDecl)
       ".{" ++ ", ".intercalate params ++ "}"
   -- Build highlighted declaration line
   let kindH := hl (.token ⟨.keyword none none none, decl.kind⟩)
-  let nameH := hl (.token ⟨.const decl.name "" none true, toString decl.name⟩)
+  let nameH := hl (.token ⟨.const decl.name "" none true none, toString decl.name⟩)
   let paramsH := match decl.paramsPP with
     | some p => " " ++ hl p
     | none => ""

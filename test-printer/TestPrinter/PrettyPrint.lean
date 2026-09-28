@@ -85,8 +85,9 @@ def ppExprHighlighted (e : Expr) (width : Nat) (column : Nat := 0)
   let cwi ← ppExprTaggedW e width column
   let ctx : SubVerso.Highlighting.Context :=
     { ids := {}, definitionsPossible := false,
-      includeUnparsed := false, suppressNamespaces := [] }
-  renderTagged none cwi |>.run ctx
+      includeUnparsed := false, suppressNamespaces := [],
+        sigCache := ← IO.mkRef {} }
+  (renderTagged (m := ReaderT SubVerso.Highlighting.Context MetaM) none cwi).run ctx
 
 private def binderInfoOpen : BinderInfo → String
   | .default => "("
@@ -129,8 +130,9 @@ private def ppColonType (e : Expr) (width : Nat) (colonCol : Nat)
     let cwi ← tagCodeInfos ctx infos tt'
     let hlCtx : SubVerso.Highlighting.Context :=
       { ids := {}, definitionsPossible := false,
-        includeUnparsed := false, suppressNamespaces := [] }
-    renderTagged none cwi |>.run hlCtx
+        includeUnparsed := false, suppressNamespaces := [],
+        sigCache := ← IO.mkRef {} }
+    (renderTagged (m := ReaderT SubVerso.Highlighting.Context MetaM) none cwi).run hlCtx
   catch _ =>
     try
       let fmt ← Meta.ppExpr e
