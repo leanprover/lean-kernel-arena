@@ -7,5 +7,8 @@ version: "0.1.0"
 url: https://github.com/sankalpsthakur/kiota
 ref: main
 rev: 2d2a9fa31cba31abdd49543c3bb667591207577e
+# Takes longer than cslib's time limit on every run
+declines:
+  - cslib
 build: cargo build --release
 run: timeout 3600s ./target/release/kiota "$IN"
