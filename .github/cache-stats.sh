@@ -7,7 +7,7 @@ set -uo pipefail
   echo "### Cache volume ($1)"
   echo '```'
   df -h /cache
-  du -sh ~/.cache/lake ~/.cache/mathlib ~/.cache/nix ~/.elan 2>/dev/null
+  du -sh ~/.cache/lean-kernel-arena ~/.cache/mathlib ~/.elan 2>/dev/null
   echo '```'
 } | tee -a "$GITHUB_STEP_SUMMARY"
 

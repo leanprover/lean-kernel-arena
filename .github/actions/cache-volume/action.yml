@@ -1,9 +1,9 @@
 name: Mount cache volume
 description: |
-  Mounts the Namespace cache volume's directories for elan toolchains and
-  ~/.cache (Lake artifact cache, Mathlib cache, Nix caches) and enables the
-  Lake artifact cache. The job must run on a `-with-cache` Namespace runner
-  with a cache tag; which refs may write the volume back is set there too.
+  Mounts the Namespace cache volume's directories over ~/.cache (the test
+  export cache of `lka.py build-test --cache`, the Mathlib cache) and ~/.elan
+  (toolchains). The job must run on a `-with-cache` Namespace runner with a
+  cache tag; which refs may write the volume back is set there too.
 runs:
   using: composite
   steps:
@@ -14,30 +14,17 @@ runs:
           ~/.cache
           ~/.elan
 
-    # Lake looks up build outputs by the hash of their inputs, so a cached
-    # artifact is only reused when toolchain, sources and options all match.
-    # Restoring copies them into .lake/build as well, where `lake env`
-    # (used to run lean4export) expects them.
-    - name: Enable Lake artifact cache
-      shell: bash
-      run: |
-        {
-          echo "LAKE_ARTIFACT_CACHE=true"
-          echo "LAKE_RESTORE_ARTIFACTS=true"
-          echo "LAKE_CACHE_DIR=$HOME/.cache/lake"
-        } >> "$GITHUB_ENV"
-
-    # Lake never evicts anything from its cache. Rather than risk removing
-    # artifacts still referenced from its index, start it over when the
-    # volume gets full. Pull requests cannot write the volume back, so
-    # pruning there would only slow them down.
-    - name: Prune Lake cache if the volume is nearly full
+    # The test export cache keeps one export per test, so it only grows with
+    # the number of cached tests; should the volume fill up nevertheless, start
+    # it over. Pull requests cannot write the volume back, so pruning there
+    # would only slow them down.
+    - name: Prune test export cache if the volume is nearly full
       if: github.event_name != 'pull_request'
       shell: bash
       run: |
         used=$(df --output=pcent /cache | tail -1 | tr -dc 0-9)
         echo "Cache volume is ${used}% full"
         if [ "$used" -ge 85 ]; then
-          echo "::warning::Cache volume is ${used}% full, wiping the Lake cache"
-          rm -rf "$LAKE_CACHE_DIR"
+          echo "::warning::Cache volume is ${used}% full, wiping the test export cache"
+          rm -rf ~/.cache/lean-kernel-arena
         fi

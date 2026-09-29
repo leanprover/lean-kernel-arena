@@ -57,6 +57,11 @@ VERBOSE = False
 # test tarball.
 TEST_SIZE_LIMIT = 10 * 1024 * 1024
 
+# Part of the cache key of every cached test export (see `test_cache_key`).
+# Bump it to invalidate all cached exports, e.g. when lean4export or the way
+# tests are exported changes.
+TEST_CACHE_VERSION = 1
+
 # The canonical location of the published site. Used for the "other rounds"
 # link, which has to be absolute: archived rounds are served from
 # /round/<name>/ and are also distributed as standalone tarballs, so a
@@ -937,8 +942,78 @@ def _gather_ndjson_stats(ndjson_file: Path) -> dict:
     }
 
 
-def create_test(test: dict, output_dir: Path) -> bool:
-    """Create a single test."""
+def test_cache_key(test: dict) -> str | None:
+    """The key under which the export of a test is cached, or None if the
+    test cannot be cached.
+
+    Only tests whose export is fully determined by their description can be
+    cached: those fetched from a repository at a pinned revision, without any
+    local sources. Their key is computed from the description alone (the
+    whole YAML file), so a cache hit needs neither the sources nor the
+    toolchain. What the key cannot see, such as the version of lean4export
+    used, is covered by `TEST_CACHE_VERSION`. The revision is part of the key
+    only to make cache entries easier to tell apart.
+    """
+    if not (test.get("url") and test.get("rev")) or test.get("multiple"):
+        return None
+    yaml_file = get_project_root() / "tests" / f"{test['name']}.yaml"
+    digest = hashlib.sha256(yaml_file.read_bytes()).hexdigest()
+    return f"{test['rev'][:12]}-v{TEST_CACHE_VERSION}-{digest[:16]}"
+
+
+def get_default_test_cache_dir() -> Path:
+    """The default location of the test export cache (see `build-test --cache`)."""
+    cache_home = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
+    return Path(cache_home) / "lean-kernel-arena" / "tests"
+
+
+def restore_cached_test(name: str, key: str, cache_dir: Path, output_file: Path) -> dict | None:
+    """Link the cached export of a test to `output_file`, returning its cached
+    statistics, or None if it is not cached."""
+    cached = cache_dir / name / f"{key}.ndjson"
+    cached_stats = cache_dir / name / f"{key}.stats.json"
+    if not (cached.exists() and cached_stats.exists()):
+        return None
+    try:
+        with open(cached_stats) as f:
+            stats = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"  Warning: ignoring unreadable cache entry {cached_stats}: {e}")
+        return None
+    # A symbolic link, as the cache may well be on another file system, and
+    # copying the larger exports would take a while
+    output_file.unlink(missing_ok=True)
+    output_file.symlink_to(cached)
+    print(f"  Using cached export {cached}")
+    return stats
+
+
+def store_cached_test(name: str, key: str, cache_dir: Path, output_file: Path, stats: dict) -> None:
+    """Put the export of a test and its statistics into the cache, replacing
+    any other cached export of the same test."""
+    entry_dir = cache_dir / name
+    entry_dir.mkdir(parents=True, exist_ok=True)
+    # Write under temporary names first, so that an interrupted write leaves
+    # no entry behind that looks complete
+    tmp = entry_dir / f"{key}.ndjson.tmp"
+    shutil.copyfile(output_file, tmp)
+    with open(entry_dir / f"{key}.stats.json.tmp", "w") as f:
+        json.dump(stats, f, indent=2)
+    for old in entry_dir.iterdir():
+        if old.name.split(".", 1)[0] != key:
+            old.unlink()
+    tmp.rename(entry_dir / f"{key}.ndjson")
+    (entry_dir / f"{key}.stats.json.tmp").rename(entry_dir / f"{key}.stats.json")
+    print(f"  Cached export as {entry_dir / key}.ndjson")
+
+
+def create_test(test: dict, output_dir: Path, cache_dir: Path | None = None) -> bool:
+    """Create a single test.
+
+    With `cache_dir`, the export of a test that can be cached (see
+    `test_cache_key`) is taken from there if present, and stored there after
+    it was built otherwise.
+    """
     name = test["name"]
     module = test.get("module")
     run_cmd_str = test.get("run")
@@ -980,8 +1055,15 @@ def create_test(test: dict, output_dir: Path) -> bool:
         # Ensure parent directories exist (for tests in subdirectories like perf/)
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
+    cache_key = test_cache_key(test)
+    cached_stats = None
+    if cache_dir is not None and cache_key is not None:
+        cached_stats = restore_cached_test(name, cache_key, cache_dir, output_file)
+
     # Produce .ndjson file(s) based on test type
-    if file_path:
+    if cached_stats is not None:
+        pass  # restored from the cache above
+    elif file_path:
         # Static file case (no work directory needed)
         if multiple:
             print(f"  Error: Test {name} cannot use 'multiple' flag with static file")
@@ -1147,9 +1229,19 @@ def create_test(test: dict, output_dir: Path) -> bool:
 
     else:
         # Single test: move tmp file to final location and gather stats
-        tmp_file.rename(output_file)
-
-        stats = _gather_ndjson_stats(output_file)
+        if cached_stats is not None:
+            stats = cached_stats
+        else:
+            output_file.unlink(missing_ok=True)
+            tmp_file.rename(output_file)
+            stats = _gather_ndjson_stats(output_file)
+            if cache_dir is not None and cache_key is not None:
+                store_cached_test(name, cache_key, cache_dir, output_file, stats)
+        # Everything below comes from the test description, not the export, so
+        # it is added afresh even to cached statistics
+        stats = dict(stats)
+        if cache_key is not None:
+            stats["cache_key"] = cache_key
         stats["name"] = name
         stats["yaml_file"] = f"tests/{name}.yaml"
         stats["outcome"] = test.get("outcome")
@@ -1226,10 +1318,15 @@ def cmd_build_test(args: argparse.Namespace) -> int:
         print("No tests found.")
         return 0
 
+    cache_dir = None
+    if args.cache is not None:
+        cache_dir = Path(args.cache) if args.cache else get_default_test_cache_dir()
+        print(f"Using the test export cache in {cache_dir}")
+
     success = 0
     failed = 0
     for test in tests:
-        if create_test(test, output_dir):
+        if create_test(test, output_dir, cache_dir):
             success += 1
         else:
             failed += 1
@@ -1906,7 +2003,8 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
 
             # Add file to tarball with appropriate subdirectory
             arcname = f"{subdir}/{test['name']}.ndjson"
-            tar.add(test_file, arcname=arcname)
+            # Cached exports are symbolic links into the cache
+            tar.add(test_file, arcname=arcname, dereference=True)
 
     # Get tarball size
     tarball_size = tarball_path.stat().st_size if tarball_path.exists() else 0
@@ -2658,6 +2756,15 @@ def main() -> int:
         "--skip-declined-by",
         metavar="CHECKER",
         help="Skip tests listed in the given checker's 'declines' field",
+    )
+    build_test_parser.add_argument(
+        "--cache",
+        nargs="?",
+        const="",
+        metavar="DIR",
+        help="Take the exports of tests fetched at a pinned revision from the "
+        "cache in DIR if present, and store them there otherwise (default DIR: "
+        "$XDG_CACHE_HOME/lean-kernel-arena/tests)",
     )
 
     # build-checker command

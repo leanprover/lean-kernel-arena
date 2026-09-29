@@ -2,7 +2,6 @@ self-hosted-runner:
   labels:
     - nscloud-ubuntu-22.04-amd64-4x16
     - nscloud-ubuntu-22.04-amd64-8x16
-    - nscloud-ubuntu-22.04-amd64-4x16-with-cache
     - nscloud-ubuntu-22.04-amd64-8x16-with-cache
     - nscloud-macos-sonoma-arm64-6x14
     - nscloud-cache-*
