@@ -13,18 +13,3 @@ runs:
         path: |
           ~/.cache
           ~/.elan
-
-    # The test export cache keeps one export per test, so it only grows with
-    # the number of cached tests; should the volume fill up nevertheless, start
-    # it over. Pull requests cannot write the volume back, so pruning there
-    # would only slow them down.
-    - name: Prune test export cache if the volume is nearly full
-      if: github.event_name != 'pull_request'
-      shell: bash
-      run: |
-        used=$(df --output=pcent /cache | tail -1 | tr -dc 0-9)
-        echo "Cache volume is ${used}% full"
-        if [ "$used" -ge 85 ]; then
-          echo "::warning::Cache volume is ${used}% full, wiping the test export cache"
-          rm -rf ~/.cache/lean-kernel-arena
-        fi

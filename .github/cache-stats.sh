@@ -13,5 +13,5 @@ set -uo pipefail
 
 used=$(df --output=pcent /cache | tail -1 | tr -dc 0-9)
 if [ "$used" -ge 80 ]; then
-  echo "::warning::Cache volume is ${used}% full"
+  echo "::warning::Cache volume is ${used}% full, consider increasing nscloud-cache-size"
 fi
