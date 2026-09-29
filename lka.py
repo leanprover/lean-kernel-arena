@@ -1977,7 +1977,8 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
     good_count = 0
     bad_count = 0
 
-    with tarfile.open(tarball_path, "w:gz") as tar:
+    # Cached exports are symbolic links into the cache (see `build-test --cache`)
+    with tarfile.open(tarball_path, "w:gz", dereference=True) as tar:
         for test in tests:
             # Skip tests larger than the size limit
             if test.get("size", 0) > TEST_SIZE_LIMIT:
@@ -2003,8 +2004,7 @@ def create_test_tarball(tests: list, output_dir: Path) -> dict:
 
             # Add file to tarball with appropriate subdirectory
             arcname = f"{subdir}/{test['name']}.ndjson"
-            # Cached exports are symbolic links into the cache
-            tar.add(test_file, arcname=arcname, dereference=True)
+            tar.add(test_file, arcname=arcname)
 
     # Get tarball size
     tarball_size = tarball_path.stat().st_size if tarball_path.exists() else 0
