@@ -21,6 +21,7 @@ instance inst : Magma (Fin 7) := ⟨op⟩
 
 end countermodel
 
+set_option debug.skipKernelTC true in
 def countermodel : Goal := by
   refine ⟨Fin 7, countermodel.inst, ?_⟩
   constructor

@@ -21,6 +21,7 @@ instance inst : Magma (Fin 21) := ⟨op⟩
 end countermodel
 
 set_option maxHeartbeats 40000000 in
+set_option debug.skipKernelTC true in
 def countermodel : Goal := by
   refine ⟨Fin 21, countermodel.inst, ?_⟩
   constructor

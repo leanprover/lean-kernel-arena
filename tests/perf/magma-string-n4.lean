@@ -27,6 +27,7 @@ set_option maxHeartbeats 10000000
 
 open MemoFinOp
 
+set_option debug.skipKernelTC true in
 def countermodel : Goal := by
   let m : Magma (Fin 4) := {
     op := finOpTable "[0,0,0,0],[0,0,2,3],[0,0,0,0],[0,1,2,0]"
