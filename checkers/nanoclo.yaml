@@ -28,4 +28,5 @@ build: |
    }
   __END__
 run: |
-  timeout 3600 target/release/nanoclo config.json < "$IN" || exit 1
+  target/release/nanoclo config.json < "$IN" || exit 1
+timeout: 3600

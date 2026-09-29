@@ -13,4 +13,5 @@ build: nix develop --command make
 run: |
   ulimit -s unlimited
   export OMP_STACKSIZE=1G
-  exec timeout 3600 ./build/nanoclo-fortran --jobs=4 "$IN"
+  exec ./build/nanoclo-fortran --jobs=4 "$IN"
+timeout: 3600

@@ -1489,8 +1489,9 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     env = os.environ.copy()
     env["IN"] = str(test_file)
 
-    # Kill the checker if it exceeds the test's timeout (if any)
-    timeout = test.get("timeout")
+    # Kill the checker if it exceeds the test's or its own timeout (if any)
+    timeouts = [t for t in (test.get("timeout"), checker.get("timeout")) if t is not None]
+    timeout = min(timeouts) if timeouts else None
 
     result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env, measure_perf=True, timeout=timeout)
 
@@ -1540,7 +1541,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
         result_data["timeout"] = timeout
     if result.timed_out:
         result_data["stderr"] = (
-            f"Killed after exceeding the test's timeout of {format_duration(timeout)}.\n"
+            f"Killed after exceeding the timeout of {format_duration(timeout)}.\n"
             + (result.stderr or "")
         )
 

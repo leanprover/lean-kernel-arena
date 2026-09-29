@@ -3,4 +3,5 @@ url: https://github.com/kim-em/overfull
 ref: main
 rev: b275736e035f6128f2237b22aab21e411f55be97
 build: command -v tex
-run: timeout 30s ./check.py "$IN"
+run: ./check.py "$IN"
+timeout: 30

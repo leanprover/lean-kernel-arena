@@ -31,14 +31,9 @@ build: |
   cmake --build build -j
 threads: 4
 # Exit codes are the arena's: 0 accept, 1 reject, 2 declined.  --max-rss makes a
-# declaration that outgrows the runner's memory a decline rather than a kill, and
-# the timeout is reported as a decline too.  -j 4 checks four declarations at a
+# declaration that outgrows the runner's memory a decline rather than a kill; the
+# arena scores the timeout like a decline too.  -j 4 checks four declarations at a
 # time, each in its own process, over one parse of the export; reduction inside a
 # declaration stays sequential, so it is only the large corpora that gain.
-run: |
-  timeout 3600 build/lazylean -j 4 --max-rss 14000 "$IN"
-  rc=$?
-  case $rc in
-    124) exit 2 ;;
-    *)   exit $rc ;;
-  esac
+run: build/lazylean -j 4 --max-rss 14000 "$IN"
+timeout: 3600

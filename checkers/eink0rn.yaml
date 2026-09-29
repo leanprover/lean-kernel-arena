@@ -76,23 +76,24 @@ build: bash tools/arena-build.sh
 #   -A32m       small nursery: eight of them, and the survivors of a big one
 #               are what the old generation has to absorb.
 #
-# The timeout is the same idea for the clock: a decline, not a wrong answer,
-# and not a job that runs the matrix out of its 360 minutes.  Ten minutes is
+# The timeout is the same idea for the clock: a decline (the arena scores a
+# timeout like one), not a wrong answer, and not a job that runs the matrix out
+# of its 360 minutes.  Ten minutes is
 # about twice the slowest export on this runner -- in the round of 2026-09-13,
 # mathlib 4.3 minutes and con-leche 4.0 -- so reaching it means a file that was
 # not going to finish.
 #
-# The two rewritten statuses are both resource limits reported as such.  124 is
-# the timeout above.  251 is the RTS's own heap-limit exit, taken when the live
-# set grows so fast between two collections that the limit is passed by more
-# than the grace the handler needs to print DECLINE itself; either way -M did
-# its job, and neither is a judgement about the file.
+# The rewritten status is a resource limit reported as such: 251 is the RTS's
+# own heap-limit exit, taken when the live set grows so fast between two
+# collections that the limit is passed by more than the grace the handler needs
+# to print DECLINE itself; either way -M did its job, and it is no judgement
+# about the file.
 run: |
-  timeout 600 ./arena/eink0rn --enforce-mutual-univ --mem=4000 -j8 "$IN" \
+  ./arena/eink0rn --enforce-mutual-univ --mem=4000 -j8 "$IN" \
     +RTS -A32m -M13g -RTS
   rc=$?
   case $rc in
-    124) exit 2 ;;
     251) exit 2 ;;
     *)   exit $rc ;;
   esac
+timeout: 600

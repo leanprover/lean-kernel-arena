@@ -39,6 +39,11 @@
       "type": "string", 
       "description": "Shell command to run the checker. $IN variable points to input test file"
     },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Time limit in seconds for running the checker on any one test. Where the test sets a time limit too, the smaller one applies. A checker exceeding it is killed and the result is recorded with status 'timeout' (treated like an error, i.e. as declined). Set this rather than wrapping the run command in `timeout`, which the arena could not kill reliably."
+    },
     "disable": {
       "type": "boolean",
       "description": "If true, this checker will be ignored and not built or run"
