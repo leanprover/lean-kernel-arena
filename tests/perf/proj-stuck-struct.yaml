@@ -1,0 +1,23 @@
+description: |
+  A definitional equality under a projection whose structure argument is
+  stuck, distilled from a fuel-bridge lemma of con-leche's own proof
+  library, on which con-leche ran out of memory.
+
+  `step c n x : Nat × Nat` recurses structurally on the fuel `n`; for a
+  variable `x` each level is stuck on `match x`, and each branch reads `.1`
+  of two recursive calls. `stepN` checks `(step (id c) N x).1 =
+  (step c N x).1` by `rfl`, the sides differing only in `id c` vs `c`.
+
+  A checker that leaves a stuck projection's structure argument alone (as
+  the reference kernel's `whnf_core` does when `reduce_proj` fails) compares
+  `step (id c) N x =?= step c N x`, tries the arguments first, and is done
+  at once. A checker that replaces it by its weak head normal form has lost
+  the `step` head and unrolls the recursion tree on both sides:
+  exponential in N (con-leche before the fix: 0.2 s, 2 s, 17 s and
+  73 MB, 0.4 GB, 2.6 GB for N = 12, 16, 20; official, nanoda, lean4lean:
+  ~0.02 s at every N).
+leanfile: tests/perf/proj-stuck-struct.lean
+export-decls: ["step12", "step16", "step20"]
+outcome: accept
+compare-perf: true
+timeout: 50
