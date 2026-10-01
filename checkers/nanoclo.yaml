@@ -14,7 +14,7 @@ description: |
   (Anthropic), directed by Sebastian Graf.
 url: https://github.com/sgraf812/nanoclo
 ref: main
-rev: 2b67fbcc76c434226e865222cfcf338a444b11c3
+rev: a2aa37ebdb2e28b85c4f3681b0bd8564628ea4a4
 build: |
   cargo build --release
   cat > config.json <<__END__
