@@ -1,0 +1,25 @@
+description: |
+  The declaration to check compares
+
+      (S u).re      and      (S ()).re
+
+  where `u` is a definition that unfolds to `()`, and reducing `S _` to a
+  constructor takes Θ(N) steps (it is a `foldr` over `List.range N`, with
+  N = 2^17).
+
+  `.re` is a projection function, so both sides unfold to a primitive
+  projection of `S u` and `S ()`. Official reduces the structure of a
+  projection during definitional equality only with `whnf_core` (no delta),
+  compares the two stuck projections by their structures, and finds those
+  equal by comparing the arguments of `S`. That is five unfoldings in all.
+  A checker that fully reduces the structure of the projection to find a
+  constructor evaluates `S` on both sides: Θ(N) steps, which runs into a
+  step budget smaller than N.
+
+  Distilled from a Palomar submission, where the structure is a
+  `Finset.sum` over `Finset.range (2^17)` under `Complex.re`.
+leanfile: tests/perf/proj-cheap-struct.lean
+export-decls: ["proj_cheap_struct"]
+outcome: accept
+compare-perf: true
+timeout: 50
