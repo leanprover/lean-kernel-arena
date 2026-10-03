@@ -1,0 +1,23 @@
+description: |
+  The declaration to check compares
+
+      (P (slow 100000)).1      and      (Q (slow 100001)).1
+
+  where `P a` and `Q a` both unfold to `(0, a)`, and `slow n` takes Θ(n)
+  steps to evaluate.
+
+  Official compares two projections of the same structure by lazily
+  unfolding their structs, and projects as soon as neither side unfolds
+  any further: after unfolding `P` and `Q`, it compares just the first
+  fields, `0` and `0`. That is four unfoldings in all. A checker that
+  instead compares the two structs completely (here `(0, slow 100000)`
+  and `(0, slow 100001)`) before projecting also compares the second
+  fields, which differ, and does so by evaluating `slow`.
+
+  This is the counterpart of `proj-cheap-struct`, where the structs must
+  not be evaluated because they are equal by their arguments.
+leanfile: tests/perf/proj-lazy-struct.lean
+export-decls: ["proj_lazy_struct"]
+outcome: accept
+compare-perf: true
+timeout: 50
