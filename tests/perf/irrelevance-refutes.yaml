@@ -1,0 +1,28 @@
+description: |
+  The declaration to check is
+
+      f 100000 (slowRefl 100000) = f 100001 (slowRefl 100001)
+
+  proved by `rfl`, where `f` ignores its arguments and `slowRefl m : m = m`
+  is a `Nat.rec` over `m`, so unfolding it to `rfl` takes Θ(m) steps.
+
+  Both sides apply `f`, so a checker may first compare the arguments, find
+  them different, and then unfold `f`. Comparing the literals refutes for
+  **Θ(1)**. Comparing the proofs, proof irrelevance refutes them by their
+  types, `100000 = 100000` against `100001 = 100001`, also for **Θ(1)**: two
+  proofs of propositions that are not defeq are not defeq. A checker that
+  takes only proof irrelevance's positive answer, and otherwise unfolds the
+  proofs, evaluates both recursions for **Θ(m)**. Official compares the
+  arguments left to right and stops at the literals, but `is_def_eq_core`
+  would also stop on `is_def_eq_proof_irrel`'s `l_false` had it reached the
+  proofs first.
+
+  Distilled from `decide +kernel` on `Rat` arithmetic, e.g.
+  `(1 : Rat) / 1000000000 * ((1000000 : Int) : Rat) = 1 / 1000`, where the
+  proofs are `Nat.gcd_dvd` terms by well-founded recursion and the
+  comparison that reaches them is `Int.divExact`'s arguments, right to left.
+leanfile: tests/perf/irrelevance-refutes.lean
+export-decls: ["irrelevance_refutes"]
+outcome: accept
+compare-perf: true
+timeout: 50
