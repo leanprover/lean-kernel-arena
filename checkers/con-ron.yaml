@@ -41,7 +41,7 @@ description: |
   supervision from Joachim Breitner at the Lean FRO.
 url: https://github.com/leanprover/con-ron
 ref: master
-rev: 2e3486617cee878f796d8133c481e239696132fe
+rev: 328307e6f9ee05731fa34edca2c2ded427b9c5c0
 threads: 4
 # Nothing but a Rust toolchain and a C compiler (for the mimalloc allocator the
 # unverified binaries use by default); every pin the checker needs — con-leche's
