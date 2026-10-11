@@ -1,0 +1,22 @@
+description: |
+  The combination of `corner-cases/eta-struct-major-and` and
+  `corner-cases/eta-struct-major-no-whnf`.
+
+  `andConst h` is `And.rec (fun _ _ => 1) h`, applied here to a proof of
+  `True ∧ True` that has no weak head normal form (built from Coquand's
+  paradox, via `propext`). A checker that eta-expands the `And` major premise
+  before reducing it accepts the equation with `1` immediately. A checker
+  that first reduces the major premise does not terminate, and the official
+  kernel today, which reduces the major and then does not eta-expand
+  propositions, does not terminate either.
+
+  This shows why, once eta applies to majors in `Prop`, the expansion has to
+  happen before reduction: proofs need not normalize, and otherwise that
+  non-termination leaks into the conversion of data. See
+  <https://github.com/leanprover/lean4/pull/15351>,
+  <https://github.com/leanprover/lean4/pull/15371> and
+  <https://github.com/leanprover/lean4/issues/14977>.
+leanfile: tests/corner-cases/eta-struct-major.lean
+export-decls: ["andMajorNoWhnf"]
+outcome: either
+timeout: 60

@@ -1,0 +1,19 @@
+description: |
+  Structure eta on a recursor's major premise, for a structure in `Prop`.
+
+  `And.rec f ⟨x.1, x.2⟩` reduces to `f x.1 x.2`. `And.rec f x`, with a
+  variable `x : P ∧ Q`, also reduces to that if the major premise is expanded
+  by structure eta, but the official kernel does not perform structure eta on
+  majors whose type is a proposition, so it is stuck, and conversion is not
+  transitive (or congruent) here.
+
+  Eta for such majors is fine for structures that eliminate into every sort,
+  like `And`, whose fields are all proofs. It must not be done for
+  propositions that eliminate only into `Prop`, like `Exists`, which have no
+  projections. The official kernel may adopt this, see
+  <https://github.com/leanprover/lean4/pull/15371>,
+  <https://github.com/leanprover/lean4/issues/3213> and the overall plan in
+  <https://github.com/leanprover/lean4/issues/14977>.
+leanfile: tests/corner-cases/eta-struct-major.lean
+export-decls: ["andMajorEta"]
+outcome: either

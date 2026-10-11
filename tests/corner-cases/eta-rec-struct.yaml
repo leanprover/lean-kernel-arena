@@ -1,0 +1,18 @@
+description: |
+  Function eta between a recursor of a structure that is missing its major
+  premise and a free variable.
+
+  `Prod.rec (fun b c => a (b, c))` and `a` are convertible: eta-expanding
+  the former gives `fun p => Prod.rec (fun b c => a (b, c)) p`, whose body
+  reduces, by structure eta on `p`, to `a (p.1, p.2)`, and that is convertible
+  to `a p`. The official kernel eta-expands only when the other side is a
+  lambda, so it rejects this, while it accepts the equation of each side with
+  `fun p => a p`.
+
+  The same issue with a recursor with rule K is `corner-cases/eta-rule-k`. The
+  official kernel may adopt eta-expansion of such partial recursor
+  applications, see <https://github.com/leanprover/lean4/pull/15374> and
+  <https://github.com/leanprover/lean4/issues/12520>.
+leanfile: tests/corner-cases/eta-rec-struct.lean
+export-decls: ["etaRecStruct"]
+outcome: either

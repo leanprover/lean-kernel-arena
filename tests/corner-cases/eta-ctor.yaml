@@ -2,7 +2,10 @@ description: |
   Function eta between a partially applied constructor and a free variable.
   The official kernel does not trigger eta expansion here, but a checker may
   accept the equality by expanding the functions.
-  See https://github.com/leanprover/lean4/issues/12520 for a discussion.
+  See https://github.com/leanprover/lean4/issues/12520 for a discussion; the
+  official kernel may adopt eta-expansion of partially applied constructors,
+  see https://github.com/leanprover/lean4/pull/15373. For a bug in a draft
+  of that change, see `bugs/eta-ctor-alias`.
 leanfile: tests/corner-cases/eta-ctor.lean
 export-decls: ["etaCtor"]
 outcome: either

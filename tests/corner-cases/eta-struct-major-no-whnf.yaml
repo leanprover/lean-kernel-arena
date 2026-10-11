@@ -1,0 +1,21 @@
+description: |
+  Structure eta on a recursor's major premise, applied before trying to reduce
+  the major to a constructor.
+
+  `prodConst loopPair` is `Prod.rec (fun _ _ => 1) loopPair`, and `loopPair`
+  is an `Acc.rec` whose major premise is a proof with no weak head normal form
+  (built from Coquand's paradox, via `propext`). A checker that first reduces
+  the major premise to weak head normal form, as the official kernel does
+  today, does not terminate here. Expanding the major premise to
+  `(loopPair.1, loopPair.2)` first lets the recursor fire without ever looking
+  at `loopPair`, and the equation with `1` holds.
+
+  The result of the reduction is the same either way (structure eta is part of
+  the theory), so the question is only one of termination of the algorithm.
+  The official kernel may adopt this order, see
+  <https://github.com/leanprover/lean4/pull/15351> and the overall plan in
+  <https://github.com/leanprover/lean4/issues/14977>.
+leanfile: tests/corner-cases/eta-struct-major.lean
+export-decls: ["prodMajorNoWhnf"]
+outcome: either
+timeout: 60

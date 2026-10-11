@@ -1,0 +1,15 @@
+description: |
+  Unit-like eta for a structure whose only field is of type `Unit`.
+
+  The official kernel applies eta for unit-like types (any two inhabitants are
+  convertible) only to structures without fields. With that criterion,
+  conversion is not transitive: both `p` and `q` are convertible to the
+  same canonical inhabitant (e.g. `fun _ => ()` or `⟨()⟩`), but not to each
+  other. Extending the criterion to Pi types whose codomain is unit-like and
+  to structures whose fields are all proofs or unit-like fixes that. The
+  official kernel may adopt this, see <https://github.com/leanprover/lean4/pull/15372>,
+  <https://github.com/leanprover/lean4/issues/2258> and the overall plan in
+  <https://github.com/leanprover/lean4/issues/14977>.
+leanfile: tests/corner-cases/eta-unit-like.lean
+export-decls: ["unitLikeStruct"]
+outcome: either

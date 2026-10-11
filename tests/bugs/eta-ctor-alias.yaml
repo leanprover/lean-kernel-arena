@@ -1,0 +1,16 @@
+description: |
+  Bogus proof that `f = Box.mk` for every `f : BoxFn`, where `BoxFn` is a
+  reducible alias for `Bool → Box`.
+
+  A checker that eta-expands a partially applied constructor (see
+  `corner-cases/eta-ctor`) has to take the missing arguments from the type of
+  the constructor application. Taking them from the type of the other side
+  without unfolding it, here `BoxFn`, finds no arguments to add, then compares
+  the (zero) given fields only, and accepts.
+
+  This bug was found by phiferd in a draft of
+  <https://github.com/leanprover/lean4/pull/15373> to the official kernel,
+  and fixed before it was merged.
+leanfile: tests/bugs/eta-ctor-alias.lean
+export-decls: ["etaCtorAlias"]
+outcome: reject
