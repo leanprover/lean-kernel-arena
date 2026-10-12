@@ -23,8 +23,8 @@ description: |
   Written by Claude (Anthropic), directed by Keith Adler.
 url: https://github.com/keithadler/tenet-hs
 ref: main
-rev: af0161de21c73517ac8ef33d692a67fb9bd96120
-version: "0.1.0"
+rev: b9b424827febc8ebb1e2aea3dbcacef185278084
+version: "0.1.1"
 
 # One worker: declarations are checked in order, in one thread, so the default of one CPU slot is
 # the honest declaration.
@@ -49,10 +49,11 @@ run: |
     *)   exit 9 ;;
   esac
 
-# Not attempted, and so not claimed. The largest library tenet-hs has been run on is Init (57,919
-# declarations, 55 s, 2.5 GB peak). These are several times larger, it checks on one thread, and its
-# memory on inputs of that size is unmeasured, so declining them avoids spending the runner's hours
-# on a result that is more likely a timeout. They will be enabled once they have been measured.
+# The full corpora below have not been run, and so are not claimed. The largest checks so far are all of
+# Init (57,919 declarations, 48 s, 0.84 GB peak) and a 405,144-declaration slice of Mathlib across 19 areas
+# (463 s, 4.2 GB peak). These are larger still, tenet-hs checks on one thread, and its memory on inputs of
+# that size is projected and not measured, so declining them avoids spending the runner's hours on a result
+# that is more likely a timeout. They will be enabled once they have been measured.
 declines:
   - mathlib
   - cslib
