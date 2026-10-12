@@ -1,0 +1,31 @@
+description: |
+  The declaration to check is
+
+      let d := bits #n 0; (rfl : d + 0 = Nat.add d 0)
+
+  where `bits #n 0` is a closed `Nat` whose evaluation makes 2^n recursive
+  calls, and the `rfl` is wrapped in `id` so that its type is compared with
+  `d + 0 = Nat.add d 0` inside the body of the `let`.
+
+  The two sides differ only in how the addition is written. Unfolding
+  `HAdd.hAdd` turns the left side into the right, for **Θ(1)**. But both sides
+  are additions of literals to a closed term, so a checker that folds closed
+  `Nat` arithmetic (`Nat.add` on literals via GMP) will try to evaluate `d`
+  first, for **Θ(2^n)**. The official kernel only folds terms without free
+  variables, and it checks the body of a `let` with `d` as a free variable
+  (bound to its value in the local context), so it never evaluates `bits`. A
+  checker that substitutes the value for `d` before checking the body makes
+  the comparison closed and pays for the evaluation.
+
+  Found by con-leche on openai/math (SquareDifference,
+  `OAI.SquareDifference.source_ordered_contraction`), where the bound value is
+  `Fintype.card TupleVertex`, whose evaluation enumerates permutations and
+  takes the checker past 6 GB; the official kernel checks that declaration in
+  16 ms.
+
+  N=16 in the Lean source.
+leanfile: tests/perf/let-fold.lean
+export-decls: ["kernel_let_fold"]
+outcome: accept
+compare-perf: true
+timeout: 50
