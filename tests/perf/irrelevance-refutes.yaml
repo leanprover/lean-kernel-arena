@@ -12,15 +12,19 @@ description: |
   types, `100000 = 100000` against `100001 = 100001`, also for **Θ(1)**: two
   proofs of propositions that are not defeq are not defeq. A checker that
   takes only proof irrelevance's positive answer, and otherwise unfolds the
-  proofs, evaluates both recursions for **Θ(m)**. Official compares the
-  arguments left to right and stops at the literals, but `is_def_eq_core`
-  would also stop on `is_def_eq_proof_irrel`'s `l_false` had it reached the
-  proofs first.
+  proofs, evaluates both recursions for **Θ(m)**.
+
+  Official reaches the proofs first. `f` is a regular definition at the head
+  of both sides, so `lazy_delta_reduction_step` tries the arguments before
+  unfolding it, and `is_def_eq_args` compares them last to first. (The
+  congruence fallback at the end of `is_def_eq_core`, `is_def_eq_app`,
+  compares first to last, but it is not reached here.) For the proofs,
+  `is_def_eq_core` stops on `is_def_eq_proof_irrel`'s `l_false`.
 
   Distilled from `decide +kernel` on `Rat` arithmetic, e.g.
   `(1 : Rat) / 1000000000 * ((1000000 : Int) : Rat) = 1 / 1000`, where the
   proofs are `Nat.gcd_dvd` terms by well-founded recursion and the
-  comparison that reaches them is `Int.divExact`'s arguments, right to left.
+  comparison that reaches them is of `Int.divExact`'s arguments, last to first.
 leanfile: tests/perf/irrelevance-refutes.lean
 export-decls: ["irrelevance_refutes"]
 outcome: accept
