@@ -1,0 +1,16 @@
+description: |
+  Proof of False via trusted field count in the recursor rule of a nested inductive.
+
+  `T` is nested through `C`, and `T.mk : C T → (Type → Prop) → T`. Lie by
+  saying that the `T.mk` rule of `T.rec` has one field instead of two. A checker
+  that uses this number when ι-reducing passes only the last field, which then
+  lands in the slot of the first one. The next argument after the major premise
+  lands in the slot of the second one. With a minor premise that returns that
+  second field, the proposition `badProp` (really `True`) reduces to `Bool`.
+  A `Prop` with two distinguishable inhabitants gives `False`.
+
+  Nanoda validated the rules of non-nested inductives, but not of nested ones,
+  until it was [fixed](https://github.com/ammkrn/nanoda_lib/issues/60).
+leanfile: tests/bugs/nested-rec-rule-nfields.lean
+export-decls: ["bad"]
+outcome: reject
