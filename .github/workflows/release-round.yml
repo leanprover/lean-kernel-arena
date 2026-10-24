@@ -121,9 +121,10 @@ jobs:
       GH_REPO: ${{ github.repository }}
       SANDBOX: ${{ needs.round-info.outputs.sandbox }}
     steps:
-      # A round is what the build of its commit measured, so the round is
-      # rendered from that build's data rather than by running everything
-      # again. A real round takes a build of master (pushed or dispatched); a
+      # A round is what the build of its commit has as results (measured by
+      # that build, or reused from earlier builds of master, see
+      # fetch-previous-results.sh), so the round is rendered from that build's
+      # data rather than by running everything again. A real round takes a build of master (pushed or dispatched); a
       # test round on a given commit takes any successful build of it,
       # including that of a pull request, so that it can exercise changes
       # still under review.
@@ -292,7 +293,8 @@ jobs:
           path: _round
 
       # Keeps the timestamp and the build link of results.json, which now say
-      # when and by which run the results were measured
+      # when and by which run the round was assembled; each result says when
+      # and by which run it was measured
       - name: Generate website
         run: |
           mkdir -p _out

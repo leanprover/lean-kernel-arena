@@ -2,6 +2,11 @@ name: Build and Deploy Site
 
 on:
   workflow_dispatch: # Manual trigger; on master, also deploys the site
+    inputs:
+      rerun-all:
+        description: Run all checkers on all tests, instead of reusing the still valid results of the latest build of master
+        type: boolean
+        default: false
   pull_request: # Run on pull requests
   push:
     branches:
@@ -19,11 +24,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  select-checkers:
-    name: Select checkers
+  select:
+    name: Select checkers and tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # to find the latest build of master and download its results
     outputs:
-      checkers: ${{ steps.select.outputs.checkers }}
+      matrix: ${{ steps.select.outputs.matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -31,8 +39,6 @@ jobs:
           # On pull requests, check out the PR head instead of the artificial
           # merge commit (empty ref means default behavior otherwise)
           ref: ${{ github.event.pull_request.head.sha }}
-          # Full history, to compute the merge base of a pull request
-          fetch-depth: 0
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -43,17 +49,38 @@ jobs:
         run: "true"
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
-      - name: Select checkers to run
-        id: select
-        run: .github/checker-matrix.sh >> "$GITHUB_OUTPUT"
-        shell: 'nix develop -c bash -euxo pipefail {0}'
+      - name: Fetch results of the latest build of master
+        if: ${{ !inputs.rerun-all }}
+        run: .github/fetch-previous-results.sh _previous
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+      # All checkers on all tests, except for the large tests on pull requests.
+      # Of these, what the latest build of master has a still valid result for
+      # (by the source hashes of checker and test) is not run again, but its
+      # result is passed on to the site build.
+      - name: Select checkers and tests to run
+        id: select
+        run: |
+          matrix=$(./lka.py ci-select --previous _previous --outdir /tmp/artifact ${{ github.event_name == 'pull_request' && '--skip-ci' || '' }})
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      # Never empty (see ci-select), so that it always replaces the artifact
+      # of an earlier attempt of this run
+      - name: Upload reused results
+        uses: actions/upload-artifact@v7
+        with:
+          name: results-reused
+          path: /tmp/artifact
+          overwrite: true
 
   check:
     name: 'Checker: ${{ matrix.checker }}'
-    needs: select-checkers
+    needs: select
+    # An empty matrix is an error, rather than no jobs
+    if: needs.select.outputs.matrix != '[]'
     # Namespace runner: unlike GitHub-hosted runners it exposes a vPMU,
     # so perf instruction counts work (user-space-only at paranoid=2)
     runs-on:
@@ -68,9 +95,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        checker: ${{ fromJSON(needs.select-checkers.outputs.checkers) }}
+        include: ${{ fromJSON(needs.select.outputs.matrix) }}
     env:
       CHECKER: ${{ matrix.checker }}
+      # The tests to run this checker on, separated by spaces
+      TESTS: ${{ matrix.tests }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -130,11 +159,11 @@ jobs:
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Generate tests
-        run: ./lka.py build-test --cache --skip-declined-by "$CHECKER" ${{ github.event_name == 'pull_request' && '--skip-ci' || '' }}
+        run: ./lka.py build-test --cache --skip-declined-by "$CHECKER" $TESTS
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Run checker on tests
-        run: ./lka.py run --checker "$CHECKER"
+        run: ./lka.py run --checker "$CHECKER" --test $TESTS
         shell: 'nix develop -c bash -euxo pipefail {0}'
 
       - name: Cache volume stats
@@ -257,11 +286,12 @@ jobs:
 
   build-site:
     name: Build and deploy site
-    needs: [check, tutorial, test-stats]
+    needs: [select, check, tutorial, test-stats]
     # Run even if some checker jobs failed, so the site is still built and can
     # be inspected in the uploaded artifact. It is only deployed if every
-    # checker succeeded, and a final step below then fails this job.
-    if: ${{ !cancelled() && needs.check.result != 'skipped' }}
+    # checker succeeded, and a final step below then fails this job. The
+    # checker jobs are skipped altogether if all results could be reused.
+    if: ${{ !cancelled() && needs.select.result == 'success' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -307,9 +337,35 @@ jobs:
           name: test-stats
           path: _artifacts/test-stats
 
+      # Only the results of the checker jobs of this attempt: a re-run may
+      # reuse what an earlier attempt of the same run ran, whose artifact is
+      # still around, and whose results then differ from the reused ones.
+      # A checker job that failed has no artifact.
       - name: Merge checker results and test stats
-        run: ./lka.py ci-merge _artifacts/*
+        run: |
+          dirs=(_artifacts/results-reused _artifacts/test-stats)
+          for checker in $(jq -r '.[].checker' <<< "$MATRIX"); do
+            if [ -d "_artifacts/results-$checker" ]; then
+              dirs+=("_artifacts/results-$checker")
+            fi
+          done
+          ./lka.py ci-merge "${dirs[@]}"
         shell: 'nix develop -c bash -euxo pipefail {0}'
+        env:
+          MATRIX: ${{ needs.select.outputs.matrix }}
+
+      # All results of this build, fresh and reused, for later builds to reuse
+      # (see .github/fetch-previous-results.sh)
+      - name: Stage all results for upload
+        run: ./lka.py ci-pack --outdir /tmp/all-results --results
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+
+      - name: Upload all results
+        uses: actions/upload-artifact@v7
+        with:
+          name: all-results
+          path: /tmp/all-results
+          overwrite: true
 
       - name: Fetch tutorial page
         uses: actions/download-artifact@v8
@@ -381,7 +437,7 @@ jobs:
       # results from one that was never run, so deploying would quietly drop
       # that checker from the published page. Re-run the failed job instead.
       - name: Deploy to GitHub Pages
-        if: ${{ env.DEPLOY == 'true' && needs.check.result == 'success' }}
+        if: ${{ env.DEPLOY == 'true' && (needs.check.result == 'success' || needs.check.result == 'skipped') }}
         id: deployment
         uses: actions/deploy-pages@v5
         with:
@@ -391,7 +447,7 @@ jobs:
       # stop the others and the site is still built above. Surface the failure
       # by failing this final job once everything else is done.
       - name: Fail if any checker job failed
-        if: ${{ always() && needs.check.result != 'success' }}
+        if: ${{ always() && needs.check.result != 'success' && needs.check.result != 'skipped' }}
         run: |
           echo "::error::Checker jobs did not all succeed (${{ needs.check.result }}), so the site was not deployed; see the 'Checker: …' matrix jobs."
           exit 1

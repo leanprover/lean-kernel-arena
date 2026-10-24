@@ -62,6 +62,12 @@ TEST_SIZE_LIMIT = 10 * 1024 * 1024
 # tests are exported changes.
 TEST_CACHE_VERSION = 1
 
+# Part of the source hash of every checker and test (see `source_hash`), which
+# CI uses to decide whether an earlier result can be reused. Bump it to
+# invalidate all earlier results, e.g. when the way checkers are run or their
+# results are measured changes.
+RESULTS_VERSION = 1
+
 # The canonical location of the published site. Used for the "other rounds"
 # link, which has to be absolute: archived rounds are served from
 # /round/<name>/ and are also distributed as standalone tarballs, so a
@@ -783,6 +789,96 @@ def find_items_by_pattern(pattern: str, item_type: str) -> list[dict]:
 
 
 # =============================================================================
+# Source hashes - deciding whether a result is still valid
+# =============================================================================
+
+
+def source_hash(config: dict, item_type: str) -> str:
+    """A hash of everything in this repository that a checker or test is made
+    from, so that a result of a checker on a test remains valid as long as the
+    hashes of both are unchanged.
+
+    It covers the YAML file and the local files it refers to (`dir`,
+    `leanfile`, `file`, and for `leanfile` tests the toolchain in tests/), and
+    for checkers also flake.lock, which pins the compilers they are built
+    with. Remote sources are covered by the pinned revision in the YAML file.
+    What it cannot see, such as changes to this script, is covered by
+    `RESULTS_VERSION` (and for tests also `TEST_CACHE_VERSION`).
+
+    Args:
+        config: Checker or test configuration, as loaded from its YAML file
+        item_type: "tests" or "checkers"
+    """
+    root = get_project_root()
+    paths = [Path(item_type) / f"{config['name']}.yaml"]
+    if config.get("dir"):
+        # The local directory of a checker is relative to checkers/ (see
+        # `build_checker`), that of a test to the project root
+        paths.append(Path("checkers") / config["dir"] if item_type == "checkers" else Path(config["dir"]))
+    for key in ("leanfile", "file"):
+        if config.get(key):
+            paths.append(Path(config[key]))
+    if config.get("leanfile"):
+        paths.append(Path("tests") / "lean-toolchain")
+    if item_type == "checkers":
+        paths.append(Path("flake.lock"))
+
+    # Only the tracked files, so that build products in a local directory
+    # (such as the .lake directory of the tutorial) do not affect the hash
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--", *map(str, paths)],
+        cwd=root, capture_output=True, check=True,
+    )
+    files = sorted(set(result.stdout.decode().split("\0")) - {""})
+
+    sha256 = hashlib.sha256()
+    versions = f"{item_type} results v{RESULTS_VERSION}"
+    if item_type == "tests":
+        versions += f" export v{TEST_CACHE_VERSION}"
+    for name, data in [("versions", versions.encode())] + [
+        (file, (root / file).read_bytes()) for file in files if (root / file).is_file()
+    ]:
+        # Length-prefixed, so that no two lists of files hash alike
+        for part in (name.encode(), data):
+            sha256.update(len(part).to_bytes(8, "big"))
+            sha256.update(part)
+    return sha256.hexdigest()[:16]
+
+
+def test_source_hashes() -> dict[str, str]:
+    """The source hashes of all tests, by name (of the YAML file)."""
+    return {test["name"]: source_hash(test, "tests") for test in load_test_descriptions()}
+
+
+def base_test_name(test_name: str, test_names) -> str | None:
+    """The name of the YAML file a test comes from, among `test_names`.
+
+    This is the test itself, except for the subtests of a `multiple` test,
+    which are named <test>/<subtest>.
+    """
+    if test_name in test_names:
+        return test_name
+    parent = test_name.rsplit("/", 1)[0]
+    if parent in test_names:
+        return parent
+    return None
+
+
+def run_provenance() -> dict:
+    """The date of a result, and the CI run it was produced in (if any)."""
+    provenance = {
+        "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
+    github_server = os.environ.get("GITHUB_SERVER_URL")
+    github_repo = os.environ.get("GITHUB_REPOSITORY")
+    github_run_id = os.environ.get("GITHUB_RUN_ID")
+    if github_server and github_repo and github_run_id:
+        provenance["github_run_id"] = github_run_id
+        provenance["github_run_url"] = f"{github_server}/{github_repo}/actions/runs/{github_run_id}"
+    return provenance
+
+
+# =============================================================================
 # Source setup - shared by tests and checkers
 # =============================================================================
 
@@ -1283,13 +1379,10 @@ def cmd_build_test(args: argparse.Namespace) -> int:
         # For building, we need to find from base tests, not expanded tests
         base_tests = load_test_descriptions()
         # Use pattern matching on test descriptions
-        if any(char in args.name for char in ['*', '?', '[', ']']):
-            tests = [test for test in base_tests if fnmatch.fnmatch(test["name"], args.name)]
-        else:
-            tests = [test for test in base_tests if test["name"] == args.name]
+        tests = [test for test in base_tests if any(fnmatch.fnmatch(test["name"], name) for name in args.name)]
 
         if not tests:
-            print(f"No tests found matching pattern: {args.name}")
+            print(f"No tests found matching pattern(s): {', '.join(args.name)}")
             return 1
     else:
         tests = load_test_descriptions()
@@ -1416,7 +1509,19 @@ def cmd_build_checker(args: argparse.Namespace) -> int:
 # =============================================================================
 
 
-def write_declined_result(checker_name: str, test_name: str, results_dir: Path) -> dict:
+def write_result(result_data: dict, results_dir: Path, provenance: dict | None) -> None:
+    """Write a result to its JSON file, together with its provenance (the
+    source hashes, date and CI run, see `cmd_run_checker`)."""
+    result_data.update(provenance or {})
+    results_dir.mkdir(parents=True, exist_ok=True)
+    # Replace "/" with "_" for a valid file name
+    safe_test_name = result_data["test"].replace("/", "_")
+    result_file = results_dir / f"{result_data['checker']}_{safe_test_name}.json"
+    with open(result_file, "w") as f:
+        json.dump(result_data, f, indent=2)
+
+
+def write_declined_result(checker_name: str, test_name: str, results_dir: Path, provenance: dict | None = None) -> dict:
     """Record a declaratively declined (checker, test) pair without running the checker."""
     result_data = {
         "checker": checker_name,
@@ -1431,15 +1536,11 @@ def write_declined_result(checker_name: str, test_name: str, results_dir: Path) 
         "stdout": "",
         "stderr": "Declined via the `declines` field in the checker configuration; the checker was not run.",
     }
-    results_dir.mkdir(parents=True, exist_ok=True)
-    safe_test_name = test_name.replace("/", "_")
-    result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
-    with open(result_file, "w") as f:
-        json.dump(result_data, f, indent=2)
+    write_result(result_data, results_dir, provenance)
     return result_data
 
 
-def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: Path, results_dir: Path) -> dict:
+def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: Path, results_dir: Path, provenance: dict | None = None) -> dict:
     """Run a checker on a test and return the result."""
     checker_name = checker["name"]
     test_name = test["name"]
@@ -1447,7 +1548,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
 
     # Tests listed in the checker's `declines` are declined without running
     if test_name in checker.get("declines", []):
-        return write_declined_result(checker_name, test_name, results_dir)
+        return write_declined_result(checker_name, test_name, results_dir, provenance)
 
     # Use the file path stored in the test dict
     test_file = test.get("file")
@@ -1467,12 +1568,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
             "stdout": "",
             "stderr": "",
         }
-        # Write result to JSON file (replace "/" with "_" for valid filename)
-        results_dir.mkdir(parents=True, exist_ok=True)
-        safe_test_name = test_name.replace("/", "_")
-        result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
-        with open(result_file, "w") as f:
-            json.dump(result_data, f, indent=2)
+        write_result(result_data, results_dir, provenance)
         return result_data
 
     # Determine working directory
@@ -1545,12 +1641,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
             + (result.stderr or "")
         )
 
-    # Write result to JSON file (replace "/" with "_" for valid filename)
-    results_dir.mkdir(parents=True, exist_ok=True)
-    safe_test_name = test_name.replace("/", "_")
-    result_file = results_dir / f"{checker_name}_{safe_test_name}.json"
-    with open(result_file, "w") as f:
-        json.dump(result_data, f, indent=2)
+    write_result(result_data, results_dir, provenance)
 
     return result_data
 
@@ -1582,29 +1673,47 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
         if skipped_checker_names:
             print(f"Skipping {len(skipped_checker_names)} checker(s) that weren't built: {', '.join(skipped_checker_names)}")
 
-    # Determine which tests to run
+    # The source hashes of all tests, recorded with each result
+    test_hashes = test_source_hashes()
+
+    def selected(test_name: str) -> bool:
+        """Whether a test is among those given by --test; the subtests of a
+        `multiple` test are also given by the name of the test itself."""
+        names = [test_name, base_test_name(test_name, test_hashes)]
+        return any(fnmatch.fnmatch(name, pattern) for name in names if name for pattern in args.test)
+
+    # Determine which tests to run, among all built tests
+    tests = load_tests()
     if args.test:
-        tests = find_items_by_pattern(args.test, "tests")
-        if not tests:
-            print(f"No tests found matching pattern: {args.test}")
+        tests = [test for test in tests if selected(test["name"])]
+        if not tests and not any(selected(name) for checker in checkers for name in checker["declines"]):
+            print(f"No tests found matching pattern(s): {', '.join(args.test)}")
             return 1
-    else:
-        # Load all built tests
-        tests = load_tests()
 
     if not checkers:
         print("No built checkers found.")
         return 0
 
-    if not tests:
+    if not tests and not args.test:
         print("No built tests found.")
         return 0
 
+    run_info = run_provenance()
+
+    def provenance(checker: dict, test_name: str) -> dict:
+        base_name = base_test_name(test_name, test_hashes)
+        return {
+            "checker_hash": checker["source_hash"],
+            "test_hash": test_hashes[base_name] if base_name else None,
+            **run_info,
+        }
+
     results = []
     for checker in checkers:
+        checker["source_hash"] = source_hash(checker, "checkers")
         for test in tests:
             print(f"Running {checker['name']} on {test['name']}...", end="\n" if VERBOSE else " ")
-            result = run_checker_on_test(checker, test, build_dir, tests_dir, results_dir)
+            result = run_checker_on_test(checker, test, build_dir, tests_dir, results_dir, provenance(checker, test["name"]))
             results.append(result)
             
             # Choose emoji based on status
@@ -1642,10 +1751,10 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
         for declined_name in checker.get("declines", []):
             if declined_name in built_test_names:
                 continue
-            if args.test and not fnmatch.fnmatch(declined_name, args.test):
+            if args.test and not selected(declined_name):
                 continue
             print(f"Declining {declined_name} for {checker['name']} (declared in checker configuration) [⊘]")
-            results.append(write_declined_result(checker["name"], declined_name, results_dir))
+            results.append(write_declined_result(checker["name"], declined_name, results_dir, provenance(checker, declined_name)))
 
     # Summary
     print("\n" + "=" * 60)
@@ -2718,6 +2827,70 @@ def cmd_ci_merge(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ci_select(args: argparse.Namespace) -> int:
+    """Handle the ci-select command.
+
+    Decides which checkers have to be run on which tests, given the results
+    of an earlier run (as staged by `ci-pack --results`). An earlier result
+    of a checker on a test is reused if the source hashes of both are
+    unchanged (see `source_hash`). The results of the subtests of a
+    `multiple` test are reused all together or not at all.
+
+    The reused results are staged in --outdir, like `ci-pack` does, and the
+    work left to do is printed to stdout as a JSON list of {"checker": name,
+    "tests": "space-separated test names"} objects, for a CI job matrix. It
+    is also staged, as _build/ci-select.json, so that what is staged is never
+    empty.
+    """
+    checkers = load_checkers()
+    tests = load_test_descriptions()
+    if args.skip_ci:
+        tests = [test for test in tests if not test.get("skip-on-ci", False)]
+    test_hashes = {test["name"]: source_hash(test, "tests") for test in tests}
+
+    # Earlier results by checker and (base) test
+    previous: dict[tuple[str, str], list[tuple[Path, dict]]] = {}
+    if args.previous:
+        for file in sorted(Path(args.previous).rglob("*.json")):
+            with open(file) as f:
+                result = json.load(f)
+            base_name = base_test_name(result["test"], test_hashes)
+            if base_name is not None:
+                previous.setdefault((result["checker"], base_name), []).append((file, result))
+
+    outdir = Path(args.outdir)
+    results_dir = outdir / "_results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    matrix = []
+    reused = 0
+    for checker in checkers:
+        checker_hash = source_hash(checker, "checkers")
+        todo = []
+        for test_name, test_hash in test_hashes.items():
+            earlier = previous.get((checker["name"], test_name), [])
+            if earlier and all(
+                result.get("checker_hash") == checker_hash and result.get("test_hash") == test_hash
+                for _, result in earlier
+            ):
+                for file, _ in earlier:
+                    shutil.copy2(file, results_dir / file.name)
+                reused += 1
+            else:
+                todo.append(test_name)
+        if todo:
+            matrix.append({"checker": checker["name"], "tests": " ".join(todo)})
+        print(f"{checker['name']}: {len(test_hashes) - len(todo)} test(s) reused, {len(todo)} to run", file=sys.stderr)
+
+    (outdir / "_build").mkdir(parents=True, exist_ok=True)
+    with open(outdir / "_build" / "ci-select.json", "w") as f:
+        json.dump(matrix, f, indent=2)
+
+    print(f"Reusing the results on {reused} of {len(checkers) * len(test_hashes)} (checker, test) pairs, "
+          f"{len(matrix)} checker(s) left to run", file=sys.stderr)
+    print(json.dumps(matrix))
+    return 0
+
+
 # =============================================================================
 # Main entry point
 # =============================================================================
@@ -2745,8 +2918,8 @@ def main() -> int:
     )
     build_test_parser.add_argument(
         "name",
-        nargs="?",
-        help="Name or glob pattern of the test to build (default: all tests)",
+        nargs="*",
+        help="Names or glob patterns of the tests to build (default: all tests)",
     )
     build_test_parser.add_argument(
         "--skip-ci",
@@ -2790,7 +2963,11 @@ def main() -> int:
     )
     run_checker_parser.add_argument(
         "--test",
-        help="Name or glob pattern of the test to run (default: all tests)",
+        nargs="+",
+        action="extend",
+        metavar="TEST",
+        help="Names or glob patterns of the tests to run; the name of a test "
+        "with multiple subtests selects all of them (default: all built tests)",
     )
 
     # build-site command
@@ -2908,6 +3085,27 @@ def main() -> int:
         help="Artifact directories to merge",
     )
 
+    # ci-select command
+    ci_select_parser = subparsers.add_parser(
+        "ci-select",
+        help="Decide which checkers to run on which tests in CI, reusing earlier results that are still valid",
+    )
+    ci_select_parser.add_argument(
+        "--previous",
+        metavar="DIR",
+        help="Directory with the results of an earlier run, as staged by ci-pack --results",
+    )
+    ci_select_parser.add_argument(
+        "--outdir",
+        required=True,
+        help="Directory to stage the reused results in",
+    )
+    ci_select_parser.add_argument(
+        "--skip-ci",
+        action="store_true",
+        help="Leave out tests marked with 'skip-on-ci: true' in YAML",
+    )
+
     args = parser.parse_args()
 
     # Set global verbose flag
@@ -2937,6 +3135,8 @@ def main() -> int:
         return cmd_ci_pack(args)
     elif args.command == "ci-merge":
         return cmd_ci_merge(args)
+    elif args.command == "ci-select":
+        return cmd_ci_select(args)
     else:
         parser.print_help()
         return 1
