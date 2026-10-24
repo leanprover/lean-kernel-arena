@@ -202,7 +202,7 @@ section pre, details pre {
         · max rss memory: {{ format_memory(result.max_rss) }}
         {% endif %}
         {% if result.github_run_url %}
-        · <a href="{{ result.github_run_url }}" target="_blank">run {{ result.date or result.github_run_id }}</a>
+        · <a href="{{ result.github_job_url or result.github_run_url }}" target="_blank">run {{ result.date or result.github_run_id }}</a>
         {% elif result.date %}
         · run {{ result.date }}
         {% endif %}

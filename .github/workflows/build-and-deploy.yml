@@ -165,6 +165,9 @@ jobs:
       - name: Run checker on tests
         run: ./lka.py run --checker "$CHECKER" --test $TESTS
         shell: 'nix develop -c bash -euxo pipefail {0}'
+        env:
+          # Recorded with each result, to link to this job's log
+          GITHUB_JOB_ID: ${{ job.check_run_id }}
 
       - name: Cache volume stats
         if: always()

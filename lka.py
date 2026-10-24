@@ -865,7 +865,9 @@ def base_test_name(test_name: str, test_names) -> str | None:
 
 
 def run_provenance() -> dict:
-    """The date of a result, and the CI run it was produced in (if any)."""
+    """The date of a result, and the CI run and job it was produced in (if
+    any). The job is only known if the workflow passes its id as
+    GITHUB_JOB_ID, as GitHub does not set it in the environment."""
     provenance = {
         "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
     }
@@ -875,6 +877,9 @@ def run_provenance() -> dict:
     if github_server and github_repo and github_run_id:
         provenance["github_run_id"] = github_run_id
         provenance["github_run_url"] = f"{github_server}/{github_repo}/actions/runs/{github_run_id}"
+        github_job_id = os.environ.get("GITHUB_JOB_ID")
+        if github_job_id:
+            provenance["github_job_url"] = f"{provenance['github_run_url']}/job/{github_job_id}"
     return provenance
 
 
