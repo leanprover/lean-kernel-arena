@@ -1,0 +1,35 @@
+description: |
+  [**con-agua**](https://github.com/leanprover/con-agua) is
+  [con-leche](https://github.com/leanprover/con-leche) reimplemented at the
+  level of x86-64 assembly: a close clone of
+  [con-ron](https://github.com/leanprover/con-ron)'s checker, written in a
+  small first-order language, compiled by a verified compiler, and shipped as
+  one committed assembler file together with a C harness of about two hundred
+  lines that reads the input and calls it.
+
+  A Lean theorem relates that assembler file, as an x86-64 program in
+  [Kraken](https://github.com/sgraf812/kraken)'s semantics, to con-ron's Lean
+  twin, which con-ron proves to refine con-leche's pure checker: if the machine
+  code reports *accept*, con-leche accepts the same bytes, so the accepted
+  declarations have a model in set theory, and in particular no theorem of
+  `False` is accepted.  The code the CPU executes is the code the theorem is
+  about, so neither a compiler nor a language runtime is trusted; what is
+  trusted is Kraken's x86 semantics, the assembler and loader, and the C
+  harness.  The threaded mode used here has its own theorem, which takes the
+  harness's thread scheduling as hypotheses.
+
+  So a proof accepted by con-leche, con-ron and con-agua is protected against
+  a bug in the Lean compiler and runtime, in `rustc` and Aeneas, or in the
+  x86 model, unless bugs in all three settings conspire.
+
+  It runs with four worker threads for the check phase, on raw `lean4export`
+  NDJSON.  The proof covers accepts only: the checker does not yet tell a
+  rejection from a decline, and reports both, as well as running out of a
+  resource, with exit code 2 (declined), so it never claims a rejection.
+  Written by AI under supervision from Joachim Breitner at the Lean FRO.
+url: https://github.com/leanprover/con-agua
+ref: master
+rev: 5cb5e50b31cd680b73f6349ed1f9d1f5544d42af
+threads: 4
+build: make
+run: ./checker --jobs=4 "$IN"
