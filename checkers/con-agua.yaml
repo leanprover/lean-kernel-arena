@@ -25,13 +25,14 @@ description: |
   It runs with four worker threads for the check phase, on raw `lean4export`
   NDJSON.  It exits with 0 on accept, 1 on a rejection and 2 on a decline, each
   with the reason con-ron would give, and with 3 when a resource runs out or an
-  abort has no specific reason (it then claims nothing).  The theorem covers accepts; the
-  rejected/declined distinction follows con-ron's error kinds and is checked
-  against con-ron on the test corpus, but is not yet part of the proof.
+  abort has no specific reason (it then claims nothing).  The theorem covers
+  rejections and declines too: on exit 1 or 2, con-ron's twin fails on the
+  same input with that kind of error (the message text is not part of the
+  proof).
   Written by AI under supervision from Joachim Breitner at the Lean FRO.
 url: https://github.com/leanprover/con-agua
 ref: master
-rev: ec1979a80d5530c6fed0e0b700195f30161cf288
+rev: 7166eda75ab8d7d35bca5a9ccece972440d94b5d
 threads: 4
 build: make
 run: ./checker --jobs=4 "$IN"
