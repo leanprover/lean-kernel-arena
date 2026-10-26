@@ -31,7 +31,7 @@ description: |
   Written by AI under supervision from Joachim Breitner at the Lean FRO.
 url: https://github.com/leanprover/con-agua
 ref: master
-rev: 31bcb673e559cf19344f01ef2816b6d097286dc1
+rev: ec1979a80d5530c6fed0e0b700195f30161cf288
 threads: 4
 build: make
 run: ./checker --jobs=4 "$IN"
