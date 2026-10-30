@@ -15,16 +15,14 @@ description: |
   a lazy machine that unfolds a matcher into its callers once and goes from
   a casesOn straight to its branch.
 
-  The build clones Aver at the commit pinned in `.aver-version` and builds
-  Pestka with a profile from checking `Init`. The same source compiled to
-  WebAssembly is the `pestka-wasm` entry.
+  The build installs the Aver release pinned in `.aver-version` from
+  crates.io and builds Pestka with a profile from checking `Init`. The same
+  source compiled to WebAssembly is the `pestka-wasm` entry.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 869c435fc10e4c913c8bc674785b2c9d60961db0
+rev: 4fbe9d1c7d76fe8e534a1aa07df1f4f483face23
 build: |
-  git clone https://github.com/jasisz/aver .aver-src
-  git -C .aver-src checkout "$(cat .aver-version)"
-  cargo install --path .aver-src aver-lang --locked --root "$PWD/.aver"
+  cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)
   "$ROOT/lka.py" build-test init
   AVER="$PWD/.aver/bin/aver" FLAGS="-C target-cpu=native" bin/build-pgo "$ROOT/_build/tests/init.ndjson"

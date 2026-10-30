@@ -13,15 +13,13 @@ description: |
   and exits with 3 otherwise, so a crash of V8 or of the host never reads
   as a verdict.
 
-  The build clones Aver at the commit pinned in `.aver-version` and
-  optimizes the module for speed with Binaryen's `wasm-opt`.
+  The build installs the Aver release pinned in `.aver-version` from
+  crates.io and optimizes the module for speed with Binaryen's `wasm-opt`.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 869c435fc10e4c913c8bc674785b2c9d60961db0
+rev: 4fbe9d1c7d76fe8e534a1aa07df1f4f483face23
 build: |
-  git clone https://github.com/jasisz/aver .aver-src
-  git -C .aver-src checkout "$(cat .aver-version)"
-  cargo install --path .aver-src aver-lang --locked --features wasm --root "$PWD/.aver"
+  cargo install aver-lang --version "$(cat .aver-version)" --locked --features wasm --root "$PWD/.aver"
   AVER="$PWD/.aver/bin/aver" bin/build-wasm
-run: AVER_SRC="$PWD/.aver-src" bin/run-wasm "$IN" 1
+run: bin/run-wasm "$IN" 1
 threads: 1
