@@ -26,14 +26,14 @@ description: |
   agentic, carried out with Claude Code.
 url: https://github.com/pmatos/vow-lean-kernel
 ref: main
-rev: 514ab33fc0262c491a0af1846cc3887f48411e36
+rev: 0d27a4fc46b8699fe28488dcfbcc2c7eb20ab25c
 build: |
   set -eu
 
   # The kernel builds only with the self-hosted `vowc`, which must first be
-  # built from vow-lang/vow at this pinned commit (the base-2^32 bignum merge
-  # the kernel is developed against). Mirrors .github/workflows/ci.yml.
-  VOW_REF=15c1b933f87eed2b23c176665730baea37706daa
+  # built from vow-lang/vow at this pinned commit (the compiler the kernel is
+  # developed against). Mirrors .github/workflows/ci.yml.
+  VOW_REF=a653ef2c1238a6431709202aff9e591d8368ec33
   ROOT="$(pwd)"
 
   git clone https://github.com/vow-lang/vow vow
