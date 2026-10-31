@@ -1,0 +1,23 @@
+description: |
+  **kefir-wasm** is the [kefir](https://github.com/dmitrykorolev/kefir) checker
+  built for `wasm32-wasip1` from the same Rust source and commit as the `kefir`
+  entry, and run under Node's WASI on V8. It uses the checking code and resource
+  budgets of the native build, so its reports differ only in the build
+  identity. The module can address at most 4 GiB of memory. The gap between
+  the two entries is the cost of running the same Rust code as WebAssembly.
+
+  Declarations are checked in file order on one thread.
+
+  The build installs the pinned Rust toolchain with the `wasm32-wasip1` standard
+  library through rustup, local to the checkout.
+version: "8fb94a9"
+url: https://github.com/dmitrykorolev/kefir
+ref: main
+rev: 8fb94a9aa71572897d1944753dec82932ae50706
+build: |
+  export RUSTUP_HOME="$PWD/.rustup" CARGO_HOME="$PWD/.cargo" RUSTUP_INIT_SKIP_PATH_CHECK=yes
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none
+  "$CARGO_HOME/bin/rustup" toolchain install "$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)" --profile minimal --target wasm32-wasip1
+  PATH="$CARGO_HOME/bin:$PATH" sh scripts/wasm/build.sh
+run: node scripts/wasm/run-wasm.mjs target/wasm32-wasip1/release/kefir.wasm "$IN" --axiom-policy=allow-all-declared-axioms
+threads: 1
