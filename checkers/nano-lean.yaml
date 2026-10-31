@@ -1,0 +1,15 @@
+description: |
+  A parallel Lean 4 kernel written in Rust using hash-consing and de Bruijn indices
+url: https://github.com/sdiehl/nano-lean
+ref: main
+rev: c251061da8e1e93c56d40d9c7988453c0c36935a
+build: |
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init
+  FLAGS="-C target-cpu=native -C llvm-args=-align-all-functions=6"
+  RUSTFLAGS="$FLAGS -Cprofile-generate=$PWD/pgo" cargo build --release --locked --bin nl-fast
+  target/release/nl-fast -q -j 4 "$ROOT/_build/tests/init.ndjson" >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="$FLAGS -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release --locked --bin nl-fast
+run: target/release/nl-fast -q -j 4 "$IN"
+threads: 4
