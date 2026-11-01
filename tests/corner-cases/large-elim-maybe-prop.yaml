@@ -1,0 +1,21 @@
+description: |
+  Large elimination for a type that may be a proposition but whose only
+  field is a proof whenever it is:
+
+      MaybePropBox.{u} (α : Sort u) : Sort u | mk : α → MaybePropBox α
+      MaybePropBox.get.{u} (α : Sort u) (t : MaybePropBox α) : α :=
+        MaybePropBox.rec (motive := fun _ => α) (fun x => x) t
+
+  The official kernel lets a possibly-`Prop` type with one constructor
+  eliminate into every universe only when each field is a proof for every
+  `u` (its universe normalizes to zero) or occurs in the constructor's
+  result type. Neither holds for `x : α`, so it generates a recursor into
+  `Prop` only; the `inductive` command refuses the type altogether, as for
+  `corner-cases/proj-maybe-prop`. The recursor here is the one the kernel
+  generates for the same type at level `u + 1`, with that level rewritten
+  to `u`. It is still sound: at `u = 0` the field `x : α` is
+  a proof, so this is subsingleton elimination, and the same argument as in
+  `corner-cases/proj-maybe-prop` applies. Compare `bugs/large-elim-param`,
+  where two constructors make the same large recursor unsound.
+file: tests/corner-cases/large-elim-maybe-prop.ndjson
+outcome: either

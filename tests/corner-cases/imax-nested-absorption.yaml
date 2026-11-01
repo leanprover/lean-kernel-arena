@@ -1,0 +1,13 @@
+description: |
+  Universe-level equations that hold for every assignment but that the
+  official kernel's normalization does not establish:
+  `imax u v = imax (imax u v) v` and `imax u v = imax v (imax u v)`.
+  When `v` is zero every side is zero; otherwise every side is `max u v`.
+  A checker that decides level equivalence completely accepts these
+  hand-crafted declarations; one that normalizes like the official kernel
+  rejects them. Unlike `corner-cases/imax-right-successor`, no right
+  operand here is a successor, so recognizing a nonzero right operand does
+  not help.
+leanfile: tests/corner-cases/imax-nested-absorption.lean
+export-decls: ["imaxAbsorbRight", "imaxAbsorbLeft"]
+outcome: either
