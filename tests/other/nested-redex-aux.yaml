@@ -1,0 +1,21 @@
+description: |
+  A valid nested inductive whose two nested occurrences differ only by a
+  beta-redex:
+
+      | a : List ((fun _ : Bool => NestedRedex) true) → NestedRedex
+      | b : List NestedRedex → NestedRedex
+
+  The kernel finds nested occurrences syntactically, so these become two
+  auxiliary types and `NestedRedex.rec` has three motives. The theorem
+  reduces a recursor application that goes through both.
+
+  A checker that normalises constructor types before it collects nested
+  occurrences merges the two into one auxiliary type. It then derives a
+  recursor with two motives and rejects the theorem. The same happens with a
+  `let` in place of the redex. `@id Type NestedRedex` does not trigger it
+  under beta/zeta-only normalisation.
+
+  Found by pestycyd (https://github.com/jasisz/pestycyd).
+leanfile: tests/other/nested-redex-aux.lean
+export-decls: ["nestedRedex"]
+outcome: accept
