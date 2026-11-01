@@ -1,0 +1,24 @@
+description: |
+  Two inductive types whose constructor field mentions the type being
+  declared only inside a beta-redex that weak head normalisation removes:
+
+      | node : (fun _ : Type => Nat) VanishPos → VanishPos
+      | node : (fun _ : Type => Nat) (VanishNeg → Nat) → VanishNeg
+
+  The official kernel puts a constructor field in weak head normal form
+  before looking for occurrences, finds `Nat`, and accepts both (the
+  tutorial's `reduceCtorParam` shows the same reduction keeping an
+  occurrence). It does not reduce below the head: when the vanishing
+  occurrence sits in the domain of an arrow inside the field, as in
+  `corner-cases/positivity-whnf` or the tutorial's `indNegReducible`, it
+  rejects. Its `isRec` flag, on the other hand, comes from a syntactic
+  search, so the export says `isRec = true` for both types although the
+  only occurrence is reduced away before the positivity check. A checker
+  that looks for occurrences before reducing, or recomputes `isRec` after
+  reducing, rejects these two; that is a reasonable reading of a rule the
+  official kernel does not apply uniformly (see the discussion at
+  https://github.com/leanprover/lean-kernel-arena/pull/181). The elaborator
+  never writes such a field.
+leanfile: tests/corner-cases/vanishing-occurrence.lean
+export-decls: ["VanishPos", "VanishNeg"]
+outcome: either
