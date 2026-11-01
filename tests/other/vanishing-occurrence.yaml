@@ -1,0 +1,17 @@
+description: |
+  Two valid inductive types whose constructor field mentions the type being
+  declared only inside a beta-redex that reduces it away:
+
+      | node : (fun _ : Type => Nat) VanishPos → VanishPos
+      | node : (fun _ : Type => Nat) (VanishNeg → Nat) → VanishNeg
+
+  The kernel puts a field in weak head normal form before looking for
+  occurrences of the types being declared, finds `Nat`, and accepts both, the
+  second one even though the unreduced field has an occurrence in a negative
+  position. A checker that looks for occurrences before reducing rejects them.
+  The same holds with `let X := VanishPos; Nat` as the field.
+
+  Found by pestycyd (https://github.com/jasisz/pestycyd).
+leanfile: tests/other/vanishing-occurrence.lean
+export-decls: ["VanishPos", "VanishNeg"]
+outcome: accept
