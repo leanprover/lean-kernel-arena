@@ -1,0 +1,23 @@
+description: |
+  A nested inductive whose two nested occurrences differ only by a
+  beta-redex:
+
+      | a : List ((fun _ : Bool => NestedRedex) true) → NestedRedex
+      | b : List NestedRedex → NestedRedex
+
+  The official kernel finds nested occurrences syntactically, so these become
+  two auxiliary types and `NestedRedex.rec` has three motives; the theorem
+  reduces a recursor application that goes through both, and the official
+  kernel accepts it.
+
+  A checker that normalises constructor types before it collects nested
+  occurrences merges the two into one auxiliary type, derives a recursor with
+  two motives and rejects the theorem. Whether such a field is a nested
+  occurrence at all is debatable: the elaborator never writes one, and the
+  official kernel's answer follows from its syntactic test rather than from
+  the type theory (see https://github.com/intgrah/sokonanoda/issues/12).
+
+  Found by pestycyd (https://github.com/jasisz/pestycyd).
+leanfile: tests/corner-cases/nested-redex-aux.lean
+export-decls: ["nestedRedex"]
+outcome: either
