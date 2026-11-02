@@ -13,14 +13,16 @@ description: |
   gets the same variable and what was found under it holds again. Proof
   arguments of one constant are not compared. Weak head normalization runs
   a lazy machine that unfolds a matcher into its callers once and goes from
-  a casesOn straight to its branch.
+  a casesOn straight to its branch. A recursive definition that keeps
+  unfolding gets a rule, derived once by reducing it on fresh variables,
+  which later calls take instead of unfolding it.
 
   The build installs the Aver release pinned in `.aver-version` from
   crates.io and builds Pestka with a profile from checking `Init`. The same
   source compiled to WebAssembly is the `pestka-wasm` entry.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 4fbe9d1c7d76fe8e534a1aa07df1f4f483face23
+rev: e1b1d11ce0fd9dd8eb95bbaf35abc2fdb58397fa
 build: |
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)
