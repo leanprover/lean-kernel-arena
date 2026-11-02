@@ -26,7 +26,7 @@ description: |
   agentic, carried out with Claude Code.
 url: https://github.com/pmatos/vow-lean-kernel
 ref: main
-rev: 0d27a4fc46b8699fe28488dcfbcc2c7eb20ab25c
+rev: cd0f69fcc965198217dcf91b1563e8bfa7ec017e
 build: |
   set -eu
 
