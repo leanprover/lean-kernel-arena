@@ -5,7 +5,6 @@
 # there, then `run` with `$IN` = the NDJSON test file. `build`/`run` are executed
 # via `/bin/sh -c`, so they stay POSIX-sh compatible (the internal scripts/*.sh
 # invoke bash explicitly).
-version: "0.1.0"
 description: |
   A Lean 4 kernel (proof checker) written in [**Vow**](https://github.com/vow-lang/vow),
   a young systems language. Reads `lean4export` NDJSON and verifies each
