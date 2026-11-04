@@ -22,7 +22,7 @@ description: |
   source compiled to WebAssembly is the `pestka-wasm` entry.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: e1b1d11ce0fd9dd8eb95bbaf35abc2fdb58397fa
+rev: f09ce292253b3756e9df46ddf9c87584722aa5c8
 build: |
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)
