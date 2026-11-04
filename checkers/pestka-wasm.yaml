@@ -8,10 +8,11 @@ description: |
   what a garbage-collected wasm target costs a Lean kernel, and Aver's
   backend keeps working on it.
 
-  Declarations are checked in file order on one thread. `bin/run-wasm`
-  passes on Pestka's exit status only when its verdict line agrees with it,
-  and exits with 3 otherwise, so a crash of V8 or of the host never reads
-  as a verdict.
+  Declarations are checked in file order on one thread, with `--low-memory`:
+  Pestka's caches stay bounded, which under the garbage collector costs no
+  extra work. `bin/run-wasm` passes on Pestka's exit status only when its
+  verdict line agrees with it, and exits with 3 otherwise, so a crash of V8
+  or of the host never reads as a verdict.
 
   The build installs the Aver release pinned in `.aver-version` from
   crates.io and optimizes the module for speed with Binaryen's `wasm-opt`.
@@ -21,5 +22,5 @@ rev: f09ce292253b3756e9df46ddf9c87584722aa5c8
 build: |
   cargo install aver-lang --version "$(cat .aver-version)" --locked --features wasm --root "$PWD/.aver"
   AVER="$PWD/.aver/bin/aver" bin/build-wasm
-run: bin/run-wasm "$IN" 1
+run: bin/run-wasm --low-memory "$IN" 1
 threads: 1
