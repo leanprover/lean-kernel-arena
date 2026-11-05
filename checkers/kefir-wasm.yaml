@@ -10,10 +10,10 @@ description: |
 
   The build installs the pinned Rust toolchain with the `wasm32-wasip1` standard
   library through rustup, local to the checkout.
-version: "8fb94a9"
+version: "e00bbd5"
 url: https://github.com/dmitrykorolev/kefir
 ref: main
-rev: 8fb94a9aa71572897d1944753dec82932ae50706
+rev: e00bbd5bf5f3bc2a1c6d6aa0c9e6b29584763d79
 build: |
   export RUSTUP_HOME="$PWD/.rustup" CARGO_HOME="$PWD/.cargo" RUSTUP_INIT_SKIP_PATH_CHECK=yes
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none

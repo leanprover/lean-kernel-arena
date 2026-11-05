@@ -8,10 +8,21 @@ description: |
   confirm is rechecked by a substitution-based checker. Hot definitions get
   reduction rules derived from their own bodies. Recursors are re-derived and
   must match the export exactly. Single-threaded.
-version: "8fb94a9"
+version: "e00bbd5"
 url: https://github.com/dmitrykorolev/kefir
 ref: main
-rev: 8fb94a9aa71572897d1944753dec82932ae50706
-build: RUSTFLAGS="-C target-cpu=native" cargo build --release --locked
-run: ./target/release/kefir --axiom-policy=allow-all-declared-axioms
+rev: e00bbd5bf5f3bc2a1c6d6aa0c9e6b29584763d79
+build: |
+  set -eu
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init-prelude
+  rm -rf pgo target-pgo-generate target-pgo-use
+  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" \
+    cargo build --release --locked --target-dir target-pgo-generate
+  IN="$ROOT/_build/tests/init-prelude.ndjson" \
+    ./target-pgo-generate/release/kefir --axiom-policy=allow-all-declared-axioms >/dev/null
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" \
+    cargo build --release --locked --target-dir target-pgo-use
+run: ./target-pgo-use/release/kefir --axiom-policy=allow-all-declared-axioms
 threads: 1
