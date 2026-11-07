@@ -1,0 +1,30 @@
+description: |
+  The declarations to check are the N projection functions of
+
+      structure Wide (n : Nat) : Prop where
+        (h0 : n + 0 = 0 + n)  …  (h{N-1} : n + (N-1) = (N-1) + n)
+
+  reached through a theorem that rebuilds a `Wide n` from all of them.
+
+  `Wide` is a proposition, so a projection out of it is checked as official's
+  `infer_proj` does: every earlier field that a later field's type uses must
+  itself be a proposition. Official instantiates the parameter `n` first and
+  then steps through the fields, so "is field j used later" is a test of the
+  cached loose-variable range of the binder body, constant time per field:
+  **Θ(N²)** for all N projections.
+
+  A checker that asks the question of the stored constructor type instead
+  walks the rest of the telescope for every earlier field of every projection,
+  and the parameter `n`, a loose bound variable in every field's type there,
+  defeats any loose-variable cutoff: no field is used later, so every walk
+  goes to the end, for **Θ(N³)**.
+
+  N=200 in the Lean source. Lean 4.35 builds a propositional structure's
+  `casesOn` from all its projections, so the same cost appears for every such
+  structure there (e.g. the `bv_decide` structure benchmarks of the Lean test
+  suite).
+leanfile: tests/perf/prop-struct-projections.lean
+export-decls: ["wide_rebuild"]
+outcome: accept
+compare-perf: true
+timeout: 60
