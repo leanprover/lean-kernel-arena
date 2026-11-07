@@ -3,8 +3,8 @@
 
 {# One result row in the results table; group members are shown indented, without the group prefix #}
 {% macro result_row(result, group) %}
-            <tr>
-                <td{% if group %} class="group-member"{% endif %}><a href="#test-{{ result.test }}">{% if group %}{{ result.test[(group | length) + 1:] }}{% else %}{{ result.test }}{% endif %}</a></td>
+            <tr id="test-{{ result.test }}">
+                <td{% if group %} class="group-member"{% endif %}><a href="{{ root_path }}{{ run_href(checker.name, result.test) }}">{% if group %}{{ result.test[(group | length) + 1:] }}{% else %}{{ result.test }}{% endif %}</a></td>
                 <td class="spacer-col"></td>
                 <td class="text-center">
                     {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}
@@ -21,33 +21,6 @@
 
 {% block style %}
 {{ detail_styles() }}
-.link-group {
-    margin-top: 0.5rem;
-}
-.link-group a {
-    margin-right: 1rem;
-    text-decoration: none;
-    padding: 0.25rem 0.5rem;
-    background-color: #e9ecef;
-    border-radius: 3px;
-    font-size: 0.9rem;
-}
-.link-group a:hover {
-    background-color: #d3d8e0;
-}
-details summary {
-    cursor: pointer;
-    user-select: none;
-    margin-bottom: 0.5rem;
-}
-section pre, details pre {
-    background-color: #f5f5f5;
-    padding: 0.5rem;
-    border-radius: 4px;
-    overflow-x: auto;
-    max-height: 300px;
-    overflow-y: auto;
-}
 {% endblock %}
 
 {% block content %}
@@ -149,74 +122,6 @@ section pre, details pre {
         {% endfor %}
     </table>
     </div>
-</section>
-<section>
-  <header>
-    <h2>Detailed results</h2>
-  </header>
-
-    {% for result in results %}
-    <h3 id="test-{{ result.test }}">Test "{{ result.test }}"</h3>
-
-    <p>
-        <strong>Expected:</strong>
-        {% if result.expected == 'accept' %}👍 accept{% elif result.expected == 'reject' %}✋ reject{% elif result.expected == 'either' %}🤷 either{% else %}⚠️ {{ result.expected }}{% endif %}
-        {% if result.test_stats %}
-        · <strong>Size:</strong> {{ result.test_stats.size_str }}
-        · <strong>Lines:</strong> {{ result.test_stats.lines_str }}
-        {% endif %}
-        {% if result.test_stats.lean4export_version %}
-        · <strong>lean4export:</strong> {{ result.test_stats.lean4export_version }}
-        {% endif %}
-        {% if result.test_stats.lean_version %}
-        · <strong>Lean:</strong> {{ result.test_stats.lean_version }}
-        {% endif %}
-        {% if result.test_links.declaration_url or result.test_links.source_url %} · {% endif %}
-        {% if result.test_links.declaration_url %}
-        <a href="{{ result.test_links.declaration_url }}" target="_blank">📄 Declaration</a>
-        {% endif %}
-        {% if result.test_links.declaration_url and result.test_links.source_url %} · {% endif %}
-        {% if result.test_links.source_url %}
-        <a href="{{ result.test_links.source_url }}" target="_blank">🔗 Source</a>
-        {% endif %}
-    </p>
-    {% if result.test_description %}
-    <div class="description">
-        {{ result.test_description | safe }}
-    </div>
-    {% endif %}
-
-    <p>
-      <b>Test result:</b>
-        <span class="{% if result.expected == 'either' %}{% elif (result.expected == 'accept' and result.status == 'accepted') or (result.expected == 'reject' and result.status == 'rejected') %}bg-success{% elif result.status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}" style="padding: 0.2em 0.5em; border-radius: 3px;">
-            {% if result.status == 'accepted' %}👍 accepted{% elif result.status == 'rejected' %}✋ rejected{% elif result.status == 'declined' %}🚫 declined{% elif result.status == 'timeout' %}⌛ timeout{% else %}💥 {{ result.status }}{% endif %}
-        </span>
-        · exit code {{ result.exit_code }}
-        {% if result.wall is not none %}
-        · wall time: {{ format_duration(result.wall_time) }}
-        {% endif %}
-        {% if result.get('instructions', 0) > 0 %}
-        · instructions: {{ format_unitless(result.get('instructions', 0)) }}
-        {% endif %}
-        {% if result.max_rss is not none %}
-        · max rss memory: {{ format_memory(result.max_rss) }}
-        {% endif %}
-        {% if result.github_run_url %}
-        · <a href="{{ result.github_job_url or result.github_run_url }}" target="_blank">run {{ result.date or result.github_run_id }}</a>
-        {% elif result.date %}
-        · run {{ result.date }}
-        {% endif %}
-    </p>
-    {% if result.stdout %}
-    <h5>stdout:</h5>
-    <pre>{{ result.stdout }}</pre>
-    {% endif %}
-    {% if result.stderr %}
-    <h5>stderr:</h5>
-    <pre>{{ result.stderr }}</pre>
-    {% endif %}
-    {% endfor %}
-
     {% else %}
     <p class="text-grey">No test results available.</p>
     {% endif %}

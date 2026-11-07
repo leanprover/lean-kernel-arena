@@ -12,7 +12,7 @@
                     {% set result = test_results.get(key) %}
                     <td class="text-center official-column {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{% elif result.status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
-                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
+                        <a href="{{ run_href(checker.name, test.name) }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if outcome_matches(test.outcome, result.status) and test.get('compare-perf') %}
                                 {# Show absolute virtual time for perf-compared tests #}
                                 {% set official_cpu_time = convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time %}
@@ -38,7 +38,7 @@
                     {% set result = test_results.get(key) %}
                     <td class="text-center {% if result %}{% if test.outcome == 'either' %}{% elif (test.outcome == 'accept' and result.status == 'accepted') or (test.outcome == 'reject' and result.status == 'rejected') %}{{ result.get('perf_highlight', '') }}{% elif result.status in ('declined', 'error', 'timeout') %}bg-warning{% else %}bg-error{% endif %}{% endif %}">
                         {% if result %}
-                        <a href="checker/{{ checker.name }}/#test-{{ test.name }}" style="text-decoration: none; color: inherit; display: block;">
+                        <a href="{{ run_href(checker.name, test.name) }}" style="text-decoration: none; color: inherit; display: block;">
                             {% if outcome_matches(test.outcome, result.status) and test.get('compare-perf') %}
                                 {# Show performance comparison for perf-compared tests #}
                                 {% set official_key = ('official', test.name) %}
