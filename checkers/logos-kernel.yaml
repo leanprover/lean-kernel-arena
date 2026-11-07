@@ -1,0 +1,39 @@
+description: |
+  **logos-kernel** — the kernel core of [LOGOS](https://logicaffeine.com), a Lean 4 checker in Rust.
+
+  - Expressions live in a maximally shared, hash-consed DAG with de Bruijn indices: structural
+    equality is one integer compare, and every cache is keyed on node identity. The export's own
+    sharing is preserved exactly; nothing is expanded into a tree.
+  - Declarations are checked by evaluation into closures: β extends an environment, a binder is
+    crossed by binding a fresh variable, and δ/ι wait in neutral values until conversion or
+    inference asks for a weak head. Types are values too, and closures keep only the variables
+    their body mentions.
+  - Conversion is Lean's algorithm: lazy δ by definitional height, proof irrelevance, η,
+    structure η, unit-like types, K, quotients, `Nat`/`String` literals, with a complete decision
+    procedure for universe level `≤`/`≡`.
+  - Inductive families, nested ones included, are elaborated by the kernel itself; an export's
+    recursors, rules and flags are admitted only if identical to what the kernel derives.
+  - The `Nat` literal fast paths (add … gcd, bitwise, shifts) and `String` literals are enabled
+    only after the environment's definitions are validated in the manner of lean4lean, against
+    reference terms elaborated by Lean itself.
+  - Rejections explain themselves on stderr: which declaration, which rule, which terms.
+url: https://github.com/Brahmastra-Labs/logicaffeine
+ref: main
+rev: 1e6ad5b7c640f8fb1780e7bf141b92a1b5a281c3
+build: |
+  set -eu
+  export CARGO_TARGET_DIR="$PWD/target"
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init
+  "$ROOT/lka.py" build-test init-prelude
+  TRAIN="$ROOT/_build/tests/init.ndjson"
+  PRELUDE="$ROOT/_build/tests/init-prelude.ndjson"
+  RUSTFLAGS="-C target-cpu=native -C profile-generate=$PWD/pgo" \
+    cargo build --locked --profile arena -p logicaffeine-kernel --features unchecked-access --example logos_kernel
+  target/arena/examples/logos_kernel --check sem "$TRAIN"
+  LLVM_PROFILE_FILE="$PWD/prelude.profraw" target/arena/examples/logos_kernel --check sem "$PRELUDE"
+  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo" --weighted-input=60,"$PWD/prelude.profraw"
+  RUSTFLAGS="-C target-cpu=native -C profile-use=$PWD/pgo/merged.profdata" \
+    cargo build --locked --profile arena -p logicaffeine-kernel --features unchecked-access --example logos_kernel
+run: |
+  target/arena/examples/logos_kernel --check sem "$IN"
