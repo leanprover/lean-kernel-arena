@@ -326,15 +326,6 @@ class BoundedOutput:
         return kept_head.decode(errors="replace") + note + kept_tail.decode(errors="replace")
 
 
-def truncate_output(text: str | None) -> str | None:
-    """Shorten a captured output to the limits of `BoundedOutput`."""
-    if not text:
-        return text
-    bounded = BoundedOutput()
-    bounded.feed(text.encode())
-    return bounded.text()
-
-
 def _run_process(
     cmd: str | list[str],
     cwd: Path | None = None,
@@ -2422,13 +2413,7 @@ def collect_results_data() -> dict:
             {k: v for k, v in test.items() if k != "file"}
             for test in tests
         ],
-        # Results from before output was bounded at capture time may carry
-        # long outputs, and are bounded here
-        "results": [
-            {k: truncate_output(v) if k in ("stdout", "stderr") else v
-             for k, v in results[key].items()}
-            for key in sorted(results)
-        ],
+        "results": [results[key] for key in sorted(results)],
     }
 
 
