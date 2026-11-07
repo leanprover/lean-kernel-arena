@@ -21,6 +21,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -239,6 +240,92 @@ def extract_ndjson_metadata(ndjson_file: Path) -> dict:
     return metadata
 
 
+# How much of a checker's stdout and stderr is kept: the first and the last
+# OUTPUT_LINES lines, each part at most OUTPUT_BYTES bytes. Enough for a
+# message or a backtrace, while a checker that prints every declaration it
+# checks cannot exhaust the memory of the runner or bloat results.json and
+# the site.
+OUTPUT_LINES = 100
+OUTPUT_BYTES = 8 * 1024
+
+
+class BoundedOutput:
+    """Collects a stream, keeping only its beginning and its end.
+
+    Feed it chunks of bytes; `text()` then returns the stream if it is within
+    the limits, and otherwise its first and last lines with a note on what
+    was omitted in between. Memory use is bounded no matter how much is fed.
+    """
+
+    def __init__(self, lines: int = OUTPUT_LINES, max_bytes: int = OUTPUT_BYTES):
+        self.lines = lines
+        self.max_bytes = max_bytes
+        self.head = bytearray()
+        self.tail = bytearray()
+        self.omitted_bytes = 0
+        self.omitted_lines = 0
+        # The last omitted byte, if any
+        self.before_tail = None
+
+    def feed(self, chunk: bytes) -> None:
+        if len(self.head) < self.max_bytes:
+            take = self.max_bytes - len(self.head)
+            self.head += chunk[:take]
+            chunk = chunk[take:]
+        self.tail += chunk
+        excess = len(self.tail) - self.max_bytes
+        if excess > 0:
+            self.omitted_bytes += excess
+            self.omitted_lines += self.tail.count(b"\n", 0, excess)
+            self.before_tail = self.tail[excess - 1]
+            del self.tail[:excess]
+
+    def text(self) -> str:
+        head, tail = bytes(self.head), bytes(self.tail)
+        if self.omitted_bytes == 0 and (head + tail).count(b"\n") <= 2 * self.lines:
+            return (head + tail).decode(errors="replace")
+
+        # Keep the first lines of the head, up to its last complete line
+        newlines = [i for i, c in enumerate(head) if c == ord("\n")]
+        if len(newlines) > self.lines:
+            cut = newlines[self.lines - 1] + 1
+        elif newlines:
+            cut = newlines[-1] + 1
+        else:
+            cut = len(head)
+        kept_head = head[:cut]
+
+        # If nothing was omitted, the tail may extend into what of the head
+        # is not kept
+        if self.omitted_bytes == 0:
+            rest = head[cut:] + tail
+            tail = rest[-self.max_bytes:]
+            before = rest[:len(rest) - len(tail)]
+            before_tail = before[-1] if before else (kept_head[-1] if kept_head else None)
+        else:
+            before_tail = self.before_tail
+        # Keep the last lines of the tail, from its first complete line
+        newlines = [i for i, c in enumerate(tail) if c == ord("\n")]
+        if tail.endswith(b"\n"):
+            newlines.pop()
+        if len(newlines) >= self.lines:
+            start = newlines[-self.lines] + 1
+        elif newlines and before_tail != ord("\n"):
+            start = newlines[0] + 1
+        else:
+            start = 0
+        kept_tail = tail[start:]
+
+        omitted_bytes = (len(head) + len(self.tail) + self.omitted_bytes
+                         - len(kept_head) - len(kept_tail))
+        omitted_lines = ((head + bytes(self.tail)).count(b"\n") + self.omitted_lines
+                         - kept_head.count(b"\n") - kept_tail.count(b"\n"))
+        note = f"[… {omitted_lines} lines ({format_memory(omitted_bytes)}) omitted …]\n"
+        if kept_head and not kept_head.endswith(b"\n"):
+            note = "\n" + note
+        return kept_head.decode(errors="replace") + note + kept_tail.decode(errors="replace")
+
+
 def _run_process(
     cmd: str | list[str],
     cwd: Path | None = None,
@@ -246,6 +333,7 @@ def _run_process(
     shell: bool = False,
     capture_output: bool = True,
     timeout: float | None = None,
+    bound_output: bool = False,
 ) -> subprocess.CompletedProcess:
     """Like subprocess.run, but with a timeout that kills the whole process group.
 
@@ -253,7 +341,11 @@ def _run_process(
     not only the direct child (which may be a `perf`/`time` wrapper or a shell)
     but also everything it spawned is killed. The returned CompletedProcess has
     an additional `timed_out` attribute.
+
+    With `bound_output`, only the beginning and the end of the captured stdout
+    and stderr are kept, see `BoundedOutput`.
     """
+    bound_output = bound_output and capture_output
     proc = subprocess.Popen(
         cmd,
         cwd=cwd,
@@ -261,7 +353,7 @@ def _run_process(
         shell=shell,
         stdout=subprocess.PIPE if capture_output else None,
         stderr=subprocess.PIPE if capture_output else None,
-        text=True,
+        text=not bound_output,
         # Only detach from our process group when we need to kill the group
         # ourselves; otherwise Ctrl-C would no longer reach the child.
         start_new_session=timeout is not None,
@@ -273,13 +365,36 @@ def _run_process(
         except ProcessLookupError:
             pass
 
+    if bound_output:
+        outputs = (BoundedOutput(), BoundedOutput())
+
+        def drain(pipe, bounded):
+            with pipe:
+                for chunk in iter(lambda: pipe.read1(65536), b""):
+                    bounded.feed(chunk)
+
+        readers = [
+            threading.Thread(target=drain, args=(pipe, bounded), daemon=True)
+            for pipe, bounded in zip((proc.stdout, proc.stderr), outputs)
+        ]
+        for reader in readers:
+            reader.start()
+
+        def communicate(timeout=None):
+            proc.wait(timeout=timeout)
+            for reader in readers:
+                reader.join()
+            return tuple(bounded.text() for bounded in outputs)
+    else:
+        communicate = proc.communicate
+
     timed_out = False
     try:
-        stdout, stderr = proc.communicate(timeout=timeout)
+        stdout, stderr = communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         timed_out = True
         kill_group()
-        stdout, stderr = proc.communicate()
+        stdout, stderr = communicate()
     except KeyboardInterrupt:
         # In a new session the child does not see the terminal's SIGINT
         if timeout is not None:
@@ -297,6 +412,7 @@ def measure_perf_with_fallback(
     shell: bool = False,
     capture_output: bool = True,
     timeout: float | None = None,
+    bound_output: bool = False,
 ) -> tuple[subprocess.CompletedProcess, dict]:
     """Run a command and measure performance metrics using perf + GNU time, with fallback.
 
@@ -373,6 +489,7 @@ def measure_perf_with_fallback(
                 shell=False,
                 capture_output=capture_output,
                 timeout=timeout,
+                bound_output=bound_output,
             )
 
             # Parse perf output
@@ -452,6 +569,7 @@ def measure_perf_with_fallback(
             shell=shell,
             capture_output=capture_output,
             timeout=timeout,
+            bound_output=bound_output,
         )
         metrics["wall_time"] = time.time() - start_wall_time
         metrics["cpu_time"] = 0.0  # Not measured here
@@ -470,6 +588,7 @@ def run_cmd(
     measure_perf: bool = False,
     print_on_failure: bool = False,
     timeout: float | None = None,
+    bound_output: bool = False,
 ) -> subprocess.CompletedProcess:
     """Run a command with optional verbose output and performance measurement.
 
@@ -482,6 +601,7 @@ def run_cmd(
         measure_perf: Whether to measure detailed performance metrics
         print_on_failure: Whether to print stdout/stderr when the command fails
         timeout: Kill the command (and its process group) after this many seconds
+        bound_output: Keep only the beginning and end of stdout/stderr
 
     Returns:
         CompletedProcess instance with additional attributes:
@@ -506,7 +626,8 @@ def run_cmd(
     if measure_perf:
         # Use detailed performance measurement
         result, metrics = measure_perf_with_fallback(
-            cmd, cwd=cwd, env=env, shell=shell, capture_output=capture_output, timeout=timeout
+            cmd, cwd=cwd, env=env, shell=shell, capture_output=capture_output, timeout=timeout,
+            bound_output=bound_output,
         )
 
         # Add metrics as attributes to the result
@@ -540,6 +661,7 @@ def run_cmd(
             shell=shell,
             capture_output=capture_output,
             timeout=timeout,
+            bound_output=bound_output,
         )
 
         elapsed = time.time() - start_time
@@ -1594,7 +1716,8 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     timeouts = [t for t in (test.get("timeout"), checker.get("timeout")) if t is not None]
     timeout = min(timeouts) if timeouts else None
 
-    result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env, measure_perf=True, timeout=timeout)
+    result = run_cmd(checker_run_cmd, cwd=work_dir, shell=True, env=env, measure_perf=True, timeout=timeout,
+                     bound_output=True)
 
     exit_code = result.returncode
     if result.timed_out:
