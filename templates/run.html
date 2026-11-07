@@ -1,9 +1,13 @@
 {% extends "base.html" %}
 {% from "macros.html" import detail_styles %}
 
-{% block title %}{{ checker.name }} on {{ test.name }} - Lean Kernel Arena{% endblock %}
+{# A page has the runs of one checker on one test, or on all subtests of a
+   `multiple` test, each in a section with an anchor #}
+{% set single = runs | length == 1 and not runs[0].anchor %}
 
-{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / <a href="{{ root_path }}checker/{{ checker.name }}/">{{ checker.name }}</a> / <a href="{{ root_path }}test/{{ test.name }}/">{{ test.name }}</a>
+{% block title %}{{ checker.name }} on {{ page }} - Lean Kernel Arena{% endblock %}
+
+{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / <a href="{{ root_path }}checker/{{ checker.name }}/">{{ checker.name }}</a> / {% if single %}<a href="{{ root_path }}test/{{ page }}/">{{ page }}</a>{% else %}{{ page }}{% endif %}
 {% endblock %}
 
 {% block style %}
@@ -16,27 +20,18 @@ section pre {
     max-height: 300px;
     overflow-y: auto;
 }
+.run {
+    padding: 0.5rem;
+    margin: 0 -0.5rem;
+    border-radius: 4px;
+    scroll-margin-top: 1rem;
+}
+.run:target {
+    background-color: #fff8dc;
+}
 {% endblock %}
 
-{% block content %}
-<section>
-    <header>
-        <h2>Checker "{{ checker.name }}" on test "{{ test.name }}"</h2>
-    </header>
-
-    <p>
-        <strong>Checker:</strong> <a href="{{ root_path }}checker/{{ checker.name }}/">{{ checker.name }}</a>
-        {% if checker.version %}
-        · <strong>Version:</strong> {{ checker.version }}
-        {% endif %}
-        {% if checker_links.declaration_url %}
-        · <a href="{{ checker_links.declaration_url }}" target="_blank">📄 Declaration</a>
-        {% endif %}
-        {% if checker_links.source_url %}
-        · <a href="{{ checker_links.source_url }}" target="_blank">🔗 Source</a>
-        {% endif %}
-    </p>
-
+{% macro run_details(test, result) %}
     <p>
         <strong>Test:</strong> <a href="{{ root_path }}test/{{ test.name }}/">{{ test.name }}</a>
         · <strong>Expected:</strong>
@@ -59,6 +54,9 @@ section pre {
         {% endif %}
         {% if test.source_url %}
         · <a href="{{ test.source_url }}" target="_blank">🔗 Source</a>
+        {% endif %}
+        {% if tutorial_href(test.name) %}
+        · <a href="{{ root_path }}{{ tutorial_href(test.name) }}">📖 Tutorial</a>
         {% endif %}
     </p>
 
@@ -91,5 +89,42 @@ section pre {
     <h5>stderr:</h5>
     <pre>{{ result.stderr }}</pre>
     {% endif %}
+{% endmacro %}
+
+{% block content %}
+<section>
+    <header>
+        <h2>Checker "{{ checker.name }}" on {% if single %}test "{{ page }}"{% else %}the tests of "{{ page }}"{% endif %}</h2>
+    </header>
+
+    <p>
+        <strong>Checker:</strong> <a href="{{ root_path }}checker/{{ checker.name }}/">{{ checker.name }}</a>
+        {% if checker.version %}
+        · <strong>Version:</strong> {{ checker.version }}
+        {% endif %}
+        {% if checker_links.declaration_url %}
+        · <a href="{{ checker_links.declaration_url }}" target="_blank">📄 Declaration</a>
+        {% endif %}
+        {% if checker_links.source_url %}
+        · <a href="{{ checker_links.source_url }}" target="_blank">🔗 Source</a>
+        {% endif %}
+    </p>
+    {% if tutorial_href(runs[0].test.name) and not single %}
+    <p>These tests are explained on the <a href="{{ root_path }}tutorial/">📖 tutorial page</a>.</p>
+    {% endif %}
+
+    {% if single %}
+    {{ run_details(runs[0].test, runs[0].result) }}
+    {% endif %}
 </section>
+{% if not single %}
+<section>
+    {% for run in runs %}
+    <div class="run" id="{{ run.anchor }}">
+    <h3><a href="#{{ run.anchor }}">{{ run.test.name[page | length + 1:] }}</a></h3>
+    {{ run_details(run.test, run.result) }}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
 {% endblock %}

@@ -37,6 +37,9 @@
         {% if test_links.source_url %}
         <a href="{{ test_links.source_url }}" target="_blank">🔗 Source</a>
         {% endif %}
+        {% if tutorial_href(test.name) %}
+        · <a href="{{ root_path }}{{ tutorial_href(test.name) }}">📖 Tutorial</a>
+        {% endif %}
     </p>
 
     {% if test_description %}
@@ -61,7 +64,7 @@
         <tbody>
             {% for result in results %}
             <tr>
-                <td><a href="{{ root_path }}run/{{ result.checker }}/{{ test.name }}/">{{ result.checker }}</a></td>
+                <td><a href="{{ root_path }}{{ run_href(result.checker, test.name) }}">{{ result.checker }}</a></td>
                 <td class="spacer-col"></td>
                 {{ result_status_cell(test.outcome, result.status) }}
                 {{ perf_cells(result, test.outcome, instructions_per_second, format_duration, format_memory, convert_instructions_to_time, test.get('compare-perf')) }}

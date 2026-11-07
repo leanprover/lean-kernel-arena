@@ -62,7 +62,7 @@ Results stored as `_results/{checker}_{test}.json`:
 - **Base template inheritance**: `base.html` → `index.html`, `checker.html`, `test.html`, `run.html`
 - **Chota CSS framework**: Minimal, responsive styling
 - **Per-checker and per-test pages**: `checker/{name}/index.html` and `test/{name}/index.html`, each a table of results
-- **Per-run pages**: `run/{checker}/{test}/index.html` with the details (result, stdout, stderr) of one run
+- **Per-run pages**: `run/{checker}/{test}/index.html` with the details (result, stdout, stderr) of one run; the subtests of a `multiple` test share one page, with an anchor each
 - **Collapsible details**: Test YAML definitions in `<details>` elements
 
 ## Critical Integration Points

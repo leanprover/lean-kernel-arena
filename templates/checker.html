@@ -4,7 +4,7 @@
 {# One result row in the results table; group members are shown indented, without the group prefix #}
 {% macro result_row(result, group) %}
             <tr id="test-{{ result.test }}">
-                <td{% if group %} class="group-member"{% endif %}><a href="{{ root_path }}run/{{ checker.name }}/{{ result.test }}/">{% if group %}{{ result.test[(group | length) + 1:] }}{% else %}{{ result.test }}{% endif %}</a></td>
+                <td{% if group %} class="group-member"{% endif %}><a href="{{ root_path }}{{ run_href(checker.name, result.test) }}">{% if group %}{{ result.test[(group | length) + 1:] }}{% else %}{{ result.test }}{% endif %}</a></td>
                 <td class="spacer-col"></td>
                 <td class="text-center">
                     {% if result.expected == 'accept' %}👍{% elif result.expected == 'reject' %}✋{% elif result.expected == 'either' %}🤷{% else %}⚠️ {{ result.expected }}{% endif %}

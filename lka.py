@@ -2367,6 +2367,35 @@ def cmd_build_rounds_index(args: argparse.Namespace) -> int:
     return 0
 
 
+# The multiple test whose subtests are also rendered as the tutorial page
+TUTORIAL_TEST = "tutorial"
+
+
+def multiple_test_parent(test: dict) -> str | None:
+    """The `multiple` test that a subtest comes from, or None for other tests.
+
+    A subtest is named <test>/<subtest> and comes from the YAML file of
+    <test>.
+    """
+    yaml_file = test.get("yaml_file") or ""
+    parent = yaml_file.removeprefix("tests/").removesuffix(".yaml")
+    if parent and test["name"].startswith(parent + "/"):
+        return parent
+    return None
+
+
+def run_page(test: dict) -> tuple[str, str | None]:
+    """The run page (below run/<checker>/) and the anchor on it, if any, with
+    the details of the run of a checker on this test.
+
+    The subtests of a `multiple` test share one page, with an anchor each.
+    """
+    parent = multiple_test_parent(test)
+    if parent is None:
+        return test["name"], None
+    return parent, "test-" + test["name"][len(parent) + 1:]
+
+
 def make_template_env(templates_dir: Path) -> Environment:
     """Create the Jinja environment used for all rendered pages.
 
@@ -2442,6 +2471,23 @@ def cmd_build_site(args: argparse.Namespace) -> int:
     test_files = {test["name"]: test.get("file") for test in load_tests()}
     for test in tests:
         test["file"] = test_files.get(test["name"])
+
+    # Links, relative to the site root, to the run of a checker on a test, and
+    # to a test's section on the tutorial page
+    tests_by_name = {test["name"]: test for test in tests}
+
+    def run_href(checker_name: str, test_name: str) -> str:
+        page, anchor = run_page(tests_by_name[test_name])
+        return f"run/{checker_name}/{page}/" + (f"#{anchor}" if anchor else "")
+
+    def tutorial_href(test_name: str) -> str | None:
+        test = tests_by_name.get(test_name)
+        if test is None or multiple_test_parent(test) != TUTORIAL_TEST:
+            return None
+        return f"tutorial/#test-{test_name[len(TUTORIAL_TEST) + 1:]}"
+
+    env.globals["run_href"] = run_href
+    env.globals["tutorial_href"] = tutorial_href
 
     # Calculate global instructions per second from results with both cpu_time and instructions
     total_instructions = 0
@@ -2721,25 +2767,33 @@ def cmd_build_site(args: argparse.Namespace) -> int:
         print(f"Error rendering test template: {e}")
         return 1
 
-    # Generate per-run pages, one for each checker and test, with the
-    # details of that run
+    # Generate per-run pages with the details of the run of a checker on a
+    # test; the subtests of a `multiple` test share one page
     try:
         run_template = env.get_template("run.html")
+        pages: dict[str, list[dict]] = {}
+        for test in tests:
+            pages.setdefault(run_page(test)[0], []).append(test)
         for checker in checkers:
             checker_links = generate_source_links(checker, "checkers", build_info.get("git_revision"))
-            for test in tests:
-                result = results.get((checker["name"], test["name"]))
-                if result is None:
+            for page, page_tests in pages.items():
+                runs = [
+                    {"test": test, "anchor": run_page(test)[1],
+                     "result": results[(checker["name"], test["name"])]}
+                    for test in page_tests
+                    if (checker["name"], test["name"]) in results
+                ]
+                if not runs:
                     continue
-                run_dir = output_dir / "run" / checker["name"] / test["name"]
+                run_dir = output_dir / "run" / checker["name"] / page
                 run_dir.mkdir(parents=True, exist_ok=True)
                 # +3 for "run/", the checker and the trailing "/"
-                root_path = "../" * (test["name"].count("/") + 3)
+                root_path = "../" * (page.count("/") + 3)
                 run_data = {
                     "checker": checker,
                     "checker_links": checker_links,
-                    "test": test,
-                    "result": result,
+                    "page": page,
+                    "runs": runs,
                     "root_path": root_path,
                     "format_duration": format_duration,
                     "format_memory": format_memory,
