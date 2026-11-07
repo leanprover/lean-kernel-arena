@@ -2593,14 +2593,6 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                     result["expected"] = test.get("outcome")
                     # Add test stats (test object contains all stats data)
                     result["test_stats"] = {k: v for k, v in test.items() if k not in ["name", "file"]}
-                    # Add test description from stats (rendered from markdown)
-                    stats_description = test.get("description", "")
-                    result["test_description"] = render_markdown(stats_description)
-                    # Test links are already stored in test object
-                    result["test_links"] = {
-                        "declaration_url": test.get("declaration_url"),
-                        "source_url": test.get("source_url")
-                    }
 
                     # Add official checker results for comparison (if available)
                     official_key = ("official", test["name"])
@@ -2727,6 +2719,37 @@ def cmd_build_site(args: argparse.Namespace) -> int:
             print(f"Generated: {output_file}")
     except Exception as e:
         print(f"Error rendering test template: {e}")
+        return 1
+
+    # Generate per-run pages, one for each checker and test, with the
+    # details of that run
+    try:
+        run_template = env.get_template("run.html")
+        for checker in checkers:
+            checker_links = generate_source_links(checker, "checkers", build_info.get("git_revision"))
+            for test in tests:
+                result = results.get((checker["name"], test["name"]))
+                if result is None:
+                    continue
+                run_dir = output_dir / "run" / checker["name"] / test["name"]
+                run_dir.mkdir(parents=True, exist_ok=True)
+                # +3 for "run/", the checker and the trailing "/"
+                root_path = "../" * (test["name"].count("/") + 3)
+                run_data = {
+                    "checker": checker,
+                    "checker_links": checker_links,
+                    "test": test,
+                    "result": result,
+                    "root_path": root_path,
+                    "format_duration": format_duration,
+                    "format_memory": format_memory,
+                    "format_unitless": format_unitless,
+                    "build_info": build_info,
+                }
+                run_template.stream(run_data).dump(str(run_dir / "index.html"))
+        print(f"Generated: {output_dir / 'run'}/*/*/index.html")
+    except Exception as e:
+        print(f"Error rendering run template: {e}")
         return 1
 
     # Copy static files if they exist
