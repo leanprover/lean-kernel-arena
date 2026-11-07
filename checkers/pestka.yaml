@@ -5,11 +5,13 @@ description: |
   It implements Lean's type theory on its own (universe levels,
   definitional equality, inductive types with their recursors, quotients,
   and the Nat and String literal extensions), following the reference
-  kernel's algorithm. It was written by an AI agent under human guidance.
+  kernel's substitution-based algorithm, without NbE, to see how far that
+  algorithm can be pushed. It was written by an AI agent under human guidance.
 
-  Declarations are checked in file order on one worker, which keeps what it
-  finds from one declaration to the next. A free variable is named by its
-  type, value and how many of its kind are open, so a binder opened again
+  Declarations are checked on one worker, which keeps what it finds from
+  one declaration to the next, and checks them grouped by namespace so that
+  this is reused while still warm. A free variable is named by its type,
+  value and how many of its kind are open, so a binder opened again
   gets the same variable and what was found under it holds again. Proof
   arguments of one constant are not compared. Weak head normalization runs
   a lazy machine that unfolds a matcher into its callers once and goes from
@@ -18,15 +20,15 @@ description: |
   which later calls take instead of unfolding it.
 
   The build installs the Aver release pinned in `.aver-version` from
-  crates.io and builds Pestka with a profile from checking `Init`. The same
-  source compiled to WebAssembly is the `pestka-wasm` entry.
+  crates.io and builds Pestka for one thread with a profile from checking
+  `Init`. The same source compiled to WebAssembly is the `pestka-wasm` entry.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: f09ce292253b3756e9df46ddf9c87584722aa5c8
+rev: 5ef78d91dbc268191c8fb555b02c37378e00ca73
 build: |
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)
   "$ROOT/lka.py" build-test init
-  AVER="$PWD/.aver/bin/aver" FLAGS="-C target-cpu=native" bin/build-pgo "$ROOT/_build/tests/init.ndjson"
+  AVER="$PWD/.aver/bin/aver" AVER_FLAGS="--threads one" FLAGS="-C target-cpu=native" bin/build-pgo "$ROOT/_build/tests/init.ndjson"
 run: .build/target/release/main "$IN" 1
 threads: 1
