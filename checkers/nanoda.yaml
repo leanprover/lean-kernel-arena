@@ -20,7 +20,7 @@ description: |
   16 MiB up to 256 MiB, as some tests need deeper recursion than 16 MiB allows.
 url: https://github.com/ammkrn/nanoda_lib
 ref: master
-rev: d0a02cc5defadd683f62f9d078f41688314fa31f
+rev: 0da9f98feadd3a0a2ef4b3dbcf52a298a6fef929
 build: |
   grep -q 'STACK_SIZE: usize = 16_777_216;' src/lib.rs || { echo "STACK_SIZE patch does not apply any more"; exit 1; }
   sed -i 's/STACK_SIZE: usize = 16_777_216;/STACK_SIZE: usize = 268_435_456;/' src/lib.rs
