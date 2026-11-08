@@ -21,14 +21,15 @@ description: |
     does. Errors (unparsable input, running out of stack or memory) exit with
     code 3 and are never reported as a rejection.
 
-  The parsed environment takes about as much memory as the export file. For inputs
-  over 1 GB the checker compacts the heap after parsing and lowers the GC's space
-  overhead, keeping peak memory near twice the input size.
+  The parsed environment takes about as much memory as the export file. A memory
+  governor watches the resident set and, above a budget (60% of the machine's
+  memory), lowers the GC's space overhead and lets fewer domains start new
+  declarations; this changes scheduling only, never what is checked.
 
   Written by Claude (Anthropic), directed by yoonwoojeong.
 url: https://github.com/yoonwoojeong/ocaml4lean
 ref: main
-rev: 3753af78b07417ad05fc51e321aa1c9dc14ffc54
+rev: 51d1b48518216ff8766becae0da22cf605d5ec2c
 threads: 4
 # `ocaml` comes from the arena's flake; build.sh needs nothing else (no dune or opam
 # packages).
