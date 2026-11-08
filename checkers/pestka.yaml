@@ -24,7 +24,7 @@ description: |
   `Init`. The same source compiled to WebAssembly is the `pestka-wasm` entry.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 5ef78d91dbc268191c8fb555b02c37378e00ca73
+rev: 7caa557d52127407589d9f02d3330265219755ee
 build: |
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)

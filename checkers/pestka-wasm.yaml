@@ -19,7 +19,7 @@ description: |
   crates.io and optimizes the module for speed with Binaryen's `wasm-opt`.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 5ef78d91dbc268191c8fb555b02c37378e00ca73
+rev: 7caa557d52127407589d9f02d3330265219755ee
 build: |
   cargo install aver-lang --version "$(cat .aver-version)" --locked --features wasm --root "$PWD/.aver"
   AVER="$PWD/.aver/bin/aver" bin/build-wasm
