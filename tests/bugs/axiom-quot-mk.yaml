@@ -1,0 +1,44 @@
+description: |
+  Proof of False via `Quot.lift` reducing on an ordinary axiom named `Quot.mk`.
+
+  The export declares the quotient declarations `Quot`, `Quot.lift` and
+  `Quot.ind`, but in place of the quotient constructor an axiom
+
+  ```
+  axiom Quot.mk {dummy : Sort u} (r : Decidable True → Decidable True → Prop) :
+    Decidable False → Quot r
+  ```
+
+  followed by
+
+  ```
+  def rel : Decidable True → Decidable True → Prop := fun _ _ => false = true
+  def bad : Decidable True :=
+    Quot.lift (fun x => x) (fun _ _ h => nomatch h)
+      (Quot.mk (dummy := True) rel (Decidable.isFalse (fun h => h)))
+  def tag : Decidable True → Bool
+    | .isTrue _ => true
+    | .isFalse _ => false
+  theorem tag_true (d : Decidable True) : tag d = true
+  theorem candidate : tag bad = true := tag_true bad
+  theorem finalContradiction : False := Bool.noConfusion candidate
+  ```
+
+  The axiom is consistent: `fun _ => Quot.mk r (Decidable.isTrue True.intro)`
+  inhabits its type. A checker that applies the rule
+  `Quot.lift f h (Quot.mk r a) ≡ f a` to any application of the name
+  `Quot.mk` with three arguments, without requiring it to be the quotient
+  constructor, reduces `bad` to `Decidable.isFalse _`, so `tag bad` reduces to
+  `false`. `candidate` then has type `false = true`. Apart from `Quot.mk`, the
+  only axioms are `propext` and `Classical.choice`.
+
+  Without the `Quot.ind` record the quotient package is incomplete, and such a
+  checker rejects `finalContradiction` with a type mismatch. The official
+  kernel installs the quotient declarations together and rejects the file.
+
+  logos-kernel, nanobruijn and tenet accepted this export. Found while triaging a
+  differential run of Pestka against other checkers.
+# Hand-written export file: Lean does not accept a declaration named `Quot.mk`
+# beside the quotient package, so lean4export cannot produce it.
+file: tests/bugs/axiom-quot-mk.ndjson
+outcome: reject
