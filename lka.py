@@ -15,6 +15,7 @@ import filecmp
 import fnmatch
 import hashlib
 import json
+import math
 import os
 import shutil
 import signal
@@ -121,16 +122,30 @@ def validate_yaml_data(data: dict, schema_name: str, file_path: Path) -> None:
         sys.exit(1)
 
 
+def _three_digits(value: float) -> str:
+    """Format a non-negative number with three significant digits, e.g. 1.23, 12.3, 123, 1234."""
+    if value == 0:
+        return "0"
+    decimals = max(0, 2 - math.floor(math.log10(value)))
+    return f"{value:.{decimals}f}"
+
+
 def format_duration(seconds: float) -> str:
-    """Format a duration in seconds to a human-readable string."""
-    if seconds >= 3600:
-        return f"{seconds / 3600:.1f}\u202fh"
-    elif seconds >= 60:
-        return f"{seconds / 60:.1f}\u202fm"
+    """Format a duration in seconds to a human-readable string.
+
+    Values have three significant digits, and stay in a unit until they reach
+    100 of it (ms below 1 s), so that no precision is lost at a unit switch:
+    850 ms, 1.23 s, 95.2 s, 1.67 min, 95.0 min, 1.67 h.
+    """
+    seconds = float(f"{seconds:.3g}")
+    if seconds >= 100 * 60:
+        return f"{_three_digits(seconds / 3600)}\u202fh"
+    elif seconds >= 100:
+        return f"{_three_digits(seconds / 60)}\u202fmin"
     elif seconds >= 1:
-        return f"{seconds:.1f}\u202fs"
+        return f"{_three_digits(seconds)}\u202fs"
     else:
-        return f"{seconds * 1000:.0f}\u202fms"
+        return f"{_three_digits(seconds * 1000)}\u202fms"
 
 
 def format_memory(bytes_value: float) -> str:
