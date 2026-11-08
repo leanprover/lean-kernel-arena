@@ -1,0 +1,34 @@
+description: |
+  [**ocaml4lean**](https://github.com/yoonwoojeong/ocaml4lean) is an independent Lean 4
+  kernel in OCaml 5. It follows the official kernel's algorithm, including its
+  definitional equality heuristics: lazy delta reduction, proof irrelevance, eta,
+  structure eta, unit-like types, Nat and String literals, and `eagerReduce`.
+
+  - **Inductives.** It re-derives every inductive block from the types and
+    constructors, including the nested-to-mutual translation and the auxiliary
+    recursors. Every exported constructor and recursor must be identical to the
+    derived one.
+  - **Terms.** Terms use locally nameless de Bruijn indices, and free variables carry
+    their types. The environment read from the file is hash-consed. Terms built
+    during checking are not interned; they are compared structurally behind a hash
+    check.
+  - **Parallelism.** Declarations are checked on 4 OCaml domains. Each block sees
+    only the constants declared before it in the file, so the verdict is the same
+    as a sequential replay.
+  - **Dependencies.** None beyond the OCaml compiler. It uses its own bignum module
+    for `Nat` literals.
+  - **Exit codes.** It never declines and accepts any axiom, as the official kernel
+    does. Errors (unparsable input, running out of stack or memory) exit with
+    code 3 and are never reported as a rejection.
+
+  Peak memory is about six times the size of the export file.
+
+  Written by Claude (Anthropic), directed by yoonwoojeong.
+url: https://github.com/yoonwoojeong/ocaml4lean
+ref: main
+rev: 6f661b3865003434373304b1627cd9bfe57d8944
+threads: 4
+# `ocaml` comes from the arena's flake; build.sh needs nothing else (no dune or opam
+# packages).
+build: ./build.sh
+run: ./ocaml4lean -j 4 "$IN"
