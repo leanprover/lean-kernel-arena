@@ -1,0 +1,41 @@
+description: |
+  Proof of False via an ordinary axiom named `Quot.lift`.
+
+  The export declares the quotient declarations `Quot`, `Quot.mk` and
+  `Quot.ind`, but `Quot.lift` is an axiom with the canonical type
+
+  ```
+  axiom Quot.lift {α : Sort u} {r : α → α → Prop} {β : Sort v} (f : α → β) :
+    (∀ a b, r a b → f a = f b) → Quot r → β
+  ```
+
+  followed by
+
+  ```
+  def R : Bool → Bool → Prop := fun _ _ => True
+  def qfalse : Quot R := Quot.mk R false
+  def lifted : Bool := Quot.lift (fun _ => false) (fun _ _ _ => rfl) qfalse
+  theorem liftBeta : lifted = false := rfl
+  axiom saysTrue : lifted = true
+  theorem finalContradiction : False :=
+    Bool.noConfusion (liftBeta.symm.trans saysTrue)  -- false = true
+  ```
+
+  `Quot.lift` and `saysTrue` are the only axioms, and they are consistent:
+  without the quotient reduction rule, an ordinary `Quot.lift` can be
+  interpreted so that `lifted` is `true`.
+  `liftBeta` checks only in a checker that applies
+  `Quot.lift f h (Quot.mk r a) ≡ f a` to the ordinary axiom, or that drops
+  the exported `Quot.lift` declaration and checks the rest against the real
+  quotient package.
+
+  This is a sibling of `axiom-quot-mk`. Unlike there, the impostor has the
+  canonical type, so a checker that skips the exported declaration by name
+  no longer trips over a type mismatch later.
+
+  lean4lean and tenet accepted this export, as did the official checker
+  before its quotient post-check.
+# Hand-written export file: Lean does not accept a declaration named `Quot.lift`
+# beside the quotient package, so lean4export cannot produce it.
+file: tests/bugs/axiom-quot-lift.ndjson
+outcome: reject
