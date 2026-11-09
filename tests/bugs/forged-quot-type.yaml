@@ -1,0 +1,34 @@
+description: |
+  Proof of `0 = 1` via the quotient constructor and induction principle
+  declared over an ordinary definition named `Quot`.
+
+  The export declares, in this order:
+
+  1. `def Quot {α : Sort u} (r : α → α → Prop) : Sort u := PUnit`;
+  2. quotient declarations `Quot.mk` and `Quot.ind`, with the types the real
+     ones have;
+  3. the theorem
+
+  ```
+  theorem bogusEq : Nat.zero = Nat.succ Nat.zero :=
+    Quot.ind (α := Nat.zero = Nat.succ Nat.zero) (r := fun _ _ => Nat.zero = Nat.succ Nat.zero)
+      (β := fun _ => Nat.zero = Nat.succ Nat.zero) (fun a => a) PUnit.unit
+  ```
+
+  Read with this definition, `Quot.ind` says that a predicate holding on the
+  image of `Quot.mk` holds on all of `PUnit`, even when `α` is empty. The
+  file has no axioms.
+
+  A checker that installs `Quot.mk` and `Quot.ind` once the name `Quot` is
+  present in the environment, without requiring it to be the quotient type
+  former, accepts it. The official kernel installs the quotient declarations
+  together and rejects the file.
+
+  This is a sibling of `forged-quot-ind`, which forges `Quot.mk` as well and
+  leaves `Quot.ind` alone; the two tests catch different checkers.
+
+  logos-kernel, nanobruijn and tenet accepted this export.
+# Hand-written export file: Lean adds the quotient declarations as one package,
+# so lean4export cannot produce them over a user-defined `Quot`.
+file: tests/bugs/forged-quot-type.ndjson
+outcome: reject
