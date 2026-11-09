@@ -29,7 +29,7 @@ description: |
   Written by Claude (Anthropic), directed by yoonwoojeong.
 url: https://github.com/yoonwoojeong/ocaml4lean
 ref: main
-rev: 8c7fa321afaa913a134f4d08b9db00c5e66641bb
+rev: 6f94226df5b91e51af692d05e00b001ee8e0f2fd
 threads: 4
 # `ocaml` comes from the arena's flake; build.sh needs nothing else (no dune or opam
 # packages).
