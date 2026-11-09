@@ -1,0 +1,27 @@
+description: |
+  Proof of `∀ P : Prop, P` via a type cache for open terms that ignores the
+  types of the enclosing binders.
+
+  ```
+  -- A := ∀ P : Prop, P,  B := ∀ P : Prop, P → P
+  theorem openDagContextLeakFalse : ∀ P : Prop, P :=
+    (fun f : A → A =>
+      (fun (g : A → A) (h : B → A) => h (fun P p => p))
+        (fun x : A => f x) (fun y : B => f y))
+    (fun z : A => z)
+  ```
+
+  `fun y : B => f y` is ill typed. The bodies `f x` and `f y` are the same
+  expression `#1 #0`, so the export shares one node between them, at the same
+  binder depth. A checker that caches
+  the inferred type of an open subterm by its identity and binder depth alone
+  reuses the type computed under `x : A` when it meets the node under
+  `y : B`, so `h` turns the trivial proof of `B` into a proof of `A`. The file
+  has no axioms and no other declarations.
+
+  ocaml4lean accepted this export with the open-term inference of its
+  `perf/kernel-overhaul` branch (yoonwoojeong/ocaml4lean#7). Found while
+  reading that branch.
+leanfile: tests/bugs/open-term-cache-context.lean
+export-decls: ["openDagContextLeakFalse"]
+outcome: reject
