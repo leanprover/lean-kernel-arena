@@ -1,0 +1,22 @@
+description: |
+  Proof of `False` via an ill-typed proof in the type of a recursor that is
+  compared with the derived type up to definitional equality.
+
+  A variant of `bugs/rec-rule-proof-irrel` that forges the type of a recursor
+  instead of a rule. `Q : Box false → Prop` has the single constructor
+  `Q.mk : Q (Box.mk false)`, so the minor premise of `Q.rec` has the type
+  `motive (Box.mk false) Q.mk`. The export replaces it by
+  ```
+  motive (@id (Box false) (Box.mk true)) Q.mk
+  ```
+  which proof irrelevance makes look equal to the derived one. For the motive
+  `fun h _ => read h = true`, the minor premise is then `true = true`, proved by
+  `rfl`, and `Q.rec` turns it into `read (Box.mk false) = true`, that is,
+  `false = true`.
+
+  A checker must compare the exported type with the derived one structurally, or
+  type check the exported type before comparing them; type checking only the
+  derived type, or checking only the shape of the exported one, is not enough.
+leanfile: tests/bugs/rec-proof-irrel.lean
+export-decls: ["badRecType"]
+outcome: reject

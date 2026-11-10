@@ -1,0 +1,19 @@
+description: |
+  Proof of `False` via a recursor rule that applies the minor premise to the
+  wrong argument.
+
+  The export declares the structure `W` with a single field `b : Bool`, but the
+  rule of `W.rec` ignores the field:
+  ```
+  fun motive mk b => mk true      -- instead of fun motive mk b => mk b
+  ```
+  With this rule,
+  `W.rec (motive := fun w => {c : Bool // c = w.b}) (fun b => ⟨b, rfl⟩) (W.mk false)`,
+  of type `{c // c = false}`, reduces to `⟨true, rfl⟩`, whose second component
+  proves `true = false`. A checker must derive the rule itself and reject an
+  export whose rule differs from it, as the official kernel does; checking that
+  the right-hand side of a rule is headed by the minor premise for its
+  constructor is not enough.
+leanfile: tests/bugs/rec-rule-wrong-arg.lean
+export-decls: ["bad"]
+outcome: reject
