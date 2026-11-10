@@ -1,0 +1,24 @@
+description: |
+  Proof of `False` via an ill-typed recursor rule that is compared with the
+  derived one up to definitional equality.
+
+  `J : Prop` has two constructors, so it eliminates only into `Prop`, and the
+  right-hand sides of the rules of `J.rec` are proofs. The export replaces the
+  rule for `J.j1` by an ill-typed one:
+  ```
+  fun motive h₁ h₂ => @id (motive J.j1) (Box.mk true)   -- instead of fun motive h₁ h₂ => h₁
+  ```
+  Here `Box : Bool → Prop` has the single constructor `Box.mk (b : Bool) : Box b`,
+  so it eliminates into `Type`, and `read : Box b → Bool` recovers `b`. With the
+  forged rule, `J.rec (motive := fun _ => Box false) … J.j1 : Box false` reduces
+  to `Box.mk true`, and `read` of it is `true`, while `read_eq` says it is `false`.
+
+  A checker that compares the exported rule with the one it derives up to
+  definitional equality, before type checking it, is fooled by proof
+  irrelevance: both sides are proofs, so only their types are compared, and
+  inferring the type of the forged rule without checking the argument of `id`
+  gives `motive J.j1`. A checker must compare the rules structurally, or type
+  check the exported rule before comparing it.
+leanfile: tests/bugs/rec-proof-irrel.lean
+export-decls: ["badApp"]
+outcome: reject

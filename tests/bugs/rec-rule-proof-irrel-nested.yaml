@@ -1,0 +1,22 @@
+description: |
+  Proof of `False` via an ill-typed rule of the auxiliary recursor of a nested
+  inductive.
+
+  A variant of `bugs/rec-rule-proof-irrel` for a nested inductive:
+  ```
+  inductive N : Prop
+    | n1 : N
+    | n2 : N ∧ N → N
+  ```
+  `N` is nested through `And`, so the auxiliary type `N ∧ N` is a `Prop` as
+  well, and the right-hand sides of the rules of `N.rec_1` are proofs. The export
+  replaces the rule for `And.intro` by
+  ```
+  fun motive_1 motive_2 n1 n2 intro l r => @id (motive_2 (And.intro l r)) (Box.mk true)
+  ```
+
+  A checker that rejects `bugs/rec-rule-proof-irrel` can still accept this one if
+  it skips its checks for the rules of an auxiliary recursor.
+leanfile: tests/bugs/rec-proof-irrel.lean
+export-decls: ["badNested"]
+outcome: reject
