@@ -1,0 +1,32 @@
+description: |
+  [**Palladium**](https://github.com/yoonwoojeong/Palladium) is an independent Lean 4
+  kernel written from scratch in Rust, with no dependencies beyond the standard library.
+
+  - **Terms.** Terms are hash-consed with binder names erased, so alpha-equivalence is
+    integer equality. A binder is opened with a canonical typed local, the pair of its
+    depth and its type, so a term carries its own typing context. Every cache
+    (inference, weak head normal form, definitional equality, including failures) is
+    therefore context-free and never invalidated.
+  - **Inference.** Type inference runs under an environment and never substitutes
+    into binder bodies. Definitional equality follows the official kernel's
+    heuristics: lazy delta reduction, proof irrelevance, eta, structure eta,
+    unit-like types, Nat and String literals, and `eagerReduce`.
+  - **Universes.** Levels are compared with a complete decision procedure.
+  - **Inductives.** Nothing in the export is trusted: recursors, their computation
+    rules and all inductive metadata are re-derived and compared with the export.
+  - **Parallelism.** Declarations are checked on 4 threads. A declaration sees only
+    the constants declared before it in the file, so the verdict is that of a
+    sequential replay.
+  - **Loading.** The export is parsed in parallel as it is read, in bounded pieces, so
+    the file is never in memory as a whole.
+  - **Exit codes.** It declines an export format it does not support. Internal faults
+    (recursion depth, panics) exit with code 3 and I/O errors with code 4; neither is
+    ever reported as a rejection.
+
+  Written by Claude (Anthropic), directed by yoonwoojeong.
+url: https://github.com/yoonwoojeong/Palladium
+ref: main
+rev: f9d85c0ee9f8b4be5617e7a98c0741b5221e0d19
+threads: 4
+build: RUSTFLAGS="-C target-cpu=native" cargo build --release
+run: target/release/palladium -q -j 4 "$IN"
