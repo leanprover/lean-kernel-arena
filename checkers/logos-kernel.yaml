@@ -19,7 +19,7 @@ description: |
   - Rejections explain themselves on stderr: which declaration, which rule, which terms.
 url: https://github.com/Brahmastra-Labs/logicaffeine
 ref: main
-rev: 1e6ad5b7c640f8fb1780e7bf141b92a1b5a281c3
+rev: 2366d9ae95f7eb7b18f7a580eb56ab8f7544b7a4
 build: |
   set -eu
   export CARGO_TARGET_DIR="$PWD/target"
