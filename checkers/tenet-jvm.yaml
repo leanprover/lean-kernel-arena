@@ -26,6 +26,7 @@ description: |
   824 s with a peak footprint near 10 GB; it has not been tried on Linux or in the arena's own runner.
 
   Written by Claude (Anthropic), directed by Keith Adler.
+language: java
 url: https://github.com/keithadler/tenet-jvm
 ref: main
 rev: 264ddbd4e409569d8c0d28140f387a06eda68ca7

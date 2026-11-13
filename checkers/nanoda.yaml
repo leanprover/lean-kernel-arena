@@ -18,6 +18,7 @@ description: |
 
   The checker threads’ stack size is a hard-coded constant in nanoda; the arena patches it from
   16 MiB up to 256 MiB, as some tests need deeper recursion than 16 MiB allows.
+language: rust
 url: https://github.com/ammkrn/nanoda_lib
 ref: master
 rev: 0da9f98feadd3a0a2ef4b3dbcf52a298a6fef929

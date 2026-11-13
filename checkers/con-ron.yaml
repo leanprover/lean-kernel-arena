@@ -39,6 +39,7 @@ description: |
   Single-threaded it retires a little under half of con-leche's instructions,
   and on Mathlib about two thirds of nanoda's.  Written by AI under close human
   supervision from Joachim Breitner at the Lean FRO.
+language: rust
 url: https://github.com/leanprover/con-ron
 ref: master
 rev: ed864140e053a1c1deb51d39d8b8e17d5f244598

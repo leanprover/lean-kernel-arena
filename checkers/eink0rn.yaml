@@ -29,6 +29,7 @@ description: |
   language scored here is the language every other checker is scored on.
   Nothing is declined; the largest export peaks around eight gigabytes.
 version: "1.1.6"
+language: haskell
 url: https://github.com/Timeroot/eink0rn
 ref: v1.1.6
 rev: ca5c1d24691011daba4c064f989f18d2d16cabd1

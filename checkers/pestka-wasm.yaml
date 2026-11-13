@@ -19,6 +19,7 @@ description: |
   The build installs `susz` 0.1.0 and the Aver release pinned in
   `.aver-version` from crates.io, and optimizes the module for speed with
   Binaryen's `wasm-opt`.
+language: aver
 url: https://github.com/jasisz/pestka
 ref: main
 rev: f8e48a7ddee20ebfe9bfeb3a81ae2b87763c374c

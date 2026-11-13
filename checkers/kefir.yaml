@@ -9,6 +9,7 @@ description: |
   reduction rules derived from their own bodies. Recursors are re-derived and
   must match the export exactly. Single-threaded.
 version: "e00bbd5"
+language: rust
 url: https://github.com/dmitrykorolev/kefir
 ref: main
 rev: e00bbd5bf5f3bc2a1c6d6aa0c9e6b29584763d79

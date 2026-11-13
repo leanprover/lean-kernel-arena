@@ -1,5 +1,6 @@
 description: |
   A parallel Lean 4 kernel written in Rust using hash-consing and de Bruijn indices
+language: rust
 url: https://github.com/sdiehl/nano-lean
 ref: v0.3.3
 rev: 5c8a523de8d021662e024266013cbb693a5885f6

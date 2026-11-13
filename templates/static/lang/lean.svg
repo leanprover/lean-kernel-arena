@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- The stacked L∃∀N mark of the Lean programming language -->
+  <defs>
+    <clipPath id="a"><rect x="13" y="64" width="50" height="51"/></clipPath>
+    <clipPath id="n"><rect x="65" y="64" width="50" height="51"/></clipPath>
+  </defs>
+  <g fill="#2f63d0">
+    <!-- L -->
+    <rect x="15" y="13" width="8" height="50"/>
+    <rect x="15" y="55" width="48" height="8"/>
+    <!-- ∃ -->
+    <rect x="65" y="13" width="50" height="8"/>
+    <rect x="65" y="34" width="50" height="8"/>
+    <rect x="65" y="55" width="50" height="8"/>
+    <rect x="107" y="13" width="8" height="50"/>
+    <!-- N -->
+    <rect x="65" y="65" width="8" height="50"/>
+    <rect x="107" y="65" width="8" height="50"/>
+  </g>
+  <g fill="none" stroke="#2f63d0" stroke-width="8">
+    <!-- ∀ -->
+    <path clip-path="url(#a)" d="M15 62 L38 114 L61 62 M24 84 H52"/>
+    <path clip-path="url(#n)" d="M69 66 L111 114"/>
+  </g>
+</svg>

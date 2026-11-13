@@ -1,6 +1,7 @@
 version: "v4.34.1"
 description: |
   The official Lean 4 kernel checker implementation.
+language: cpp
 dir: official
 build: |
   echo leanprover/lean4:v4.34.1 > lean-toolchain

@@ -13,6 +13,7 @@ description: |
   like addition before taking the arithmetic shortcut named after it, and it refuses a numeric
   literal unless the environment's `Nat` is the inductive the literal denotes. Both are extra checks
   on the prelude of the kind the arena's README permits.
+language: csharp
 url: https://github.com/keithadler/tenet
 ref: main
 rev: 026a35ce8c433b4785a8be8ae15952803ddfacc5

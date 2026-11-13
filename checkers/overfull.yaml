@@ -1,4 +1,5 @@
 description: A Lean kernel checker in plain TeX. Some inputs overfill it.
+language: tex
 url: https://github.com/kim-em/overfull
 ref: main
 rev: b275736e035f6128f2237b22aab21e411f55be97

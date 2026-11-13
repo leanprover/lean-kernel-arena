@@ -6,6 +6,7 @@ description: |
 
   The implementation is intentionally incomplete and declines declarations it
   cannot translate or represent.
+language: lean
 url: https://github.com/FrederickPu/Canonical-min
 ref: kernel-arena
 rev: 0acb45dd44b724c7c5861f86106f03c63b7ca491

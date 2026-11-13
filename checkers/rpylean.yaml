@@ -1,6 +1,7 @@
 version: "v2026.9.1"
 description: |
   **rpylean** - A Lean type checker written in (R)Python.
+language: python
 url: https://github.com/Julian/rpylean
 ref: main
 rev: 463a3101197fa7db733cc6e2d4f55767ef3b3713

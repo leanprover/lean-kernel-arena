@@ -9,7 +9,7 @@ Validates test configuration files in the `tests/` directory.
 
 **Supported test patterns:**
 1. **Git repository with run command** - Clone a repo and run a custom command
-   - Required: `url`, `run`
+   - Required: `url`, `run`, `language`
    - Optional: `ref`, `rev`, `pre-build`, `outcome`
    
 2. **Git repository with module export** - Clone a repo and export a Lean module
@@ -21,7 +21,7 @@ Validates test configuration files in the `tests/` directory.
    - Optional: `outcome`
    
 4. **Local directory with run command** - Use local directory and run command
-   - Required: `dir`, `run`
+   - Required: `dir`, `run`, `language`
    - Optional: `pre-build`, `outcome`
    
 5. **Local directory with module export** - Use local directory and export module
@@ -33,16 +33,16 @@ Validates checker configuration files in the `checkers/` directory.
 
 **Supported checker patterns:**
 1. **Git repository checker** - Clone a repo and build/run checker
-   - Required: `url`, `run`
+   - Required: `url`, `run`, `language`
    - Optional: `version`, `ref`, `rev`, `build`
    - If `version` is omitted but both `ref` and `rev` are present, the arena will display the version as `ref (rev7)` where `rev7` is the last 7 characters of `rev`.
    
 2. **Local directory checker** - Use local directory source
-   - Required: `dir`, `run`
+   - Required: `dir`, `run`, `language`
    - Optional: `version`, `build`
    
 3. **Simple checker** - Just a run command, optionally with build step
-   - Required: `run`
+   - Required: `run`, `language`
    - Optional: `version`, `build`
 
 ## Field Definitions
@@ -64,6 +64,7 @@ Validates checker configuration files in the `checkers/` directory.
 - `timeout`: Time limit in seconds for running a checker on this test (optional). A checker that exceeds it is killed and recorded with status `timeout`, which is scored like an error (i.e. as declined). For `multiple` tests, the limit applies to each generated subtest individually. The `set-timeouts.py` script derives these limits from the official checker's wall times on the live site.
 
 ### Checker-Specific Fields
+- `language`: The (dominant) implementation language, one of the identifiers listed in `checker.json` (e.g. `lean`, `rust`, `haskell`, `x86`). The website shows its logo next to the checker. A new language also needs an entry in `LANGUAGES` in `lka.py` and a logo in `templates/static/lang/`.
 - `build`: Shell command to build the checker (optional - only needed if compilation is required)
 - `run`: Shell command to run the checker (`$IN` variable points to input file)
 

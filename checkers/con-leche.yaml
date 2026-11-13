@@ -11,6 +11,7 @@ description: |
   runs in verified mode here (the mode the theorem is about) with four
   worker threads for the check phase. It accepts only the three standard
   axioms and declines streams that use others.
+language: lean
 url: https://github.com/leanprover/con-leche
 ref: master
 rev: 0d2f467bbe576f21e42ea861d246abef718f1c13
