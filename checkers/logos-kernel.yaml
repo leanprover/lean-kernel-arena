@@ -17,9 +17,23 @@ description: |
     only after the environment's definitions are validated in the manner of lean4lean, against
     reference terms elaborated by Lean itself.
   - Rejections explain themselves on stderr: which declaration, which rule, which terms.
+
+  The core is the one LOGOS runs (`largo lean check`, `cargo install logicaffeine-kernel`'s `logos-kernel`); this
+  build of it is tuned for the Arena's instruction count: a profile trained on the Arena's `init` and `init-prelude`,
+  `target-cpu=native`, store reads without bounds checks and a position-dependent link.
+
+  It is our own code, built on the work of others (credited in full in the crate's README): the Lean 4 kernel,
+  whose theory and conversion it implements; [lean4lean](https://github.com/digama0/lean4lean) (Mario Carneiro), in
+  whose manner its literal fast paths are validated; [smalltt](https://github.com/AndrasKovacs/smalltt) (András
+  Kovács), whose evaluation into closures its value engine follows;
+  [sokonanoda](https://github.com/intgrah/sokonanoda) (Jeremy Chen), [nanoda](https://github.com/ammkrn/nanoda_lib)
+  (Chris Bailey), [mathgraph](https://github.com/metalogiclabs/mathgraph-lean-kernel) and
+  [nano-lean](https://github.com/sdiehl/nano-lean) (Stephen Diehl), which we studied and profiled declaration by
+  declaration while tuning it, and whose PGO build this one follows; [lean4export](https://github.com/leanprover/lean4export);
+  and this Arena.
 url: https://github.com/Brahmastra-Labs/logicaffeine
 ref: main
-rev: 1e6ad5b7c640f8fb1780e7bf141b92a1b5a281c3
+rev: 2366d9ae95f7eb7b18f7a580eb56ab8f7544b7a4
 build: |
   set -eu
   export CARGO_TARGET_DIR="$PWD/target"
