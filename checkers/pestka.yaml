@@ -8,27 +8,38 @@ description: |
   kernel's substitution-based algorithm, without NbE, to see how far that
   algorithm can be pushed. It was written by an AI agent under human guidance.
 
-  Declarations are checked on one worker, which keeps what it finds from
-  one declaration to the next, and checks them grouped by namespace so that
-  this is reused while still warm. A free variable is named by its type,
-  value and how many of its kind are open, so a binder opened again
-  gets the same variable and what was found under it holds again. Proof
-  arguments of one constant are not compared. Weak head normalization runs
-  a lazy machine that unfolds a matcher into its callers once and goes from
-  a casesOn straight to its branch. A recursive definition that keeps
-  unfolding gets a rule, derived once by reducing it on fresh variables,
-  which later calls take instead of unfolding it.
+  The export is first converted to [Susz](https://github.com/jasisz/susz),
+  a binary form of lean4export's ndjson, by the `susz` converter (Rust).
+  The converter is not trusted: Susz holds structure only, and Pestka checks
+  every reference, count and offset itself. An export the converter finds
+  invalid is rejected, one it cannot convert is declined. Pestka keeps the
+  proofs as bytes until their theorem is checked.
 
-  The build installs the Aver release pinned in `.aver-version` from
-  crates.io and builds Pestka for one thread with a profile from checking
-  `Init`. The same source compiled to WebAssembly is the `pestka-wasm` entry.
+  Declarations are checked on four workers, each keeping what it finds from
+  one declaration to the next, grouped by namespace so that this is reused
+  while still warm. A free variable is named by its type, value and how many
+  of its kind are open, so a binder opened again gets the same variable and
+  what was found under it holds again. Proof arguments of one constant are
+  not compared. Weak head normalization runs a lazy machine that unfolds a
+  matcher into its callers once and goes from a casesOn straight to its
+  branch. A recursive definition that keeps unfolding gets a rule, derived
+  once by reducing it on fresh variables, which later calls take instead of
+  unfolding it.
+
+  The build installs `susz` 0.1.0 and the Aver release pinned in
+  `.aver-version` from crates.io, and builds Pestka with a profile from
+  checking `Init`. The same source compiled to WebAssembly is the
+  `pestka-wasm` entry.
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 7caa557d52127407589d9f02d3330265219755ee
+rev: f8e48a7ddee20ebfe9bfeb3a81ae2b87763c374c
 build: |
+  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.0 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)
   "$ROOT/lka.py" build-test init
-  AVER="$PWD/.aver/bin/aver" AVER_FLAGS="--threads one" FLAGS="-C target-cpu=native" bin/build-pgo "$ROOT/_build/tests/init.ndjson"
-run: .build/target/release/main "$IN" 1
-threads: 1
+  .susz/bin/susz pack --no-index "$ROOT/_build/tests/init.ndjson" "$PWD/init.susz"
+  AVER="$PWD/.aver/bin/aver" FLAGS="-C target-cpu=native" bin/build-pgo "$PWD/init.susz"
+  rm -f "$PWD/init.susz"
+run: bin/arena-run "$IN" 4
+threads: 4
