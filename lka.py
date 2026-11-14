@@ -80,6 +80,27 @@ ROUNDS_URL = f"{SITE_URL}/round/"
 # The GitHub repository, used for links to releases and source files.
 REPO_URL = "https://github.com/leanprover/lean-kernel-arena"
 
+# Implementation languages a checker can declare (`language` in its YAML; the
+# schema lists the same keys), with their display name and the logo file in
+# templates/static/lang/.
+LANGUAGES = {
+    "aver": ("Aver", "aver.svg"),
+    "cobol": ("COBOL", "cobol.svg"),
+    "cpp": ("C++", "cpp.svg"),
+    "csharp": ("C#", "csharp.svg"),
+    "fortran": ("Fortran", "fortran.svg"),
+    "haskell": ("Haskell", "haskell.svg"),
+    "java": ("Java", "java.svg"),
+    "lean": ("Lean", "lean.svg"),
+    "ocaml": ("OCaml", "ocaml.svg"),
+    "python": ("Python", "python.svg"),
+    "rust": ("Rust", "rust.svg"),
+    "solidity": ("Solidity", "solidity.svg"),
+    "tex": ("TeX", "tex.svg"),
+    "vow": ("Vow", "vow.png"),
+    "x86": ("x86-64 assembly", "x86.svg"),
+}
+
 # A round named "2026-10" is released as the tag "round-2026-10" and served
 # from "/round/2026-10/".
 ROUND_TAG_PREFIX = "round-"
@@ -2548,6 +2569,7 @@ def make_template_env(templates_dir: Path) -> Environment:
     env.globals["rounds_url"] = ROUNDS_URL
     env.globals["format_perf_tooltip"] = format_perf_tooltip
     env.globals["result_perf_tooltip"] = result_perf_tooltip
+    env.globals["languages"] = LANGUAGES
     return env
 
 

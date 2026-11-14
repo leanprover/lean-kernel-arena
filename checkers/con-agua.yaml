@@ -30,6 +30,7 @@ description: |
   same input with that kind of error (the message text is not part of the
   proof).
   Written by AI under supervision from Joachim Breitner at the Lean FRO.
+language: x86
 url: https://github.com/leanprover/con-agua
 ref: master
 rev: 9ee5d9d8d80794dbc7068531e40686ad80e81189

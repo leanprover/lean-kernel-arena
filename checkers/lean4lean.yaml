@@ -4,6 +4,7 @@ description: |
   The project also houses some metatheory regarding the Lean system, in the same general direction as the MetaCoq project.
 
   The lean4lean checker checks that primitive definitions from the prelude are as expected, so it is sensitive to the Lean version it is built against. The `arena` branch tracks lean4lean's master and carries its own `lean-toolchain`, which selects that version.
+language: lean
 url: https://github.com/digama0/lean4lean
 ref: arena
 rev: bce3448115f7819fc12d647fadd3bb090666637e

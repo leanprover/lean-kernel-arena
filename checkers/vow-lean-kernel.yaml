@@ -23,6 +23,7 @@ description: |
   as a challenge: to have an agent develop a complete Lean kernel entirely in the
   new language, and it doubles as a proving ground for it. The work was 100%
   agentic, carried out with Claude Code.
+language: vow
 url: https://github.com/pmatos/vow-lean-kernel
 ref: main
 rev: da680383c6a797cba1a356ed3ae533a3f8d5b507

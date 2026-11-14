@@ -111,3 +111,17 @@ table.checker-summary thead th {
 .bg-success { background-color: #d4edda !important; }
 .bg-error { background-color: #f8d7da !important; }
 .bg-warning { background-color: #fff3cd !important; }
+
+/* Logo of a checker's implementation language, all drawn in the same
+   square box whatever the logo's own aspect ratio */
+img.lang-icon {
+  width: 1.25em;
+  height: 1.25em;
+  object-fit: contain;
+  vertical-align: middle;
+}
+table.checker-summary td.lang-col {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}

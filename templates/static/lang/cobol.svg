@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A punched card, for COBOL (which has no official logo) -->
+  <path d="M26 8 H108 a6 6 0 0 1 6 6 V114 a6 6 0 0 1 -6 6 H20 a6 6 0 0 1 -6 -6 V20 Z" fill="#e8d9a8" stroke="#8a6d2b" stroke-width="4"/>
+  <g fill="#3b3b3b">
+    <rect x="30" y="26" width="7" height="12"/>
+    <rect x="48" y="44" width="7" height="12"/>
+    <rect x="66" y="26" width="7" height="12"/>
+    <rect x="84" y="62" width="7" height="12"/>
+    <rect x="30" y="80" width="7" height="12"/>
+    <rect x="48" y="98" width="7" height="12"/>
+    <rect x="66" y="80" width="7" height="12"/>
+    <rect x="84" y="98" width="7" height="12"/>
+    <rect x="96" y="44" width="7" height="12"/>
+    <rect x="30" y="62" width="7" height="12"/>
+  </g>
+</svg>

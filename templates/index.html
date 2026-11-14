@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import status_icon %}
+{% from "macros.html" import status_icon, language_icon %}
 
 {# One test row in the Tests table; group members are shown indented, without the group prefix #}
 {% macro test_row(test, group) %}
@@ -212,6 +212,7 @@ details.page-details > summary h3 {
         <thead>
             <tr>
                 <th rowspan="2" style="vertical-align: bottom;">Checker</th>
+                <th rowspan="2"></th>
                 <th rowspan="2" style="vertical-align: bottom;">Version</th>
                 <th rowspan="2" class="spacer-col"></th>
                 <th colspan="3" class="text-center" title="Invalid proofs, expected to be rejected">✋</th>
@@ -238,6 +239,7 @@ details.page-details > summary h3 {
             {% for checker in checkers %}
             <tr>
                 <td><a href="checker/{{ checker.name }}/">{{ checker.name }}</a></td>
+                <td class="lang-col">{{ language_icon(checker.language, root_path) }}</td>
                 <td>{{ checker.version }}</td>
                 <td class="spacer-col"></td>
                 <td class="text-center {% if checker.stats.reject_correct > 0 %}bg-success{% endif %}">{{ checker.stats.reject_correct or '' }}</td>

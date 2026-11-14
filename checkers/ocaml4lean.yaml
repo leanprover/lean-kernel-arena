@@ -27,6 +27,7 @@ description: |
   declarations; this changes scheduling only, never what is checked.
 
   Written by Claude (Anthropic), directed by yoonwoojeong.
+language: ocaml
 url: https://github.com/yoonwoojeong/ocaml4lean
 ref: main
 rev: 6f94226df5b91e51af692d05e00b001ee8e0f2fd

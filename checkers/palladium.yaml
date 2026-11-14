@@ -24,6 +24,7 @@ description: |
     ever reported as a rejection.
 
   Written by Claude (Anthropic), directed by yoonwoojeong.
+language: rust
 url: https://github.com/yoonwoojeong/Palladium
 ref: main
 rev: f9d85c0ee9f8b4be5617e7a98c0741b5221e0d19

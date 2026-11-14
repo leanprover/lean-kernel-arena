@@ -5,6 +5,7 @@ description: |
   [nanoda](https://github.com/ammkrn/nanoda_lib).
   Inspired by
   [smalltt](https://github.com/AndrasKovacs/smalltt).
+language: rust
 url: https://github.com/intgrah/sokonanoda
 ref: master
 rev: 9a021b66f804a1d1df68a981337c67413ef72f6b

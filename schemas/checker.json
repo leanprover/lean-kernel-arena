@@ -9,6 +9,11 @@
       "type": "string",
       "description": "Version identifier for the checker. If omitted but both `ref` and `rev` are present, the arena will display `ref (rev7)` where `rev7` is the last 7 characters of `rev`."
     },
+    "language": {
+      "type": "string",
+      "enum": ["aver", "cobol", "cpp", "csharp", "fortran", "haskell", "java", "lean", "ocaml", "python", "rust", "solidity", "tex", "vow", "x86"],
+      "description": "The (dominant) implementation language of the checker, shown as a logo on the website. To add a language, extend this list, `LANGUAGES` in `lka.py` and add a logo to `templates/static/lang/`."
+    },
     "description": {
       "type": "string",
       "description": "Multi-line description of the checker (supports Pandoc Markdown)"
@@ -65,7 +70,7 @@
       "description": "Worker threads the checker runs concurrently; the parallel runner reserves this many CPU slots to avoid oversubscribing (default: 1)"
     }
   },
-  "required": ["run"],
+  "required": ["run", "language"],
   "additionalProperties": false,
   "oneOf": [
     {

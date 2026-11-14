@@ -17,6 +17,7 @@ description: |
     only after the environment's definitions are validated in the manner of lean4lean, against
     reference terms elaborated by Lean itself.
   - Rejections explain themselves on stderr: which declaration, which rule, which terms.
+language: rust
 url: https://github.com/Brahmastra-Labs/logicaffeine
 ref: main
 rev: 1e6ad5b7c640f8fb1780e7bf141b92a1b5a281c3

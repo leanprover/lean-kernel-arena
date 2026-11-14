@@ -21,6 +21,7 @@ description: |
   measurements, are in `docs/design.md`.
 
   Written by Claude (Anthropic), directed by Keith Adler.
+language: haskell
 url: https://github.com/keithadler/tenet-hs
 ref: main
 rev: c1dfa0eece89bdffe9e4018a9ade8b58e14066e3

@@ -25,6 +25,7 @@ description: |
 
   This is an experimental checker, not intended for production use. All code
   modifications from the original nanoda_lib were written by Claude (Anthropic).
+language: rust
 url: https://github.com/nomeata/nanobruijn
 ref: master
 rev: 7a049962e95eaa0cf754400bed9179dceb04d5ab

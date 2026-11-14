@@ -17,6 +17,9 @@
 }
 {% endmacro %}
 
+{# The logo of a checker's implementation language #}
+{% macro language_icon(language, root_path) %}{% if language in languages %}{% set name, icon = languages[language] %}<img src="{{ root_path }}static/lang/{{ icon }}" alt="{{ name }}" title="{{ name }}" class="lang-icon">{% endif %}{% endmacro %}
+
 {# The glyph for a result status #}
 {% macro status_icon(status) %}{% if status == 'accepted' %}👍{% elif status == 'rejected' %}✋{% elif status == 'declined' %}🚫{% elif status == 'timeout' %}⌛{% else %}💥{% endif %}{% endmacro %}
 

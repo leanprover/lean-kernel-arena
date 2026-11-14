@@ -12,6 +12,7 @@ description: |
 
   The modifications from the original nanoda_lib were written by Claude
   (Anthropic), directed by Sebastian Graf.
+language: rust
 url: https://github.com/sgraf812/nanoclo
 ref: main
 rev: b8cefd0d0c76fe38c1db848e61816e1f23dca79e

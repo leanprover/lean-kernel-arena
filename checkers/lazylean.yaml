@@ -23,6 +23,7 @@ description: |
 
   Written by Claude (Anthropic), directed by Chris Emery.
 version: "0.3.0"
+language: cpp
 url: https://github.com/corun1024/lazylean
 ref: v0.3.0
 rev: 68c66fa18c1afe029512b90ecfe0b162c0dcd8fb

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import detail_styles, result_status_cell, perf_cells, perf_header %}
+{% from "macros.html" import detail_styles, result_status_cell, perf_cells, perf_header, language_icon %}
 
 {# One result row in the results table; group members are shown indented, without the group prefix #}
 {% macro result_row(result, group) %}
@@ -29,6 +29,7 @@
         <h2>Checker "{{ checker.name }}"</h2>
     </header>
     <p>
+        {% if checker.language in languages %}<strong>Language:</strong> {{ language_icon(checker.language, root_path) }} {{ languages[checker.language][0] }}{% if checker.version or checker_links.declaration_url or checker_links.source_url %} · {% endif %}{% endif %}
         {% if checker.version %}<strong>Version:</strong> {{ checker.version }}{% endif %}
         {% if checker.version and (checker_links.declaration_url or checker_links.source_url) %} · {% endif %}
         {% if checker_links.declaration_url %}

@@ -1,6 +1,7 @@
 description: |
   A GnuCOBOL 3.2 port of lean4lean's executable kernel.
   Checks NDJSON exports with no wall-clock timeout. Resource limits return decline.
+language: cobol
 url: "https://github.com/kim-em/lean4cobol.git"
 ref: "main"
 rev: d2e7b79c014ec3fa9aa8fb42f2b34d0ca479e3c8

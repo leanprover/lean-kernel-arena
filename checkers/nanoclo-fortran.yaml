@@ -5,6 +5,7 @@ description: |
   Exported expressions are shared and immutable.
   Follows nanoclo 4cdd12f; algorithm fidelity is checked with all 26 counters
   on every Init declaration. Supports nested inductives and Nat/String literals.
+language: fortran
 url: https://github.com/kim-em/nanoclo-fortran
 ref: main
 rev: "b3a13ef5f0ae98a56087bef11ee1ec80dde0ef30"

@@ -13,6 +13,7 @@ description: |
   implementation. However, by re-deriving each inductive's recursor and reduction behavior from
   first principles and verifying the result, it can catch a large class of potential
   implementation bugs in the kernel's handling of inductives.
+language: lean
 url: https://github.com/nomeata/lean-inductive-models
 ref: main
 rev: 86caadd58c70f0cfc8455748994a781402276164

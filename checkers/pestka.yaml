@@ -30,6 +30,7 @@ description: |
   `.aver-version` from crates.io, and builds Pestka with a profile from
   checking `Init`. The same source compiled to WebAssembly is the
   `pestka-wasm` entry.
+language: aver
 url: https://github.com/jasisz/pestka
 ref: main
 rev: f8e48a7ddee20ebfe9bfeb3a81ae2b87763c374c

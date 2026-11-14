@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A CPU chip, for x86-64 assembly (which has no official logo) -->
+  <g stroke="#7a7a7a" stroke-width="7">
+    <path d="M36 2 V16 M64 2 V16 M92 2 V16 M36 112 V126 M64 112 V126 M92 112 V126"/>
+    <path d="M2 36 H16 M2 64 H16 M2 92 H16 M112 36 H126 M112 64 H126 M112 92 H126"/>
+  </g>
+  <rect x="12" y="12" width="104" height="104" rx="8" fill="#2b2b2b"/>
+  <text x="64" y="80" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="46" fill="#ffffff">x86</text>
+</svg>

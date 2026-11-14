@@ -11,6 +11,7 @@ description: |
   The build installs the pinned Rust toolchain with the `wasm32-wasip1` standard
   library through rustup, local to the checkout.
 version: "e00bbd5"
+language: rust
 url: https://github.com/dmitrykorolev/kefir
 ref: main
 rev: e00bbd5bf5f3bc2a1c6d6aa0c9e6b29584763d79

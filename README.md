@@ -185,6 +185,7 @@ Example:
 description: |
   Description of your checker implementation
 version: "1.0.0"
+language: rust   # implementation language, see schemas/checker.json
 url: https://github.com/user/my-checker
 ref: main        # git branch or tag
 rev: deadbeef    # git revision

@@ -3,6 +3,7 @@ description: |
   K-likeness and ι instead of trusting those export fields. Not a
   nanoda fork.
 version: "0.1.0"
+language: rust
 url: https://github.com/sankalpsthakur/kiota
 ref: main
 rev: c064ab69d67a20fac28ddd7e216b7f56b83725f9
