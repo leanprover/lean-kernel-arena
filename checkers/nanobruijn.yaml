@@ -28,7 +28,7 @@ description: |
 language: rust
 url: https://github.com/nomeata/nanobruijn
 ref: master
-rev: 7a049962e95eaa0cf754400bed9179dceb04d5ab
+rev: 2712fa699918ed2d0fb2a01bc56e5ddd1201542a
 build: |
   cargo build --release
   cat > config.json <<__END__
