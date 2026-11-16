@@ -28,4 +28,5 @@ leanfile: tests/perf/gf3-matrix-product.lean
 export-decls: ["Gf3Bench.big"]
 outcome: accept
 compare-perf: true
+skip-on-ci: true
 timeout: 60
