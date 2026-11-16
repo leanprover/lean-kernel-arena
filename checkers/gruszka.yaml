@@ -1,0 +1,46 @@
+description: |
+  **Gruszka** is a Lean 4 kernel written in Rust. It implements Lean's type
+  theory independently and decides definitional equality by normalization by
+  evaluation (NbE). Its only input format is
+  [Susz](https://github.com/jasisz/susz), a binary form of lean4export's
+  ndjson. It was written by an AI agent under human guidance.
+
+  Terms are never built: environment expressions remain Susz ids, proof
+  blocks stay as bytes until their theorem is checked, and the checker works
+  with values in worker-local arenas. Values, environments and spines are
+  hash-consed, so repeated computations share an id and their cached
+  weak-head forms and types. What not to compute comes from
+  [Pestka](https://github.com/jasisz/pestka), a substitution-based kernel
+  that measured it first: an argument its binder never reads is never
+  evaluated, proof arguments are not compared once the arguments before them
+  agree, and a casesOn reduces only its major premise.
+
+  A worker keeps its values for a session of many declarations, so later
+  declarations find the work of earlier ones. A session only moves forward
+  in file order, and facts kept longer are stamped with the declaration that
+  made them and used only after it, so nothing travels back.
+
+  Declarations are grouped by namespace and checked on four workers. Each
+  worker takes a contiguous part of that order, and one that runs out takes
+  half of the largest part left. The verdict remains the first failure in
+  file order and does not depend on the worker count.
+
+  The export is first converted to Susz by `susz pack` (Rust, from
+  crates.io); an export the converter finds invalid is rejected, one it
+  cannot convert is declined. The converter is not trusted: Gruszka treats
+  the whole file, including the prelude, as untrusted, bounds-checks every
+  reference it reads, and builds the quotient package and every recursor
+  itself before comparing them with the file.
+language: rust
+url: https://github.com/jasisz/gruszka
+ref: main
+rev: 0d731c197df47645c42d0b56876dfef63152f8e9
+build: |
+  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.2 --locked --root "$PWD/.susz"
+  ROOT=$(cd ../../../.. && pwd)
+  "$ROOT/lka.py" build-test init
+  .susz/bin/susz pack --no-index "$ROOT/_build/tests/init.ndjson" "$PWD/init.susz"
+  FLAGS="-C target-cpu=native" scripts/build-pgo.sh "$PWD/init.susz"
+  rm -f "$PWD/init.susz"
+run: scripts/arena-run "$IN" 4
+threads: 4
