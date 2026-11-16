@@ -1,0 +1,31 @@
+description: |
+  The declaration to check is
+
+      Nat.beq (fp 4) 361572011084151223 = true
+
+  proved by `decide +kernel`, where `fp m` multiplies 781×781 matrices over
+  GF(3) along a fixed word of length m and reduces the product modulo
+  2^61 - 1. A matrix is a pair of bit-sliced `Nat` literals of 609 961 bits
+  (the entries equal to 1 and those equal to 2), and one product runs 781
+  steps of shifting, masking, multiplying and xoring numbers of that size. The
+  14 input matrices are generated from `Nat.pow b 32000` inside the file, so
+  the test has no data.
+
+  This is a scaled-down copy of a real proof: the theorem `ck97` of
+  AxiomMath/CFSG's `Certificates.Kernel.Sporadic.Fi24Seven.C06`, which checks
+  one chunk of a straight-line program over such matrices with CFSG's own
+  `mul3s` and `prodV` (copied unchanged). `ck97` has 86 products; this test
+  has 3.
+
+  It measures big-`Nat` arithmetic and what the reduction caches keep. Every
+  product's intermediates are big literals that a checker's whnf caches hold
+  until the declaration ends, so memory grows by about **1 GiB per product**:
+  the official kernel (v4.35.0) needs about 17 G instructions and **3.5 GiB**
+  here, and `ck97` itself about 87 GiB. A checker that hashes big literals by
+  their low 64 bits only (lean4#15686) or keeps more intermediates than needed
+  shows it here.
+leanfile: tests/perf/gf3-matrix-product.lean
+export-decls: ["Gf3Bench.big"]
+outcome: accept
+compare-perf: true
+timeout: 60
