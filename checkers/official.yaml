@@ -1,9 +1,8 @@
-version: "v4.34.1"
+version: "v4.35.0"
 description: |
   The official Lean 4 kernel checker implementation.
 language: cpp
-dir: official
 build: |
-  echo leanprover/lean4:v4.34.1 > lean-toolchain
-  lake build
-run: .lake/build/bin/kernel "$IN"
+  echo leanprover/lean4:v4.35.0 > lean-toolchain
+  lean --version
+run: leanchecker --from-export "$IN"
