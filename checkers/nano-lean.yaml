@@ -2,8 +2,8 @@ description: |
   A parallel Lean 4 kernel written in Rust using hash-consing and de Bruijn indices
 language: rust
 url: https://github.com/sdiehl/nano-lean
-ref: v0.3.3
-rev: 5c8a523de8d021662e024266013cbb693a5885f6
+ref: v0.4.0
+rev: faef321a7ab9fd9ea67a6d8d52d84ee27cd80266
 build: |
   ROOT=$(cd ../../../.. && pwd)
   "$ROOT/lka.py" build-test init
