@@ -32,16 +32,21 @@
 
 {# Performance cells: time, time%, memory, memory%.
    Comparisons are shown for tests marked compare-perf, whenever this checker
-   and the official one both gave the expected outcome. The time comparison
+   and the official one both gave the expected outcome (but not for the official
+   checker itself, which is the baseline). Timeouts show no time or memory, as
+   none was measured. The time comparison
    cell gets a light green background when the checker is at least 10% faster
    than the official checker. #}
 {% macro perf_cells(result, expected, instructions_per_second, format_duration, format_memory, convert_instructions_to_time, compare_perf=false) %}
-{% set compared = outcome_matches(expected, result.status) and result.official and outcome_matches(expected, result.official.status) %}
+{% set timed_out = result.status == 'timeout' %}
+{% set compared = result.checker != 'official' and outcome_matches(expected, result.status) and result.official and outcome_matches(expected, result.official.status) %}
 {% set official_cpu_time = (convert_instructions_to_time(result.official.get('instructions', 0), instructions_per_second) if result.official.get('instructions', 0) > 0 and instructions_per_second > 0 else result.official.cpu_time) if compared else none %}
 {% set current_cpu_time = (convert_instructions_to_time(result.get('instructions', 0), instructions_per_second) if result.get('instructions', 0) > 0 and instructions_per_second > 0 else result.cpu_time) if compared else none %}
 {% set show_comparison = compare_perf and official_cpu_time and current_cpu_time %}
 <td class="text-right">
-    {% if result.get('instructions', 0) > 0 and instructions_per_second > 0 %}
+    {% if timed_out %}
+        —
+    {% elif result.get('instructions', 0) > 0 and instructions_per_second > 0 %}
         <span title="{{ result_perf_tooltip(result, instructions_per_second) }}">{{ format_duration(convert_instructions_to_time(result.get('instructions', 0), instructions_per_second)) }}</span>
     {% elif result.cpu_time is not none %}
         <span title="{{ result_perf_tooltip(result, instructions_per_second) }}">{{ format_duration(result.cpu_time) }}</span>
@@ -53,7 +58,9 @@
     {% endif %}
 </td>
 <td class="text-right">
-    {% if result.max_rss is not none %}
+    {% if timed_out %}
+        —
+    {% elif result.max_rss is not none %}
         {{ format_memory(result.max_rss) }}
     {% endif %}
 </td>

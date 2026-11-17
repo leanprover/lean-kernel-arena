@@ -2841,7 +2841,8 @@ def cmd_build_site(args: argparse.Namespace) -> int:
                 row["perf_time_sum"] = own_time
                 row["perf_instructions_sum"] = own_instructions
                 row["perf_wall_time_sum"] = own_wall_time
-                if official_time > 0 and own_time > 0:
+                # The official checker is the baseline, so not compared to itself
+                if checker["name"] != "official" and official_time > 0 and own_time > 0:
                     row["relative_perf"] = format_relative_perf(own_time, official_time)
                 else:
                     row["relative_perf"] = None
