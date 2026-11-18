@@ -1,0 +1,27 @@
+description: |
+  The declarations to check compare
+
+      (gC slowA c).fn x      and      (gC' slowA c).fn x
+
+  (and two variants), where `gC' s c` unfolds to `gC s c`, and `gC s c` is
+  `if s = c then ⟨…, 0⟩ else ⟨…, 1⟩` for a structure whose field `fn` is a
+  function. `slowA` is a closed `Nat` that evaluates in 2^19 unit steps, and
+  `c` and `x` are variables.
+
+  Unfolding `gC'` makes the sides identical, for **Θ(1)**. Reducing the
+  structure `gC slowA c` to a constructor instead decides `slowA = c`: it
+  evaluates `slowA`, for **Θ(2^19)**, and then is stuck on `c` anyway.
+  Unlike in `proj-cheap-struct`, the projections are not compared as such:
+  each is the head of an application. Official reaches `whnf_core` with full
+  reduction of projected structures before it compares the applications by
+  their arguments.
+
+  Official (v4.35.0) needs about 19 s and 1.4 GB here, nearly all of it
+  evaluating `slowA`, `slowB` and `slowC`. Distilled from
+  AxiomMath/CFSG's `CertificateChecks.KernelSporSch.RuE64.invol_eq`, where
+  the same shape takes it over 24 GB and more than 1.5 hours.
+leanfile: tests/perf/proj-applied-struct.lean
+export-decls: ["proj_applied_struct_1", "proj_applied_struct_2", "proj_applied_struct_3"]
+outcome: accept
+compare-perf: true
+timeout: 120

@@ -1,0 +1,14 @@
+description: |
+  `unfold-before-literal` with a wrong right side:
+
+      [slowA, 1].sum = slowA + (2 + 0)
+
+  must be rejected. After unfolding, the arguments `1 + 0` and `2 + 0`
+  differ, which refutes nothing by itself, so a sound checker evaluates
+  `slowA` here. This keeps the shortcut honest: comparing arguments first
+  may only ever answer "equal".
+leanfile: tests/perf/unfold-before-literal-bad.lean
+export-decls: ["unfold_before_literal_bad"]
+outcome: reject
+compare-perf: true
+timeout: 60

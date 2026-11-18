@@ -1,0 +1,23 @@
+description: |
+  The declarations to check compare
+
+      [slowA, 1].sum      and      slowA + (1 + 0)
+
+  (and two variants: the sides swapped, and a longer list), where `slowA` is
+  a closed `Nat` that evaluates in 2^19 unit steps.
+
+  `List.sum` is `foldr (· + ·) 0`, so unfolding it three times makes the
+  sides identical, for **Θ(1)**. But both sides are closed `Nat` terms
+  headed by `+`, and a checker that tries its `Nat` literal extension before
+  unfolding evaluates `slowA` to a literal first, for **Θ(2^19)**. The test
+  asks whether literal arithmetic waits until unfolding has had its chance.
+
+  Official (v4.35.0) needs about 20 s and 1.4 GB here, nearly all of it
+  evaluating `slowA`, `slowB` and `slowC`. Distilled from
+  AxiomMath/CFSG's `CertificateChecks.KernelJ2Cover.totalC`, where the
+  same shape costs it more than 100 GB.
+leanfile: tests/perf/unfold-before-literal.lean
+export-decls: ["unfold_before_literal_1", "unfold_before_literal_2", "unfold_before_literal_3"]
+outcome: accept
+compare-perf: true
+timeout: 120
