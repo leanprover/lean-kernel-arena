@@ -1,6 +1,6 @@
-import Export
+import LeanExport
 import Tutorial.AddConstInfo
-open Lean
+open Lean LeanExport
 open Std (HashMap)
 
 initialize importedRecursorMap : IO.Ref (NameMap NameSet) ← do

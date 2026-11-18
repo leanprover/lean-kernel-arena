@@ -7,7 +7,7 @@ description: |
   `Batteries.`
 url: https://github.com/cedar-policy/cedar-spec/
 ref: main
-rev: 017c35c3d1f856a0f8b62a66660ee6628870bbcf
+rev: 326d93c24490c90607a3e257318e9c6a049c8116
 pre-build: |
   shopt -s dotglob && find . -mindepth 1 -maxdepth 1 ! -name cedar-lean -exec rm -rf {} + && mv cedar-lean/* . && rmdir cedar-lean
 module: Cedar

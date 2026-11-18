@@ -1,15 +1,6 @@
-{"version": "1.1.0",
+{"version": "1.3.0",
  "packagesDir": ".lake/packages",
- "packages":
- [{"url": "https://github.com/leanprover/lean4export",
-   "type": "git",
-   "subDir": null,
-   "scope": "",
-   "rev": "777c921eba89aac5f14cc388717935b5fa2cb739",
-   "name": "Lean4Export",
-   "manifestFile": "lake-manifest.json",
-   "inputRev": "joachim/export-eq-with-qout",
-   "inherited": false,
-   "configFile": "lakefile.toml"}],
+ "packages": [],
  "name": "tutorial",
- "lakeDir": ".lake"}
+ "lakeDir": ".lake",
+ "fixedToolchain": false}

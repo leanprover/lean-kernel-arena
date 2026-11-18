@@ -57,7 +57,7 @@ Validates checker configuration files in the `checkers/` directory.
 
 ### Test-Specific Fields
 - `file`: Static file path relative to project root
-- `module`: Lean module name to export using lean4export
+- `module`: Lean module name to export using lean4export (the toolchain's bundled `leanexport` where available)
 - `run`: Shell command to generate test data (`$OUT` variable available)
 - `pre-build`: Command to run before building (e.g., `lake exe cache get`)
 - `outcome`: Expected test result (`"accept"`, `"reject"`, or `"either"`). Use `"either"` for tests where it is not (yet) settled whether a checker should accept or reject; both behaviours count as acceptable, and the test is excluded from the completeness and soundness columns.
