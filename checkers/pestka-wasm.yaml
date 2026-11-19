@@ -22,7 +22,7 @@ description: |
 language: aver
 url: https://github.com/jasisz/pestka
 ref: main
-rev: a629f0a5f7f9ca1898dabbb47b97c66d1d395500
+rev: 1b6b06c5182181d8cb766022622ee5466edb838e
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --features wasm --root "$PWD/.aver"
