@@ -749,22 +749,31 @@ def get_lean_toolchain(directory: Path) -> str | None:
     return None
 
 
-def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list | None, cwd: Path, out_file: Path) -> bool:
+def find_bundled_leanexport(cwd: Path) -> Path | None:
+    """The `leanexport` binary shipped with the toolchain selected in `cwd`,
+    or None if that toolchain does not ship one (Lean before v4.35.0)."""
+    result = run_cmd(["elan", "which", "leanexport"], cwd=cwd)
+    if result.returncode != 0:
+        return None
+    return Path(result.stdout.strip())
+
+
+def run_lean4export(lean4export_bin: Path, module_name: str, export_decls: list | None, cwd: Path, out_file: Path) -> bool:
     """Run lean4export (via lake env) to export a module.
 
-    lean4export_dir: path to the checked-out/build lean4export repo
+    lean4export_bin: path to the exporter binary (bundled `leanexport` or a
+        `lean4export` built by `setup_lean4export`)
     module_name: module name to export
     export_decls: optional list of declaration names to pass after --
     cwd: working directory to run lake env from
     out_file: output path for NDJSON
     """
-    lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
     if not lean4export_bin.exists():
         print(f"  Error: lean4export binary not found at {lean4export_bin}")
         return False
 
     # Build command
-    cmd = f"lake env {lean4export_bin} {module_name}"
+    cmd = f"lake env {shlex.quote(str(lean4export_bin))} {module_name}"
     if export_decls:
         # Quote each decl for shell safety
         decls = " ".join(shlex.quote(str(d)) for d in export_decls)
@@ -780,6 +789,9 @@ def run_lean4export(lean4export_dir: Path, module_name: str, export_decls: list 
 
 def setup_lean4export(toolchain: str) -> Path | None:
     """Clone and build lean4export for a specific Lean toolchain.
+
+    Only needed for toolchains that do not ship `leanexport` themselves (see
+    `find_bundled_leanexport`), i.e. before Lean v4.35.0.
 
     Args:
         toolchain: Lean toolchain string (e.g., 'leanprover/lean4:v4.27.0-rc1')
@@ -1341,18 +1353,6 @@ def create_test(test: dict, output_dir: Path, cache_dir: Path | None = None) -> 
         if work_dir is None:
             return False
 
-        # Get the toolchain from the src directory (consistent for both leanfile and module tests)
-        toolchain = get_lean_toolchain(work_dir)
-
-        if not toolchain:
-            print(f"  Error: No lean-toolchain found in {work_dir}")
-            return False
-
-        # Set up lean4export for this specific toolchain
-        lean4export_dir = setup_lean4export(toolchain)
-        if lean4export_dir is None:
-            return False
-
         # Run pre-build command if specified
         if pre_build:
             print(f"  Running pre-build: {pre_build}")
@@ -1387,7 +1387,20 @@ def create_test(test: dict, output_dir: Path, cache_dir: Path | None = None) -> 
         else:
             print(f"  Exporting module {module_name} ...")
 
-        if not run_lean4export(lean4export_dir, module_name, export_decls, cwd=build_dir, out_file=tmp_file):
+        # Use the exporter shipped with the toolchain if there is one, else
+        # build lean4export for this toolchain.
+        lean4export_bin = find_bundled_leanexport(build_dir)
+        if lean4export_bin is None:
+            toolchain = get_lean_toolchain(build_dir)
+            if not toolchain:
+                print(f"  Error: No lean-toolchain found in {build_dir}")
+                return False
+            lean4export_dir = setup_lean4export(toolchain)
+            if lean4export_dir is None:
+                return False
+            lean4export_bin = lean4export_dir / ".lake" / "build" / "bin" / "lean4export"
+
+        if not run_lean4export(lean4export_bin, module_name, export_decls, cwd=build_dir, out_file=tmp_file):
             return False
 
     elif run_cmd_str:

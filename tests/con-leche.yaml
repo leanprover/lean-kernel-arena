@@ -8,7 +8,7 @@ description: |
   dependency cone.
 url: https://github.com/leanprover/con-leche
 ref: master
-rev: 78ded4b6fc9a4d9ab809e8ca2c75c56537c41bff
+rev: cd2eceab2e9b10404c663b468639c8aa99d0d1f2
 module: ConLecheTests
 export-decls:
   - ConLeche.model_exists
