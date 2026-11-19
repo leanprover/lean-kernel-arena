@@ -1,0 +1,29 @@
+description: |
+  The declarations to check compare
+
+      false && eqA 600 (unpack 600 11 p) (unpack 600 11 q)      and      false && Nat.beq p q
+
+  (and two variants: the sides swapped, and the conjunction nested in a
+  second one as in the CFSG goal), where `p` and `q` are variables,
+  `unpack n w p` reads `n` points of `w` bits out of `p`, and `eqA` compares
+  two arrays point by point.
+
+  `&&` is a `match` on its first argument, so unfolding it reduces both
+  sides to `false`, for **Θ(1)**. A checker that compares the arguments of
+  the shared head first compares the open second arguments instead, which
+  are not definitionally equal: it reduces points
+  `Nat.land (Nat.shiftRight p (w * i)) m` by peeling the shift bit by bit
+  down to the free `p`, for **Θ((n·w)²)**, and only then unfolds `&&`.
+  Unlike in `discarded-argument`, the head discards its second argument
+  only because the first is `false`, and the arguments are open terms that
+  can neither be evaluated nor quickly told apart.
+
+  Official (v4.36.0) needs about 14 s and 1.6 GB here. Distilled from
+  AxiomMath/CFSG's `CertificateChecks.Batch27581.p2`, where the same shape
+  over 1755 points of 11 bits takes it 441 s, and sokonanoda and Gruszka
+  past 8 GB.
+leanfile: tests/perf/short-circuit-and.lean
+export-decls: ["short_circuit_and_1", "short_circuit_and_2", "short_circuit_and_3"]
+outcome: accept
+compare-perf: true
+timeout: 120
