@@ -26,16 +26,25 @@ description: |
   once by reducing it on fresh variables, which later calls take instead of
   unfolding it.
 
-  The build installs `susz` 0.1.2 and the Aver release pinned in
-  `.aver-version` (0.35.0) from crates.io, and builds Pestka with a profile from
+  Where the reference's order of lazy delta would start a closed
+  computation that the two sides do not need, Pestka changes only the order
+  of its steps: a Nat operation on arguments that are not all literals waits
+  while the other side can still unfold, two applications of one projection
+  step by turns until one side reaches a form the other had, and two
+  definitions of different names first step toward each other's head. Each
+  is tried within a bounded attempt, and the reference path runs when it
+  does not meet. Caches are bounded by default (low-memory mode).
+
+  The build installs `susz` 0.1.4 and the Aver release pinned in
+  `.aver-version` (0.36.0) from crates.io, and builds Pestka with a profile from
   checking `Init`. The same source compiled to WebAssembly is the
   `pestka-wasm` entry.
 language: aver
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 9eb7bb9214be76c4629c3a8054c1260e347c9018
+rev: a629f0a5f7f9ca1898dabbb47b97c66d1d395500
 build: |
-  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.2 --locked --root "$PWD/.susz"
+  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   ROOT=$(cd ../../../.. && pwd)
   "$ROOT/lka.py" build-test init
