@@ -1,0 +1,15 @@
+description: |
+  The argument twin of `proj-applied-struct`:
+
+      (gC slowA c).fn x = (gC' slowA c).fn (x + 1)
+
+  (and two variants) must be rejected. After unfolding `gC'` the heads are
+  identical and only the arguments differ, so a checker that takes equal
+  heads as equal without comparing arguments accepts it. The existing
+  `proj-applied-struct-bad` (`= x + c`) checks a different error, a right
+  side equal only propositionally. A checker may evaluate `slowA` on the way.
+leanfile: tests/perf/proj-applied-struct-arg-bad.lean
+export-decls: ["proj_applied_struct_arg_bad_1", "proj_applied_struct_arg_bad_2", "proj_applied_struct_arg_bad_3"]
+outcome: reject
+compare-perf: true
+timeout: 60

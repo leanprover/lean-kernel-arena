@@ -10,11 +10,6 @@ url: https://github.com/intgrah/sokonanoda
 ref: master
 rev: 9a021b66f804a1d1df68a981337c67413ef72f6b
 build: |
-  ROOT=$(cd ../../../.. && pwd)
-  "$ROOT/lka.py" build-test init-prelude
-  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
-  target/release/sokonanoda --stdin --nat-extension --string-extension --axiom-allow-all --threads 4 < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
-  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
-  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+  RUSTFLAGS="-C target-cpu=native" cargo build --release
 run: |
   target/release/sokonanoda --stdin --nat-extension --string-extension --axiom-allow-all --threads 4 < "$IN"

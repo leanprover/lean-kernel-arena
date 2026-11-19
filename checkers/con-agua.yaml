@@ -33,7 +33,7 @@ description: |
 language: x86
 url: https://github.com/leanprover/con-agua
 ref: master
-rev: 9ee5d9d8d80794dbc7068531e40686ad80e81189
+rev: fa516c1d5fa4cddb01c9e8e2e56d88a1461864bb
 threads: 4
 build: make
 run: ./checker --jobs=4 "$IN"

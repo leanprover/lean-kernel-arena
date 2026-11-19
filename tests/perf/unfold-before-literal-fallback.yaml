@@ -1,0 +1,14 @@
+description: |
+  A positive companion of `unfold-before-literal`:
+
+      [slowA + 1, 1].sum = slowA + (2 + 0)
+
+  (and two variants) is true, both sides being `slowA + 2`, but after
+  unfolding the sum the addition arguments differ. A checker that compares
+  arguments first must continue correctly after that comparison fails, by
+  evaluation or otherwise, and accept, instead of rejecting.
+leanfile: tests/perf/unfold-before-literal-fallback.lean
+export-decls: ["unfold_before_literal_fallback_1", "unfold_before_literal_fallback_2", "unfold_before_literal_fallback_3"]
+outcome: accept
+compare-perf: true
+timeout: 120

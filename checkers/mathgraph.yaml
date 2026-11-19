@@ -32,11 +32,6 @@ build: |
      "num_threads": 2
    }
   __END__
-  ROOT=$(cd ../../../.. && pwd)
-  "$ROOT/lka.py" build-test init-prelude
-  RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
-  target/release/sokonanoda config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
-  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
-  RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+  RUSTFLAGS="-C target-cpu=native" cargo build --release
 run: |
   target/release/sokonanoda config.json < "$IN" || exit 1

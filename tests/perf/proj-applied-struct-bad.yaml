@@ -1,0 +1,14 @@
+description: |
+  `proj-applied-struct` with a right side that holds propositionally but
+  not definitionally:
+
+      (gC slowA c).fn x = x + c
+
+  must be rejected: both branches of `gC slowA c` have `fn = fun x => x + c`,
+  but the structure is stuck on `slowA = c` for a variable `c`. A checker
+  may evaluate `slowA` on the way.
+leanfile: tests/perf/proj-applied-struct-bad.lean
+export-decls: ["proj_applied_struct_bad"]
+outcome: reject
+compare-perf: true
+timeout: 60
