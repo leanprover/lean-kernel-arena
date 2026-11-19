@@ -46,10 +46,6 @@ rev: 1b6b06c5182181d8cb766022622ee5466edb838e
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
-  ROOT=$(cd ../../../.. && pwd)
-  "$ROOT/lka.py" build-test init
-  .susz/bin/susz pack --no-index "$ROOT/_build/tests/init.ndjson" "$PWD/init.susz"
-  AVER="$PWD/.aver/bin/aver" FLAGS="-C target-cpu=native" bin/build-pgo "$PWD/init.susz"
-  rm -f "$PWD/init.susz"
+  AVER="$PWD/.aver/bin/aver" RUSTFLAGS="-C target-cpu=native" bin/build
 run: bin/arena-run "$IN" 4
 threads: 4

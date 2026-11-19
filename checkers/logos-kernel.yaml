@@ -24,17 +24,7 @@ rev: 1e6ad5b7c640f8fb1780e7bf141b92a1b5a281c3
 build: |
   set -eu
   export CARGO_TARGET_DIR="$PWD/target"
-  ROOT=$(cd ../../../.. && pwd)
-  "$ROOT/lka.py" build-test init
-  "$ROOT/lka.py" build-test init-prelude
-  TRAIN="$ROOT/_build/tests/init.ndjson"
-  PRELUDE="$ROOT/_build/tests/init-prelude.ndjson"
-  RUSTFLAGS="-C target-cpu=native -C profile-generate=$PWD/pgo" \
-    cargo build --locked --profile arena -p logicaffeine-kernel --features unchecked-access --example logos_kernel
-  target/arena/examples/logos_kernel --check sem "$TRAIN"
-  LLVM_PROFILE_FILE="$PWD/prelude.profraw" target/arena/examples/logos_kernel --check sem "$PRELUDE"
-  llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo" --weighted-input=60,"$PWD/prelude.profraw"
-  RUSTFLAGS="-C target-cpu=native -C profile-use=$PWD/pgo/merged.profdata" \
+  RUSTFLAGS="-C target-cpu=native" \
     cargo build --locked --profile arena -p logicaffeine-kernel --features unchecked-access --example logos_kernel
 run: |
   target/arena/examples/logos_kernel --check sem "$IN"
