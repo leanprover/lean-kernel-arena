@@ -46,10 +46,6 @@ ref: main
 rev: a1a3864a892e033fe6b177cab21bcd96cf887d25
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
-  ROOT=$(cd ../../../.. && pwd)
-  "$ROOT/lka.py" build-test init
-  .susz/bin/susz pack --no-index "$ROOT/_build/tests/init.ndjson" "$PWD/init.susz"
-  FLAGS="-C target-cpu=native" scripts/build-pgo.sh "$PWD/init.susz"
-  rm -f "$PWD/init.susz"
+  RUSTFLAGS="-C target-cpu=native" cargo build --release --locked --bin gruszka
 run: scripts/arena-run "$IN" 4
 threads: 4
