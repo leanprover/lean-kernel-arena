@@ -1,0 +1,24 @@
+description: |
+  The declaration to check is `fun a h => h` at type
+
+      ∀ a, a ∈ small → a ∈ big N
+
+  where `PSet` is a structure with one field `Mem : α → Prop` (like Mathlib's
+  `Set`), `a ∈ s` unfolds to the applied projection `s.1 a`, `small` unfolds
+  to `big N` in one delta step, and reducing `big N` to a constructor takes
+  Θ(N) steps.
+
+  The two sides are applied projections `small.1 a` and `(big N).1 a`.
+  Unfolding `small` makes them syntactically equal, for **Θ(1)**. A checker
+  that instead reduces the projected structures to constructors before
+  comparing evaluates `big N`, for **Θ(N)**.
+
+  Official compares bare projections `s.1 =?= t.1` lazily, but not applied
+  ones: for those it reduces the structures with `whnf` first
+  (leanprover/lean4#16613). The issue uses N = 2^(2^32), on which official
+  gives up; N=100000 in the Lean source, where it is merely slow.
+leanfile: tests/perf/proj-app-lazy-delta.lean
+export-decls: ["proj_app_lazy_delta"]
+outcome: accept
+compare-perf: true
+timeout: 50
