@@ -16,8 +16,8 @@ description: |
 language: csharp
 url: https://github.com/keithadler/tenet
 ref: main
-rev: 026a35ce8c433b4785a8be8ae15952803ddfacc5
-version: "0.11.3"
+rev: 50464880ee2ac902f0a44b7ced3a0a9b51a52363
+version: "0.11.4"
 
 # Tenet checks declarations on several threads, so it has to say how many or the runner will
 # oversubscribe the machine and spoil everyone else's timings. Four, not twelve: measured on all of
