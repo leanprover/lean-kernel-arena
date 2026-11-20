@@ -8,11 +8,11 @@ description: |
   confirm is rechecked by a substitution-based checker. Hot definitions get
   reduction rules derived from their own bodies. Recursors are re-derived and
   must match the export exactly. Single-threaded.
-version: "e00bbd5"
+version: "0f97b2a"
 language: rust
 url: https://github.com/dmitrykorolev/kefir
 ref: main
-rev: e00bbd5bf5f3bc2a1c6d6aa0c9e6b29584763d79
+rev: 0f97b2aba2aad4ced6344c4694da46ef6a1e3197
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo build --release --locked
 run: ./target/release/kefir --axiom-policy=allow-all-declared-axioms
