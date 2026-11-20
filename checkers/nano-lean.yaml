@@ -2,9 +2,8 @@ description: |
   A parallel Lean 4 kernel written in Rust using hash-consing and de Bruijn indices
 language: rust
 url: https://github.com/sdiehl/nano-lean
-ref: v0.4.1
-rev: f77c168c02c57becb204242bf6e977d4d33425db
-build: |
-  RUSTFLAGS="-C target-cpu=native -C llvm-args=-align-all-functions=6" cargo build --release --locked --bin nl-fast
+ref: v0.4.2
+rev: 5cd4a25de7cdd8a5fadde3fec53e41a6a8693138
+build: scripts/pgo.sh
 run: target/release/nl-fast -q -j 4 "$IN"
 threads: 4
