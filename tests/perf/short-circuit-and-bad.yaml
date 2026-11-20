@@ -1,0 +1,14 @@
+description: |
+  `short-circuit-and` with `true` in place of `false`:
+
+      (true && eqA 600 (unpack 600 11 p) (unpack 600 11 q)) = (true && Nat.beq p q)
+
+  must be rejected: `&&` now returns its second argument, and `eqA` sees
+  only the low 600 · 11 bits of `p` and `q` while `Nat.beq` sees all of
+  them. Unfolding `&&` decides the sides only when the first argument is
+  `false`.
+leanfile: tests/perf/short-circuit-and-bad.lean
+export-decls: ["short_circuit_and_bad"]
+outcome: reject
+compare-perf: true
+timeout: 60

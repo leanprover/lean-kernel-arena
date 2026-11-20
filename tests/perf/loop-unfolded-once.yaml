@@ -1,0 +1,23 @@
+description: |
+  The declaration to check compares
+
+      allInK 0 N (fun i => g w i)
+      decide (Nat.allTR (N - 0) (fun k _ => (fun i => g w i) (0 + k)) = true)
+
+  with N = 1000000 and `g`, `w` variables, where
+  `allInK lo hi p := Nat.allTR (hi - lo) fun k _ => p (lo + k)`.
+
+  Unfolding `allInK` once gives the `Nat.allTR` term on the right, and
+  `decide (b = true)` reduces to `b` through `instDecidableEqBool`, for
+  **Θ(1)**. A checker that unfolds `Nat.allTR` and its tail-recursive
+  `loop` instead lays out the `&&` of N tests stuck on `g`, for **Θ(N)**
+  time and nesting depth.
+
+  Official (v4.36.0) needs 0.3 s here. Distilled from AxiomMath/CFSG's
+  `CFSG.Sporadic.HNSchreier.Native.Kernel.orbitTreeCheck_certificate`,
+  where a `change` leaves the same comparison over 1140000 points.
+leanfile: tests/perf/loop-unfolded-once.lean
+export-decls: ["loop_unfolded_once"]
+outcome: accept
+compare-perf: true
+timeout: 60

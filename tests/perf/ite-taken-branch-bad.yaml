@@ -1,0 +1,14 @@
+description: |
+  `ite-taken-branch` with the branch the condition does not take:
+
+      (if false = true then piA else tA) = piA
+
+  must be rejected: the left side is the permutation table `tA`, the right
+  side its inverse. A checker must decide the condition rather than assume
+  the branch that matches the other side; refuting `tA = piA` may evaluate
+  `piA` on the way.
+leanfile: tests/perf/ite-taken-branch-bad.lean
+export-decls: ["ite_taken_branch_bad"]
+outcome: reject
+compare-perf: true
+timeout: 60

@@ -1,0 +1,26 @@
+description: |
+  The declarations to check compare
+
+      (if true = true then piA else tA)      and      piA
+
+  (and two variants: the sides swapped, and a case split on a variable `o`
+  as in the CFSG proof), where `piA := invCand 300 tA` is the inverse of a
+  permutation table, computed by a `for` loop of `Array.set!`.
+
+  Unfolding `ite` and deciding `true = true` takes the `then` branch, and
+  the sides are identical, for **Θ(1)**. But `piA` is higher than `ite`, and
+  a checker that unfolds the higher side first evaluates `piA`, for
+  **Θ(n²)** list steps, before `ite` gets its turn. Unlike in
+  `unroll-versus-evaluate`, the cheap step is on the lower side, it is a
+  `Decidable` instance rather than a recursion, and the other side is a
+  constant without arguments.
+
+  Official (v4.36.0) needs about 14 s and 1.7 GB here, nearly all of it
+  evaluating `piA`, `piB` and `piC`. Distilled from AxiomMath/CFSG's
+  `CertificateChecks.Batch27011.optI_eq`, where the same shape over 1755
+  points takes it, sokonanoda, con-ron and con-leche past 8 GB.
+leanfile: tests/perf/ite-taken-branch.lean
+export-decls: ["ite_taken_branch_1", "ite_taken_branch_2", "ite_taken_branch_3"]
+outcome: accept
+compare-perf: true
+timeout: 120
