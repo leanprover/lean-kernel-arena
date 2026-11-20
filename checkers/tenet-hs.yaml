@@ -24,8 +24,8 @@ description: |
 language: haskell
 url: https://github.com/keithadler/tenet-hs
 ref: main
-rev: c1dfa0eece89bdffe9e4018a9ade8b58e14066e3
-version: "0.1.2"
+rev: cbe7855013438519ee99ce933f9d57db896123a8
+version: "0.1.4"
 
 # One worker: declarations are checked in order, in one thread, so the default of one CPU slot is
 # the honest declaration.
