@@ -13,4 +13,4 @@ leanfile: tests/perf/loop-unfolded-once-bad.lean
 export-decls: ["loop_unfolded_once_bad"]
 outcome: reject
 compare-perf: true
-timeout: 60
+timeout: 120

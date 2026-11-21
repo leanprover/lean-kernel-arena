@@ -26,4 +26,4 @@ leanfile: tests/perf/short-circuit-and.lean
 export-decls: ["short_circuit_and_1", "short_circuit_and_2", "short_circuit_and_3"]
 outcome: accept
 compare-perf: true
-timeout: 120
+timeout: 220

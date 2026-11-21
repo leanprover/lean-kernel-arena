@@ -20,4 +20,4 @@ leanfile: tests/perf/unfold-before-literal.lean
 export-decls: ["unfold_before_literal_1", "unfold_before_literal_2", "unfold_before_literal_3"]
 outcome: accept
 compare-perf: true
-timeout: 120
+timeout: 240

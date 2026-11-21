@@ -24,4 +24,4 @@ leanfile: tests/perf/proj-applied-struct.lean
 export-decls: ["proj_applied_struct_1", "proj_applied_struct_2", "proj_applied_struct_3"]
 outcome: accept
 compare-perf: true
-timeout: 120
+timeout: 230

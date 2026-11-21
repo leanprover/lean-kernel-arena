@@ -22,4 +22,4 @@ leanfile: tests/perf/proj-cheap-struct.lean
 export-decls: ["proj_cheap_struct"]
 outcome: accept
 compare-perf: true
-timeout: 50
+timeout: 40

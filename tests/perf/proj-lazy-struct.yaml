@@ -20,4 +20,4 @@ leanfile: tests/perf/proj-lazy-struct.lean
 export-decls: ["proj_lazy_struct"]
 outcome: accept
 compare-perf: true
-timeout: 50
+timeout: 40
