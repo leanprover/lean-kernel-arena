@@ -43,9 +43,12 @@ description: |
 language: rust
 url: https://github.com/jasisz/gruszka
 ref: main
-rev: a1a3864a892e033fe6b177cab21bcd96cf887d25
+rev: edd7d47521626f959f23af9a418c32718009d2a9
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
-  RUSTFLAGS="-C target-cpu=native" cargo build --release --locked --bin gruszka
+  curl -sSfL -o init.susz https://huggingface.co/datasets/jasisz/susz/resolve/108beeec4e2524eeee237330ec6dd99ee2e50216/susz-0.1/init.susz
+  echo "b775c241147ff359c4b50aceef2f47282dad9123ecb9f39e28b3c4db21d638d4  init.susz" | sha256sum -c
+  FLAGS="-C target-cpu=native" scripts/build-pgo.sh "$PWD/init.susz"
+  rm -f init.susz
 run: scripts/arena-run "$IN" 4
 threads: 4
