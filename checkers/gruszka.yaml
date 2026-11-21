@@ -43,7 +43,7 @@ description: |
 language: rust
 url: https://github.com/jasisz/gruszka
 ref: main
-rev: edd7d47521626f959f23af9a418c32718009d2a9
+rev: ebc80dcb20786d4f25335146b8a9fe8f398843c1
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
   curl -sSfL -o init.susz https://huggingface.co/datasets/jasisz/susz/resolve/108beeec4e2524eeee237330ec6dd99ee2e50216/susz-0.1/init.susz
