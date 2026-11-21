@@ -36,16 +36,19 @@ description: |
   does not meet. Caches are bounded by default (low-memory mode).
 
   The build installs `susz` 0.1.4 and the Aver release pinned in
-  `.aver-version` (0.36.0) from crates.io, and builds Pestka with a profile from
+  `.aver-version` (0.36.1) from crates.io, and builds Pestka with a profile from
   checking `Init`. The same source compiled to WebAssembly is the
   `pestka-wasm` entry.
 language: aver
 url: https://github.com/jasisz/pestka
 ref: main
-rev: 1b6b06c5182181d8cb766022622ee5466edb838e
+rev: f8f5052815ab7e5a086287fb414d224443a58b9b
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
-  AVER="$PWD/.aver/bin/aver" RUSTFLAGS="-C target-cpu=native" bin/build
+  curl -sSfL -o init.susz https://huggingface.co/datasets/jasisz/susz/resolve/108beeec4e2524eeee237330ec6dd99ee2e50216/susz-0.1/init.susz
+  echo "b775c241147ff359c4b50aceef2f47282dad9123ecb9f39e28b3c4db21d638d4  init.susz" | sha256sum -c
+  AVER="$PWD/.aver/bin/aver" FLAGS="-C target-cpu=native" bin/build-pgo "$PWD/init.susz"
+  rm -f init.susz
 run: bin/arena-run "$IN" 4
 threads: 4
