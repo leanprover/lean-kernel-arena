@@ -27,4 +27,4 @@ leanfile: tests/perf/prop-struct-projections.lean
 export-decls: ["wide_rebuild"]
 outcome: accept
 compare-perf: true
-timeout: 60
+timeout: 40

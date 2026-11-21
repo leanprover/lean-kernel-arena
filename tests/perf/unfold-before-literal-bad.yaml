@@ -11,4 +11,4 @@ leanfile: tests/perf/unfold-before-literal-bad.lean
 export-decls: ["unfold_before_literal_bad"]
 outcome: reject
 compare-perf: true
-timeout: 60
+timeout: 130

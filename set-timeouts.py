@@ -10,9 +10,13 @@ Fetches the latest results.json from the arena website and distributes a
 total timeout budget over the test YAML files marked `compare-perf: true`
 (the real-world corpora and the perf/ tests; these are the only ones where a
 checker is expected to take long, so the many small corner-case tests are
-left without a timeout). The distribution is based on the official checker's
-wall time w on each test, taken to be at least MIN_OFFICIAL so that tests the
-official checker finishes in milliseconds still get a sensible time limit.
+left without a timeout). Tests not marked `compare-perf` keep whatever
+timeout they already have: some corner cases set one on purpose because
+checkers are expected not to terminate on them.
+
+The distribution is based on the official checker's wall time w on each
+test, taken to be at least MIN_OFFICIAL so that tests the official checker
+finishes in milliseconds still get a sensible time limit.
 
 The budget is BUDGET_FACTOR times the sum of all official wall times, so it
 grows automatically with the test suite. It is distributed as a power law,
@@ -76,12 +80,10 @@ def load_results(source: str) -> dict:
         return json.load(f)
 
 
-def set_timeout_in_yaml(yaml_path: Path, timeout: int | None) -> None:
-    """Set (or with None, remove) the top-level `timeout` key, preserving the rest of the file verbatim."""
+def set_timeout_in_yaml(yaml_path: Path, timeout: int) -> None:
+    """Set the top-level `timeout` key, preserving the rest of the file verbatim."""
     text = yaml_path.read_text()
-    if timeout is None:
-        text = TIMEOUT_LINE.sub("", text, count=1)
-    elif TIMEOUT_LINE.search(text):
+    if TIMEOUT_LINE.search(text):
         text = TIMEOUT_LINE.sub(f"timeout: {timeout}\n", text, count=1)
     else:
         if text and not text.endswith("\n"):
@@ -131,7 +133,7 @@ def main() -> int:
         official_wall[yaml_file] = max(official_wall.get(yaml_file, 0.0), r["wall_time"])
 
     # Only consider YAML files present in this checkout; only those marked
-    # compare-perf get a timeout, the others have theirs removed (if any)
+    # compare-perf get a timeout, the others keep theirs (if any)
     old_timeouts: dict[str, int | None] = {}
     selected: set[str] = set()
     for yaml_file in sorted(tests_of_yaml):
@@ -151,14 +153,11 @@ def main() -> int:
     official_wall = {y: w for y, w in official_wall.items() if y in selected}
 
     # Compute new timeouts and update the YAML files
-    new_timeouts: dict[str, int | None] = compute_timeouts(official_wall, args.budget_factor, args.alpha, args.min_official)
-    for yaml_file in old_timeouts:
-        if yaml_file not in selected and old_timeouts[yaml_file] is not None:
-            new_timeouts[yaml_file] = None
+    new_timeouts = compute_timeouts(official_wall, args.budget_factor, args.alpha, args.min_official)
     print(f"Total official wall time {format_duration(total_official)}, "
           f"budget {format_duration(args.budget_factor * total_official)}, "
-          f"sum of timeouts {format_duration(sum(t for t in new_timeouts.values() if t))} "
-          f"over {len(official_wall)} tests (minimum {format_duration(min(t for t in new_timeouts.values() if t))})")
+          f"sum of timeouts {format_duration(sum(new_timeouts.values()))} "
+          f"over {len(official_wall)} tests (minimum {format_duration(min(new_timeouts.values()))})")
 
     changed = 0
     for yaml_file, new in new_timeouts.items():
@@ -167,11 +166,8 @@ def main() -> int:
             continue
         changed += 1
         old_str = format_duration(old) if old is not None else "none"
-        if new is None:
-            print(f"  {yaml_file}: {old_str} -> none (not compare-perf)")
-        else:
-            print(f"  {yaml_file}: {old_str} -> {format_duration(new)} "
-                  f"(official: {format_duration(official_wall[yaml_file])}, {new / official_wall[yaml_file]:.1f}x)")
+        print(f"  {yaml_file}: {old_str} -> {format_duration(new)} "
+              f"(official: {format_duration(official_wall[yaml_file])}, {new / official_wall[yaml_file]:.1f}x)")
         if not args.dry_run:
             set_timeout_in_yaml(root / yaml_file, new)
     if changed == 0:
@@ -201,9 +197,8 @@ def main() -> int:
 
     def describe(r: dict) -> str:
         limit = new_timeouts[yaml_of_test[r["test"]]]
-        limit_str = format_duration(limit) if limit is not None else "none"
         return (f"  {r['checker']} on {r['test']}: {r['status']} after {format_duration(r['wall_time'])} "
-                f"(limit {limit_str})")
+                f"(limit {format_duration(limit)})")
 
     print()
     if newly_timed_out:

@@ -11,4 +11,4 @@ leanfile: tests/perf/short-circuit-and-bad.lean
 export-decls: ["short_circuit_and_bad"]
 outcome: reject
 compare-perf: true
-timeout: 60
+timeout: 120

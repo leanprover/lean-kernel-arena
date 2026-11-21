@@ -11,4 +11,4 @@ leanfile: tests/perf/proj-applied-struct-bad.lean
 export-decls: ["proj_applied_struct_bad"]
 outcome: reject
 compare-perf: true
-timeout: 60
+timeout: 130

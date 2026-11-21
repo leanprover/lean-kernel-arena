@@ -29,4 +29,4 @@ leanfile: tests/perf/irrelevance-refutes.lean
 export-decls: ["irrelevance_refutes"]
 outcome: accept
 compare-perf: true
-timeout: 50
+timeout: 40

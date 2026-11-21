@@ -11,4 +11,4 @@ leanfile: tests/perf/unfold-before-literal-fallback.lean
 export-decls: ["unfold_before_literal_fallback_1", "unfold_before_literal_fallback_2", "unfold_before_literal_fallback_3"]
 outcome: accept
 compare-perf: true
-timeout: 120
+timeout: 270
