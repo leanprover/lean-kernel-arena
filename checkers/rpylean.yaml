@@ -1,10 +1,10 @@
-version: "v2026.11.2"
+version: "v2026.11.5"
 description: |
   **rpylean** - A Lean type checker written in (R)Python.
 language: python
 url: https://github.com/Julian/rpylean
 ref: main
-rev: dd8949ef877091c9f76294de13b215f77d36248d
+rev: 02c31d73a7f1cb084e1a546b04771c75b144df1b
 build: |
   git clone --filter=blob:none https://github.com/pypy/pypy
   cat > .env <<__END__
@@ -13,6 +13,3 @@ build: |
   just translate
 run: |
   ./rpylean-c check "$IN"
-# rpylean's peak memory on Mathlib exceeds the 16 GB available on arena CI
-# runners.
-declines: mathlib
