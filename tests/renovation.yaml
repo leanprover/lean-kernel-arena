@@ -1,0 +1,13 @@
+description: |
+  Small tests for the per-inductive feature flags (`isImpredicative`, `isK`,
+  `hasProjections`, `hasEta`, `hasLargeElim`) of the upcoming kernel renovation
+  (lean4#16595), in export format 3.2.0, generated from the Lean project in the
+  renovation directory. The flags are inputs: a checker must check that each
+  flag is allowed, and must not recompute them.
+dir: renovation
+multiple: true
+# Run with `lake env lean` rather than built with `lake build`, as a build that
+# Lake finds in its artifact cache would not run it at all.
+run: |
+  lake build Renovation.Meta
+  LEAN_ABORT_ON_PANIC=1 lake env lean Renovation.lean

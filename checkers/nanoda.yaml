@@ -42,3 +42,6 @@ run: |
     2) exit 2 ;;
     *) exit 1 ;;
   esac
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

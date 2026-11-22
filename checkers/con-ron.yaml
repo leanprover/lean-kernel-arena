@@ -51,3 +51,6 @@ threads: 4
 # semantics is what the Lean model describes.
 build: cargo build --release
 run: ./target/release/con-ron --verified --jobs=4 "$IN"
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

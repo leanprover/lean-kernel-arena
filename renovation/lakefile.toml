@@ -1,0 +1,6 @@
+name = "renovation"
+defaultTargets = [ "Renovation" ]
+
+[[lean_lib]]
+name = "Renovation"
+root = "Renovation"

@@ -31,3 +31,6 @@ rev: f9d85c0ee9f8b4be5617e7a98c0741b5221e0d19
 threads: 4
 build: RUSTFLAGS="-C target-cpu=native" cargo build --release
 run: target/release/palladium -q -j 4 "$IN"
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

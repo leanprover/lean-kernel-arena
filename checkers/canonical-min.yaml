@@ -16,3 +16,6 @@ build: |
   lake build canonical-min-arena
 run: LD_LIBRARY_PATH="$PWD/.lake/packages/Canonical/.lake/build/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" lake env .lake/build/bin/canonical-min-arena "$IN"
 threads: 1
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

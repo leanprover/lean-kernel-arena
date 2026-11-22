@@ -921,6 +921,13 @@ def load_checkers() -> list[dict]:
     return [checker for checker in all_checkers if not checker.get("disable", False)]
 
 
+def checker_declines(checker: dict, test_name: str) -> bool:
+    """Whether the checker's `declines` field covers the test: if it names
+    the test itself, or a `multiple` test that it is a subtest of."""
+    declines = checker.get("declines", [])
+    return test_name in declines or test_name.rsplit("/", 1)[0] in declines
+
+
 def find_test_by_name(name: str) -> dict | None:
     """Find a test by name (including expanded subtests)."""
     results = find_items_by_pattern(name, "tests")
@@ -1723,7 +1730,7 @@ def run_checker_on_test(checker: dict, test: dict, build_dir: Path, tests_dir: P
     checker_run_cmd = checker["run"]
 
     # Tests listed in the checker's `declines` are declined without running
-    if test_name in checker.get("declines", []):
+    if checker_declines(checker, test_name):
         return write_declined_result(checker_name, test_name, results_dir, provenance)
 
     # Use the file path stored in the test dict
@@ -1923,10 +1930,14 @@ def cmd_run_checker(args: argparse.Namespace) -> int:
 
         # Also record declaratively declined tests that are not among the
         # built tests (e.g. because `build-test --skip-declined-by` skipped
-        # building them).
+        # building them). A declined `multiple` test whose subtests were not
+        # built is recorded under its own name, and stands for all its
+        # subtests (see `expand_declined_multiple`).
         built_test_names = {test["name"] for test in tests}
         for declined_name in checker.get("declines", []):
-            if declined_name in built_test_names:
+            if declined_name in built_test_names or any(
+                name.startswith(declined_name + "/") for name in built_test_names
+            ):
                 continue
             if args.test and not selected(declined_name):
                 continue
@@ -2440,6 +2451,26 @@ def summarize_correctness(result_list: list[dict]) -> dict:
     return counts
 
 
+def expand_declined_multiple(results: dict, tests: list[dict]) -> dict:
+    """Replace the declined result of a checker on a `multiple` test, as
+    recorded when the checker declines it in its `declines` field without its
+    subtests being built, by a declined result on each of its subtests."""
+    test_names = {test["name"] for test in tests}
+    expanded = {}
+    for (checker_name, test_name), result in results.items():
+        if test_name in test_names or result.get("status") != "declined":
+            expanded[(checker_name, test_name)] = result
+            continue
+        subtests = [name for name in test_names if name.startswith(test_name + "/")]
+        if not subtests:
+            # A result on a test that is no longer there; keep it as it was
+            expanded[(checker_name, test_name)] = result
+        for name in subtests:
+            if (checker_name, name) not in results:
+                expanded[(checker_name, name)] = {**result, "test": name}
+    return expanded
+
+
 def collect_results_data() -> dict:
     """Collect checkers, tests, results and build metadata into a single
     JSON-serializable structure.
@@ -2450,7 +2481,7 @@ def collect_results_data() -> dict:
     """
     checkers = load_checkers()
     tests = load_tests()
-    results = load_results()
+    results = expand_declined_multiple(load_results(), tests)
     return {
         "meta": get_build_metadata(),
         "checkers": [

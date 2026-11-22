@@ -22,3 +22,6 @@ build: |
   PATH="$CARGO_HOME/bin:$PATH" sh scripts/wasm/build.sh
 run: node scripts/wasm/run-wasm.mjs target/wasm32-wasip1/release/kefir.wasm "$IN" --axiom-policy=allow-all-declared-axioms
 threads: 1
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

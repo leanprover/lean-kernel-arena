@@ -100,6 +100,7 @@ To contribute a test, create a YAML file in the `tests/` directory.  See `schema
 * `corner-cases/`: inputs where the correct outcome is debatable (`outcome: either`), typically gaps between algorithmic and declarative conversion.
 * `perf/`: small inputs that expose algorithmic performance problems.
 * `tutorial/`: one small test per feature of the type theory, generated from `tutorial/Tutorial.lean`.
+* `renovation/`: small tests for the per-inductive feature flags of the upcoming kernel renovation ([lean4#16595](https://github.com/leanprover/lean4/pull/16595), export format 3.2.0), generated from `renovation/Renovation.lean`. All checkers decline them for now; remove `renovation` from a checker's `declines` to opt in.
 * `other/`: synthetic tests of a specific check (accept or reject) that do not fit the above.
 
 Tests can be defined in several ways:
@@ -205,7 +206,7 @@ The `run` command receives the test file path via the `$IN` environment variable
   
 - anything else: an error in the checker
 
-If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names). Such tests are recorded as declined without running the checker at all.
+If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names). Naming a test with multiple subtests (such as `renovation`) declines all its subtests. Such tests are recorded as declined without running the checker at all.
 
 **Timeouts:**
 

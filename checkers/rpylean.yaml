@@ -13,3 +13,6 @@ build: |
   just translate
 run: |
   ./rpylean-c check "$IN"
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

@@ -13,3 +13,6 @@ build: |
   RUSTFLAGS="-C target-cpu=native" cargo build --release
 run: |
   target/release/sokonanoda --stdin --nat-extension --string-extension --axiom-allow-all --threads 4 < "$IN"
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

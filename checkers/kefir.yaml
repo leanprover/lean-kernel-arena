@@ -17,3 +17,6 @@ build: |
   RUSTFLAGS="-C target-cpu=native" cargo build --release --locked
 run: ./target/release/kefir --axiom-policy=allow-all-declared-axioms
 threads: 1
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation

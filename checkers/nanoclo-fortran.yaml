@@ -16,3 +16,6 @@ run: |
   export OMP_STACKSIZE=1G
   exec ./build/nanoclo-fortran --jobs=4 "$IN"
 timeout: 3600
+# The renovation tests need support for the inductive flags of export format 3.2.0
+declines:
+  - renovation
