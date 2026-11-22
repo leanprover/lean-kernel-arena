@@ -21,4 +21,4 @@ leanfile: tests/perf/proj-app-lazy-delta.lean
 export-decls: ["proj_app_lazy_delta"]
 outcome: accept
 compare-perf: true
-timeout: 50
+timeout: 60

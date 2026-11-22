@@ -23,4 +23,4 @@ leanfile: tests/perf/ite-taken-branch.lean
 export-decls: ["ite_taken_branch_1", "ite_taken_branch_2", "ite_taken_branch_3"]
 outcome: accept
 compare-perf: true
-timeout: 120
+timeout: 230

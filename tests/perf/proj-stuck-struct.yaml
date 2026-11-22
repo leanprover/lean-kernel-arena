@@ -20,4 +20,4 @@ leanfile: tests/perf/proj-stuck-struct.lean
 export-decls: ["step12", "step16", "step20"]
 outcome: accept
 compare-perf: true
-timeout: 50
+timeout: 40

@@ -11,4 +11,4 @@ leanfile: tests/perf/ite-taken-branch-bad.lean
 export-decls: ["ite_taken_branch_bad"]
 outcome: reject
 compare-perf: true
-timeout: 60
+timeout: 110

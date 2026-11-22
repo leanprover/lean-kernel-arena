@@ -29,4 +29,4 @@ export-decls: ["Gf3Bench.big"]
 outcome: accept
 compare-perf: true
 skip-on-ci: true
-timeout: 60
+timeout: 70

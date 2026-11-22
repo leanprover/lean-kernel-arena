@@ -20,4 +20,4 @@ leanfile: tests/perf/loop-unfolded-once.lean
 export-decls: ["loop_unfolded_once"]
 outcome: accept
 compare-perf: true
-timeout: 60
+timeout: 40

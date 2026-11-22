@@ -215,7 +215,7 @@ Tests may specify a `timeout` (in seconds). A checker that takes longer than tha
 ./set-timeouts.py
 ```
 
-which fetches the latest `results.json` from <https://arena.lean-lang.org> and distributes a total budget of three times the official checker's total wall time over the real-world corpora and the `perf/` tests (those marked `compare-perf`), biased towards small tests: roughly 2× the official time for `mathlib`, 10× or more for small tests, and about a minute for tiny ones, and reports which checker runs in that data would have been affected by the new limits.
+which fetches the latest `results.json` from <https://arena.lean-lang.org> and distributes a total budget of three times the official checker's total wall time over the real-world corpora and the `perf/` tests (those marked `compare-perf`), biased towards small tests: roughly 2× the official time for `mathlib`, 10× or more for small tests, and about a minute for tiny ones, and reports which checker runs in that data would have been affected by the new limits. Other tests keep the timeout they have, if any; set one by hand on a test where checkers are expected not to terminate.
 
 The arena does not automatically update the checkers; please submit new releases manually.
 

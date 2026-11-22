@@ -47,4 +47,4 @@ export-decls:
 outcome: accept
 compare-perf: true
 skip-on-ci: true
-timeout: 910
+timeout: 220

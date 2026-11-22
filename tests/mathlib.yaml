@@ -13,4 +13,4 @@ module: Mathlib
 outcome: accept
 compare-perf: true
 skip-on-ci: true
-timeout: 5680
+timeout: 4120

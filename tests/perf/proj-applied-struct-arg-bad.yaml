@@ -12,4 +12,4 @@ leanfile: tests/perf/proj-applied-struct-arg-bad.lean
 export-decls: ["proj_applied_struct_arg_bad_1", "proj_applied_struct_arg_bad_2", "proj_applied_struct_arg_bad_3"]
 outcome: reject
 compare-perf: true
-timeout: 60
+timeout: 120
