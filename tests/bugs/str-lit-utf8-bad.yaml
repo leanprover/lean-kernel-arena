@@ -1,0 +1,14 @@
+description: |
+  Ill-typed equality equating `"é"` with its raw UTF-8 bytes.
+
+  Soundness counterpart to `bugs/str-lit-utf8`: injects
+  `strLitUtf8Bad : "é" = String.ofList [Char.ofNat 0xC3, Char.ofNat 0xA9]`
+  with proof `Eq.refl "é"`.  A checker that expands string literals byte-by-byte
+  instead of by Unicode scalar values equates both sides and accepts this false
+  theorem.
+
+  rpylean accepted this export because `W_LitStr.build_str_expr` iterated raw
+  UTF-8 bytes instead of decoding UTF-8 codepoints.
+leanfile: tests/bugs/str-lit-utf8-bad.lean
+export-decls: ["strLitUtf8Bad"]
+outcome: reject
