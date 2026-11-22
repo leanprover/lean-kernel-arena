@@ -1,0 +1,21 @@
+description: |
+  `Nat.shiftRight` and `Nat.shiftLeft` on literals with shift counts ≥ 2^64.
+
+  Both `Nat.shiftRight 42 (2^64)` and `Nat.shiftLeft 0 (2^64)` reduce to `0`
+  in the kernel's Nat-literal extension.  A checker that narrows the shift
+  count to a 64-bit machine integer unconditionally overflows, and one that
+  computes `2^shift` explicitly OOMs or panics.
+
+  Covers both closed applications (`rfl`) and open applications in the major
+  premise of `Nat.rec` (so closed-term evaluators cannot bypass the kernel's
+  `whnf` Nat-literal path).
+
+  rpylean crashed with an uncaught `OverflowError` in `nat_binop_value`
+  (`v2.toint()` on `Nat.shiftRight` and `Nat.shiftLeft`).
+leanfile: tests/bugs/nat-shift-huge.lean
+export-decls:
+  - natShiftRightHuge
+  - natShiftLeftZeroHuge
+  - natShiftRightHugeOpen
+  - natShiftLeftZeroHugeOpen
+outcome: accept
