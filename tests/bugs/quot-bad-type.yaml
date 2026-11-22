@@ -1,0 +1,23 @@
+description: |
+  Proof of `False` from a forged `quot` declaration.
+
+  The export contains `Eq` and `False` from `Init.Prelude`, followed by a
+  `quot` record with `name: Quot`, `kind: "type"`, and `levelParams: [u]`
+  whose `type` is forged to `False` instead of
+  `∀ {α : Sort u}, (α → α → Prop) → Sort u`.  The theorem
+  `inconsistent : False` is then simply `Quot.{0}`.
+
+  A sound kernel must either check that each exported `quot` declaration
+  matches Lean's fixed quotient signatures (and that `Eq` is declared) or
+  synthesize the genuine `Quot` declarations itself rather than trusting the
+  exported type.
+
+  rpylean accepted this export because `register_quotient` only checked the
+  declaration name and `W_Quotient.type_check` only checked that the exported
+  type was a `Sort`.
+# Hand-written export file: `lean4export` cannot emit a `quot` record with a
+# forged type.  Built from `Eq` and `False` exported with the toolchain from
+# tests/lean-toolchain (v4.36.0), plus the forged `Quot` record and
+# `inconsistent : False := Quot.{0}`.
+file: tests/bugs/quot-bad-type.ndjson
+outcome: reject
