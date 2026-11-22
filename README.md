@@ -206,7 +206,7 @@ The `run` command receives the test file path via the `$IN` environment variable
   
 - anything else: an error in the checker
 
-If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names). Naming a test with multiple subtests (such as `renovation`) declines all its subtests. Such tests are recorded as declined without running the checker at all.
+If it is already known that a checker cannot handle a test, and running it would just waste time, the checker YAML can list that test in the `declines` field (a test name or list of test names, which may be glob patterns such as `bugs/*`). Naming a test with multiple subtests (such as `renovation`) declines all its subtests. Such tests are recorded as declined without running the checker at all.
 
 **Timeouts:**
 

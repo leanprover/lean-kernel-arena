@@ -13,6 +13,7 @@ import argparse
 import datetime
 import filecmp
 import fnmatch
+import glob
 import hashlib
 import json
 import math
@@ -913,10 +914,21 @@ def load_test_descriptions() -> list[dict]:
 def load_checkers() -> list[dict]:
     """Load all checker definitions, filtering out disabled ones."""
     all_checkers = load_yaml_files(get_project_root() / "checkers", "checker")
+    test_names = None
     for checker in all_checkers:
         # Normalize `declines` (a single test name or a list) to a list
         declines = checker.get("declines", [])
-        checker["declines"] = [declines] if isinstance(declines, str) else declines
+        declines = [declines] if isinstance(declines, str) else declines
+        # Expand glob patterns (such as `bugs/*`) to the names of the tests they match
+        if any(glob.has_magic(pattern) for pattern in declines):
+            if test_names is None:
+                test_names = [test["name"] for test in load_test_descriptions()]
+            declines = [
+                name
+                for pattern in declines
+                for name in (fnmatch.filter(test_names, pattern) if glob.has_magic(pattern) else [pattern])
+            ]
+        checker["declines"] = declines
     # Filter out disabled checkers
     return [checker for checker in all_checkers if not checker.get("disable", False)]
 

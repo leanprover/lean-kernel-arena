@@ -54,7 +54,7 @@
       "description": "If true, this checker will be ignored and not built or run"
     },
     "declines": {
-      "description": "Test name or list of test names that this checker declines without running them (recorded as declined, as if the checker had exited with code 2)",
+      "description": "Test name or list of test names (or glob patterns such as `bugs/*`) that this checker declines without running them (recorded as declined, as if the checker had exited with code 2)",
       "oneOf": [
         { "type": "string" },
         {
