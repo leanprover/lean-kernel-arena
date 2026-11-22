@@ -13,11 +13,8 @@ description: |
   axioms and declines streams that use others.
 language: lean
 url: https://github.com/leanprover/con-leche
-ref: master
-rev: 600d3b583b769176e911b06d20ba16330c9a179b
+ref: renovation
+rev: d8c8c2278357053c52bb568fc97c2838431c35fc
 build: lake build con-leche
 threads: 4
 run: .lake/build/bin/con-leche --verified --jobs=4 "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation
