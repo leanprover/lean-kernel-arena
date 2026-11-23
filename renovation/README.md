@@ -15,16 +15,6 @@ All checkers decline these tests for now (see `declines` in `checkers/*.yaml`); 
 
 ## Toolchain
 
-The project is pinned to the PR release of lean4#16595 at `53e1623`, the newest one
-available, which predates the final version of the PR in two ways that matter here:
-
-* It still generates reduction rules for recursors without large elimination. The test
-  generator drops them (`dropSmallRecRules` in `Renovation/Meta.lean`), so the exports are as
-  with the final version.
-* It does not check that only the first type of a mutual block is marked `isK`, so the
-  generator only warns about `KMutSecondB` rather than failing.
-
-With these two workarounds, the exports are identical to those of a toolchain built from the
-PR at `0729164`, on which every good test is accepted and every bad test is rejected by the
-kernel. Once there is a PR release (or a release) with the final version, bump
-`lean-toolchain` and drop the workarounds.
+The project is pinned to the PR release of lean4#16595 (at `8f3431e`). The generator checks
+that its kernel accepts every good test and rejects every bad one. Its exporter still writes
+format version `3.1.0`, so the generator writes `3.2.0` into the metadata itself.
