@@ -23,6 +23,9 @@ def wellFormed : Declaration :=
   .inductDecl [] 1 [{
     name := `E
     type := mkForall `w .default (mkConst ``W) (mkSort 1)
+    -- As the elaborator would choose them: `E` is nested, hence recursive, so it has no eta
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false
+    hasLargeElim := true
     ctors := [{
       name := `E.mk
       type := mkForall `w .default (mkConst ``W) <|
