@@ -42,7 +42,7 @@ description: |
 language: rust
 url: https://github.com/leanprover/con-ron
 ref: renovation
-rev: c67a2157e73e1192ad9a4434969d187286fc005f
+rev: ca665a8bf3bbe150f47f1bf23e5972a1d657858b
 threads: 4
 # Nothing but a Rust toolchain and a C compiler (for the mimalloc allocator the
 # unverified binaries use by default); every pin the checker needs — con-leche's

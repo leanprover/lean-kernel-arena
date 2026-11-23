@@ -10,11 +10,7 @@ def assertKernelRejects (decl : Declaration) : CoreM Unit := do
   -- Synchronously, unlike `addDecl`, which may check definitions in a separate task
   let accepted := ((← getEnv).toKernelEnv.addDecl (← getOptions) decl).toBool
   if accepted then
-    -- The toolchain pinned here (lean4#16595 at 53e1623) lacks some checks of the final version
-    if Lean.githash.startsWith "53e1623" then
-      logWarning "the kernel of this toolchain accepts this bad declaration"
-    else
-      throwError "the kernel accepts this bad declaration"
+    throwError "the kernel accepts this bad declaration"
 
 /-! Definitions and theorems, as in the tutorial -/
 
@@ -124,37 +120,6 @@ structure Flags where
   hasLargeElim : Bool := false
   deriving Inhabited, Repr
 
-/--
-The recursor of a type without large elimination has no reduction rules. The toolchain pinned here
-(lean4#16595 at 53e1623) still generates them; the final version of the PR does not, so they are
-dropped here, after the kernel has checked the declaration. This is a no-op on a toolchain built
-from the final version of the PR.
--/
-def dropSmallRecRules (env : Environment) (ci : ConstantInfo) : ConstantInfo :=
-  match ci with
-  | .recInfo v =>
-    -- Not `getMajorInduct`, which for the recursor of an auxiliary type of a nested inductive is
-    -- the container
-    match env.find? v.all.head! with
-    | some (.inductInfo iv) => if iv.hasLargeElim then ci else .recInfo { v with rules := [] }
-    | _ => ci
-  | ci => ci
-
-/-- Applies `dropSmallRecRules` to the recursors of the inductive types `types`. -/
-def fixupRecRules (types : List Name) : CoreM Unit := do
-  let env ← getEnv
-  -- The recursors, including those of the auxiliary types of nested inductives
-  let mut recs := #[]
-  for t in types do
-    if let some ci := env.toKernelEnv.find? (t ++ `rec) then recs := recs.push ci
-    let mut i := 1
-    while true do
-      let some ci := env.toKernelEnv.find? (t ++ Name.mkSimple s!"rec_{i}") | break
-      recs := recs.push ci
-      i := i + 1
-  for ci in recs do
-    modifyEnv (insertConstInfo · (dropSmallRecRules env ci))
-
 /-- An inductive block as elaborated, with the flags that the elaborator chose. -/
 structure Block where
   levelParams : List Name
@@ -246,9 +211,7 @@ def badInductiveConsts (bad wellFormed : Declaration) : CoreM (Array ConstantInf
   let env ← getEnv
   try
     addDecl wellFormed
-    let env' ← getEnv
-    let added := env'.constants.map₂.toArray.filter (!env.contains ·.1)
-    let added := added.map fun (n, ci) => (n, dropSmallRecRules env' ci)
+    let added := (← getEnv).constants.map₂.toArray.filter (!env.contains ·.1)
     let firstIsK := match bad with
       | .inductDecl _ _ (t :: _) _ => t.isK
       | _ => false
@@ -278,7 +241,6 @@ def elabGoodInductive : CommandElab := fun stx => do
     let flags ← elabFlags ⟨stx[2]⟩
     let decl := block.toDecl flags
     addDecl decl
-    fixupRecRules (block.types.map (·.name))
     registerTestCase {
       decls := (block.types.map (·.name)).toArray
       outcome := .good
