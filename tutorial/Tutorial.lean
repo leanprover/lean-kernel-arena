@@ -327,6 +327,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
 /-- Another inductive type with a non-sort type -/
@@ -344,6 +345,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
 /-- An inductive with duplicate level params -/
@@ -361,6 +363,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
 /-- An inductive with too few parameters in the type -/
@@ -379,6 +382,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
 
@@ -409,6 +413,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -439,6 +444,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -470,6 +476,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -500,6 +507,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -530,6 +538,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -542,6 +551,7 @@ good_decl
   let n := `reduceCtorParam
   .inductDecl (lparams := []) (nparams := 1) (isUnsafe := false) [{
     name := n
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
     type := arrow (.sort 1) (.sort 1)
     ctors := [{
         name := n ++ `mk
@@ -570,6 +580,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   },
   dummyRecInfo n,
   .ctorInfo {
@@ -615,6 +626,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -663,6 +675,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   },
   dummyRecInfo n,
   .ctorInfo {
@@ -774,7 +787,8 @@ bad_raw_consts
       name := n, levelParams := [], type := .sort 1
       numParams := 0, numIndices := 0, all := [n]
       ctors := [n ++ `mk]
-      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false
+      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false,
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
     }
   ]
 
@@ -798,10 +812,11 @@ inductive SortElimProp (b : Bool) : Bool → Bool → Prop
   | mk (b1 b2 : Bool) : SortElimProp b b2 b1
 
 /--
-Inductive predicates eliminate into Sort if they have one constructors and it carries data, but the data is
-known from the type, e.g. a parameter or an index
+Inductive predicates with one constructor that carries data eliminate into Prop only, even if the data
+is known from the type, e.g. a parameter or an index. (Before the kernel renovation, lean4#16595, they
+eliminated into Sort.)
 -/
-good_def sortElimPropRec.{u} : ∀ {b : Bool} {motive : ∀ b1 b2, SortElimProp b b1 b2 → Sort u}
+good_def sortElimPropRec : ∀ {b : Bool} {motive : ∀ b1 b2, SortElimProp b b1 b2 → Prop}
   (mk : ∀ b1 b2, motive b2 b1 (.mk b1 b2)) (b1 b2 : Bool) (x : SortElimProp b b1 b2), motive b1 b2 x := @SortElimProp.rec
 
 inductive SortElimProp2 (b : Bool) : Bool → Bool → Prop
@@ -935,10 +950,11 @@ meta def mkPropStructureTest (n : Lean.Name) (resType : Lean.Expr) (idx : Nat) :
 
 /-- Projecting out of a proposition
 
-The lean kernel allows projections out of propositions if they precede
-all dependent data fields.
+Before the kernel renovation (lean4#16595), the lean kernel allowed projections out of propositions
+if they precede all dependent data fields. Now `PropStructure`, which has data fields, is
+impredicative, and an impredicative type has no projections at all.
 -/
-good_raw_consts mkPropStructureTest `projProp1 (Lean.mkConst ``PUnit [0]) 0
+bad_raw_consts mkPropStructureTest `projProp1 (Lean.mkConst ``PUnit [0]) 0
 
 /-- Projecting out of a proposition
 
@@ -948,10 +964,12 @@ bad_raw_consts mkPropStructureTest `projProp2 (Lean.mkConst ``PUnit [1]) 1
 
 /-- Projecting out of a proposition
 
-The lean kernel allows projections out of propositions if they precede
-all dependent data fields. Non-dependent data fields are not relevant.
+Before the kernel renovation (lean4#16595), the lean kernel allowed projections out of propositions
+if they precede all dependent data fields, and non-dependent data fields were not relevant. Now
+`PropStructure`, which has data fields, is impredicative, and an impredicative type has no
+projections at all.
 -/
-good_raw_consts mkPropStructureTest `projProp3 (Lean.mkConst ``PUnit [0]) 2
+bad_raw_consts mkPropStructureTest `projProp3 (Lean.mkConst ``PUnit [0]) 2
 
 /-- Projecting out of a proposition
 
@@ -1046,13 +1064,6 @@ do not match that of the constructor.
 bad_thm ruleKbad : ∀ (h : true = false) (a : Bool),
   Eq.rec (motive := fun _ _ => Bool) a h = a :=
   fun _ a => unchecked Eq.refl a
-
-/--
-Rule k should not fire for `Acc`.
--/
-bad_thm ruleKAcc.{u} : ∀ (α : Sort u) (p : α → α → Prop) (x : α) (h : Acc p x) (a : Bool),
-  Acc.rec (motive := fun _ _ => Bool) (fun _ _ _=> a) h = a :=
-  fun α p x h a => unchecked Eq.refl a
 
 /-- Type checking Nat literals -/
 good_decl (.defnDecl {
@@ -1204,6 +1215,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -1242,6 +1254,7 @@ bad_raw_consts
       isRec := false
       isUnsafe := false
       isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -1255,6 +1268,7 @@ good_decl
   let n := `reduceCtorParamRefl
   .inductDecl (lparams := []) (nparams := 1) (isUnsafe := false) [{
     name := n
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
     type := arrow (.sort 1) (.sort 1)
     ctors := [{
         name := n ++ `mk
@@ -1281,6 +1295,7 @@ good_decl
   let n := `reduceCtorParamRefl2
   .inductDecl (lparams := []) (nparams := 1) (isUnsafe := false) [{
     name := n
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
     type := arrow (.sort 1) (.sort 1)
     ctors := [{
         name := n ++ `mk
@@ -1321,23 +1336,6 @@ noncomputable def accRecType := @Acc.rec
 
 /-- Asserting the type of `Acc.rec`. -/
 good_consts #[``accRecType]
-
-/-! `Acc` and reduction -/
-
-/-- `Acc.rec` reduces on `Acc.intro`. -/
-good_thm accRecReduction :
-  ∀ {α : Type} (r : α → α → Prop) (a : α)
-    (h : ∀ b, r b a → Acc r b) (p : Bool),
-    Acc.rec (motive := fun _ _ => Bool) (fun _ _ _ => p) (Acc.intro (x := a) h) = p := by
-  intro α r a h p
-  rfl
-
-/-- `Acc.rec` does not have structure eta. -/
-bad_thm accRecNoEta :
-  ∀ {α : Type} (r : α → α → Prop) (a : α)
-    (h : Acc r a) (p : Bool),
-    Acc.rec (motive := fun _ _ => Bool) (fun _ _ _ => p) h = p :=
-  @fun α r a h p => unchecked Eq.refl p
 
 /-! Quotients -/
 
