@@ -12,4 +12,3 @@ run: |
 # Mathlib is supported, but excluded from routine arena runs for cost.
 declines:
   - mathlib
-  - renovation

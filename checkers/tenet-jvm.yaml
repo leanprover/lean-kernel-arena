@@ -39,6 +39,3 @@ build: make
 # 0 accept, 1 reject, 3 internal error or unreadable input. The launcher passes the JVM options the
 # checker wants (throughput collector, most of the RAM); the checker itself runs in a large-stack thread.
 run: bin/tenet-jvm "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

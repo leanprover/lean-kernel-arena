@@ -7,6 +7,3 @@ rev: 5cd4a25de7cdd8a5fadde3fec53e41a6a8693138
 build: scripts/pgo.sh
 run: target/release/nl-fast -q -j 4 "$IN"
 threads: 4
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

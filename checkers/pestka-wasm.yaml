@@ -29,6 +29,3 @@ build: |
   AVER="$PWD/.aver/bin/aver" bin/build-wasm
 run: bin/arena-run --wasm "$IN" 1
 threads: 1
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

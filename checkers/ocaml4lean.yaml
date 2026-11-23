@@ -36,6 +36,3 @@ threads: 4
 # packages).
 build: ./build.sh
 run: ./ocaml4lean -j 4 "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

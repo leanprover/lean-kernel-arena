@@ -18,6 +18,3 @@ run: |
   trap 'rm -f "$FILTERED"' EXIT
   scripts/filter/target/release/filter "$IN" "$FILTERED" || exit 3
   .lake/build/bin/metalean fast --jobs 8 "$FILTERED"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

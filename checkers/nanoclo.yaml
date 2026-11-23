@@ -31,6 +31,3 @@ build: |
 run: |
   target/release/nanoclo config.json < "$IN" || exit 1
 timeout: 3600
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

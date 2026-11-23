@@ -38,6 +38,3 @@ threads: 4
 # declaration stays sequential, so it is only the large corpora that gain.
 run: build/lazylean -j 4 --max-rss 14000 "$IN"
 timeout: 3600
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

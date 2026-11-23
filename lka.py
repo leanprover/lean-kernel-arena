@@ -79,7 +79,7 @@ SITE_URL = "https://arena.lean-lang.org"
 ROUNDS_URL = f"{SITE_URL}/round/"
 
 # The GitHub repository, used for links to releases and source files.
-REPO_URL = "https://github.com/leanprover/lean-kernel-arena"
+REPO_URL = "https://github.com/leanprover/lean-kernel-arena-beta"
 
 # Implementation languages a checker can declare (`language` in its YAML; the
 # schema lists the same keys), with their display name and the logo file in

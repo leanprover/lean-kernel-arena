@@ -6,6 +6,3 @@ rev: b275736e035f6128f2237b22aab21e411f55be97
 build: command -v tex
 run: ./check.py "$IN"
 timeout: 30
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

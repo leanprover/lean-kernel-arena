@@ -10,6 +10,3 @@ ref: arena
 rev: 932afa1419f8c9f21717cb01578cdd4d709df6be
 build: lake build lean4lean
 run: .lake/build/bin/lean4lean --import "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

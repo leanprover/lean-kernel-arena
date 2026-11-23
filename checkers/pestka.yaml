@@ -52,6 +52,3 @@ build: |
   rm -f init.susz
 run: bin/arena-run "$IN" 4
 threads: 4
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

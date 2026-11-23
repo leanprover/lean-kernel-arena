@@ -28,6 +28,3 @@ build: |
     cargo build --locked --profile arena -p logicaffeine-kernel --features unchecked-access --example logos_kernel
 run: |
   target/arena/examples/logos_kernel --check sem "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

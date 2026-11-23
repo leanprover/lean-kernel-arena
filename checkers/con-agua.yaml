@@ -37,6 +37,3 @@ rev: fa516c1d5fa4cddb01c9e8e2e56d88a1461864bb
 threads: 4
 build: make
 run: ./checker --jobs=4 "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation

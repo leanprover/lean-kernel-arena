@@ -10,6 +10,3 @@ rev: 606c3c08f892243d83faadf33ae2acd8bf218f78
 build: cargo build --release
 run: ./target/release/kiota "$IN"
 timeout: 5680
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation
