@@ -41,8 +41,8 @@ description: |
   supervision from Joachim Breitner at the Lean FRO.
 language: rust
 url: https://github.com/leanprover/con-ron
-ref: master
-rev: de06320fcdce1ee999bb7a751725e5840d54c3fe
+ref: renovation
+rev: c67a2157e73e1192ad9a4434969d187286fc005f
 threads: 4
 # Nothing but a Rust toolchain and a C compiler (for the mimalloc allocator the
 # unverified binaries use by default); every pin the checker needs — con-leche's
@@ -51,6 +51,3 @@ threads: 4
 # semantics is what the Lean model describes.
 build: cargo build --release
 run: ./target/release/con-ron --verified --jobs=4 "$IN"
-# The renovation tests need support for the inductive flags of export format 3.2.0
-declines:
-  - renovation
