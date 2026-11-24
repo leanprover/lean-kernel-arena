@@ -47,7 +47,7 @@ partial def exportClosure (env : Kernel.Environment) (roots : Array Name) :
     if acc.contains n then continue
     let some ci := env.find? n | continue
     acc := acc.insert n ci
-    let exprs := #[ci.type] ++ ci.value?.toArray ++
+    let exprs := #[ci.type] ++ (ci.value? (allowOpaque := true)).toArray ++
       (match ci with | .recInfo v => v.rules.toArray.map (·.rhs) | _ => #[])
     for e in exprs do
       todo := e.getUsedConstants.toList ++ todo

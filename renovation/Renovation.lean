@@ -481,6 +481,78 @@ inductive NPUnit : Type where
 /-- Two values of a unit-like type without `hasEta` are not definitionally equal. -/
 bad_def nPUnitEq : ∀ (x y : NPUnit), Eq x y := fun x y => unchecked (Eq.refl x)
 
+/-! ## Types that may be propositions
+
+A type in `Sort u` is a proposition for `u := 0` only. With the flags, whether it may have
+projections, eta and large elimination is decided by the rules above alone. (Before the flags,
+these were corner cases: lean4#7637.)
+-/
+
+/--
+A structure in `Sort u` with projections, eta and large elimination. It is not impredicative, as its
+fields all live in `Sort u`; so it may have projections, and with eta, large elimination.
+-/
+good_inductive { hasProjections := true, hasEta := true, hasLargeElim := true } in
+inductive MaybeProp.{u} : Sort u where
+  | mk (field : PUnit.{u}) (proof : field = field) (tail : True)
+
+/-- Projecting out the first field of a structure that may be a proposition. -/
+good_def projMaybeProp.{u} : MaybeProp.{u} → PUnit.{u} := fun x => unchecked (proj% MaybeProp 0 x)
+
+/--
+Projecting out the third field of a structure that may be a proposition, past a field that may be
+data and that the second field depends on.
+-/
+good_def projMaybePropPast.{u} : MaybeProp.{u} → True := fun x => unchecked (proj% MaybeProp 2 x)
+
+/--
+A type in `Sort u` whose only field is a proof whenever the type is a proposition, with large
+elimination: it has one constructor and eta.
+-/
+good_inductive { hasProjections := true, hasEta := true, hasLargeElim := true } in
+inductive MaybePropBox.{u} (α : Sort u) : Sort u where
+  | mk (x : α)
+
+/-- Eliminating `MaybePropBox` into its parameter. -/
+good_def maybePropBoxGet.{u} : ∀ (α : Sort u), MaybePropBox α → α :=
+  fun α t => MaybePropBox.rec (motive := fun _ => α) (fun x => x) t
+
+/-- Like `MaybePropBox`, but without eta it cannot have large elimination, as it may be a proposition. -/
+bad_inductive { hasProjections := true, hasLargeElim := true }
+  via { hasProjections := true, hasEta := true, hasLargeElim := true } in
+inductive MaybePropBoxNoEta.{u} (α : Sort u) : Sort u where
+  | mk (x : α)
+
+/-! ## Structure eta on the major premise of a recursor
+
+Structure eta applies to every type with `hasEta`, including propositions like `And`, and also to
+the major premise of a recursor. (Before the flags, the official kernel did not do the latter for
+propositions: lean4#15371.)
+-/
+
+/-- Structure eta on the major premise of `And.rec`. -/
+good_thm andMajorEta : ∀ (P Q : Prop) (A : Type) (f : P → Q → A) (x : P ∧ Q),
+    @Eq A (And.rec f ⟨x.1, x.2⟩) (And.rec f x) :=
+  fun P Q A f x => unchecked (Eq.refl (And.rec (motive := fun _ => A) f x))
+
+/-! A proof that has no weak head normal form (Coquand's paradox via `propext`) -/
+
+theorem tautext {A B : Prop} (a : A) (b : B) : A = B := propext ⟨fun _ => b, fun _ => a⟩
+def True' : Prop := ∀ A : Prop, A → A
+def delta : True' → True' := fun z => z (True' → True') id z
+def omega : True' := fun _ a => cast (tautext id a) delta
+def Omega : True' := delta omega
+
+noncomputable def andConst (h : True ∧ True) : Nat := And.rec (motive := fun _ => Nat) (fun _ _ => 1) h
+
+/--
+Structure eta on the major premise of `And.rec`, a proof of `True ∧ True` that has no weak head
+normal form. With structure eta on the major before reducing it, this holds at once; reducing the
+major first does not terminate. Proofs need not normalize, so eta has to come first.
+-/
+good_thm andMajorNoWhnf : @Eq Nat (andConst (Omega _ ⟨.intro, .intro⟩)) 1 :=
+  unchecked (Eq.refl 1)
+
 /-! ## Nested inductive types -/
 
 /-
