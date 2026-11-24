@@ -29,8 +29,8 @@ description: |
 language: java
 url: https://github.com/keithadler/tenet-jvm
 ref: main
-rev: 4cc6e20a0456c5e042c1fad5ad09b09c7e6e79c4
-version: "0.1.5"
+rev: 030f734975ab32c7ad8d27e37c4f1c6e2e88171d
+version: "0.1.6"
 
 # One worker: declarations are checked in order, in one thread. The JVM's own helper threads (garbage
 # collector, JIT) are not counted, so the default of one CPU slot is the honest declaration.
