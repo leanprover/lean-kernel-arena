@@ -946,7 +946,7 @@ bad_raw_consts mkPropStructureTest `projProp1 (Lean.mkConst ``PUnit [0]) 0
 
 /-- Projecting out of a proposition
 
-The lean kernel disallows data projections out of propositional structures.
+Data projections out of propositional structures are not allowed.
 -/
 bad_raw_consts mkPropStructureTest `projProp2 (Lean.mkConst ``PUnit [1]) 1
 
@@ -961,13 +961,13 @@ bad_raw_consts mkPropStructureTest `projProp3 (Lean.mkConst ``PUnit [0]) 2
 
 /-- Projecting out of a proposition
 
-The lean kernel disallows data projections out of propositional structures.
+Data projections out of propositional structures are not allowed.
 -/
 bad_raw_consts mkPropStructureTest `projProp4 (Lean.mkConst ``PUnit [1]) 3
 
 /-- Projecting out of a proposition
 
-The lean kernel disallows proof projections out of propositional structures that depend on data.
+Proof projections out of propositional structures that depend on data are not allowed.
 -/
 bad_raw_consts mkPropStructureTest `projProp5
   (Lean.mkApp3 (Lean.mkConst ``Eq [1]) (Lean.mkConst ``PUnit [1]) (.proj ``PropStructure 3 (.bvar 0)) (.proj ``PropStructure 3 (.bvar 0))) 4
@@ -975,8 +975,8 @@ bad_raw_consts mkPropStructureTest `projProp5
 /--
 Projecting out of a proposition.
 
-The lean kernel rejects any projections out of a proposition that
-come after a dependent data field, even if that is not used by the present projection.
+Projections out of a proposition that come after a dependent data field are not allowed,
+even if that is not used by the present projection.
 -/
 bad_raw_consts mkPropStructureTest `projProp6 (Lean.mkConst ``PUnit [0]) 5
 
@@ -1128,8 +1128,8 @@ inductive IndexedUnit : Bool → Type where
 /--
 The unit-like rule, which makes any two elements of a single-constructor type with
 no fields definitionally equal, is also restricted to non-recursive structures
-*without indices* (`is_def_eq_unit_like` goes through `is_non_rec_structure`), so it
-does not fire for `IndexedUnit`.
+*without indices* (in the official kernel, `is_def_eq_unit_like` went through
+`is_non_rec_structure` when this test was written), so it does not fire for `IndexedUnit`.
 -/
 bad_def indexedUnitEta : ∀ (x y : IndexedUnit true), x = y :=
   fun x y => unchecked Eq.refl x
@@ -1141,9 +1141,10 @@ inductive IndexedSingleton : Bool → Type where
   | mk : True → IndexedSingleton true
 
 /--
-Structure eta applies only to *non-recursive structures without indices*: the
-official kernel's `is_non_rec_structure` requires `nindices == 0`, so it does not
-fire for `IndexedSingleton` even though that has a single constructor.
+Structure eta applies only to *non-recursive structures without indices* (the
+official kernel's `is_non_rec_structure` required `nindices == 0` when this test was
+written), so it does not fire for `IndexedSingleton` even though that has a single
+constructor.
 
 Every field of `IndexedSingleton.mk` is a proof, so a kernel that checks only
 "has a single constructor" and then compares the fields against projections
@@ -1428,7 +1429,7 @@ bad_consts #[`DupInd2]
 
 Unsafe and partial declarations can't be used in theorems.
 
-Kernels are permitted to automatically reject or decline whenever they see an unsafe or partial declaration (nanoda does this).
+Kernels are permitted to automatically reject or decline whenever they see an unsafe or partial declaration (nanoda, for example, did this).
 That's reasonable if you're using `lean4export` in the common way where you specify specific constants,
 and only the transitive dependencies of those constants are output.
 In that mode, if unsafe or partial declarations aren't used, they simply won't be output at all.
@@ -1452,7 +1453,7 @@ partial def partialLoop : False := partialLoop
 ```
 
 The reason is that the Lean's *elaborator* only allows `partial def` to be an inhabited type.
-The kernel does not ensure that `.partial` types are inhabited.
+A kernel need not ensure that `.partial` types are inhabited.
 -/
 run_meta Lean.addDecl (.mutualDefnDecl [{
   name := `partialLoop

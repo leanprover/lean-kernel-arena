@@ -11,7 +11,7 @@ description: |
   `W.rec (motive := fun w => {c : Bool // c = w.b}) (fun b => ⟨b, rfl⟩) (W.mk false)`,
   of type `{c // c = false}`, reduces to `⟨true, rfl⟩`, whose second component
   proves `true = false`. A checker must derive the rule itself and reject an
-  export whose rule differs from it, as the official kernel does; checking that
+  export whose rule differs from it; checking that
   the right-hand side of a rule is headed by the minor premise for its
   constructor is not enough.
 leanfile: tests/bugs/rec-rule-wrong-arg.lean

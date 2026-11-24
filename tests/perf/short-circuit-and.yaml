@@ -18,9 +18,9 @@ description: |
   only because the first is `false`, and the arguments are open terms that
   can neither be evaluated nor quickly told apart.
 
-  Official (v4.36.0) needs about 14 s and 1.6 GB here. Distilled from
+  Official (v4.36.0) needed about 14 s and 1.6 GB here. Distilled from
   AxiomMath/CFSG's `CertificateChecks.Batch27581.p2`, where the same shape
-  over 1755 points of 11 bits takes it 441 s, and sokonanoda and Gruszka
+  over 1755 points of 11 bits took it 441 s, and sokonanoda and Gruszka
   past 8 GB.
 leanfile: tests/perf/short-circuit-and.lean
 export-decls: ["short_circuit_and_1", "short_circuit_and_2", "short_circuit_and_3"]

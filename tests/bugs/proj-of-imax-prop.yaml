@@ -11,8 +11,8 @@ description: |
   wrongly allows projecting its `Bool` field out of a proof. Congruence on the
   proof-irrelevance equation then equates `false` and `true`, giving `False`.
 
-  This is <https://github.com/leanprover/lean4/pull/14613>, a bug in the official
-  kernel.
+  This is <https://github.com/leanprover/lean4/pull/14613>, a bug that the
+  official kernel had.
 leanfile: tests/bugs/proj-of-imax-prop.lean
 export-decls: ["badFalse"]
 outcome: reject

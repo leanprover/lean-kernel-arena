@@ -16,7 +16,7 @@ description: |
   stores no value of type `α`, so the nested occurrence is phantom and `E w` is
   isomorphic to `Unit` for every `w`. The variant where `L` actually stores an
   `α` (so recursion would descend into an `E ⟨false⟩` while the motive is fixed
-  at `E w`) is already rejected by the kernel's positivity check ("non valid
+  at `E w`) is already rejected by the positivity check ("non valid
   occurrence"). Since it is not a demonstrated unsoundness, it is not settled
   whether a checker should accept or reject it, so the expected outcome is
   `either` and the test does not count towards completeness or soundness.

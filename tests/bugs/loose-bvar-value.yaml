@@ -8,8 +8,8 @@ description: |
     | mk : γ → T γ
   ```
   with the value of `f` replaced by the bound variable `#0`, which no binder
-  binds. The official kernel rejects `f`: its type checker does not support
-  loose bound variables.
+  binds. A value with a loose bound variable is not a well-formed term, so a
+  checker must reject `f`.
 
   A checker that checks an inductive declaration as soon as it meets it, but
   defers definitions, reaches `f` first through `T.mk`: the type of its field

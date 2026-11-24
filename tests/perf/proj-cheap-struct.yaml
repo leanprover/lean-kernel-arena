@@ -8,8 +8,8 @@ description: |
   N = 2^17).
 
   `.re` is a projection function, so both sides unfold to a primitive
-  projection of `S u` and `S ()`. Official reduces the structure of a
-  projection during definitional equality only with `whnf_core` (no delta),
+  projection of `S u` and `S ()`. A checker that reduces the structure of a
+  projection during definitional equality only with `whnf_core` (no delta)
   compares the two stuck projections by their structures, and finds those
   equal by comparing the arguments of `S`. That is five unfoldings in all.
   A checker that fully reduces the structure of the projection to find a

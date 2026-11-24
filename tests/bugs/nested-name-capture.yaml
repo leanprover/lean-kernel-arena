@@ -18,7 +18,7 @@ description: |
 
   A checker must not let an admitted rule refer to a constant that existed only
   while the block was checked, for instance by choosing temporary names that no
-  declaration in the file uses. The official kernel rejects the file.
+  declaration in the file uses.
 
   Nanoda, nanoclo, nanobruijn and sokonanoda accepted this export. Found by a
   differential run of Pestka against other checkers.
