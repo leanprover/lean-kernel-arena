@@ -7,6 +7,9 @@ description: |
   `Quot` living in `Sort (max 1 u)` (lean4#15023).
 dir: renovation
 multiple: true
+# Each test is tiny, but andMajorNoWhnf makes a checker that reduces the major
+# premise of a recursor before eta-expanding it loop
+timeout: 60
 # Run with `lake env lean` rather than built with `lake build`, as a build that
 # Lake finds in its artifact cache would not run it at all.
 run: |
