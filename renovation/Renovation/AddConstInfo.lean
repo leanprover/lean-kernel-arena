@@ -20,3 +20,8 @@ public def insertConstInfo (env : Environment) (ci : Lean.ConstantInfo) : Enviro
 public def addConstInfos [Monad m] [MonadEnv m] (cis : Array Lean.ConstantInfo) : m Unit := do
   for ci in cis do
     modifyEnv (insertConstInfo · ci)
+
+/-- A kernel environment that has the constants `cs`, and no others. -/
+public def Lean.Kernel.Environment.withConsts (env : Kernel.Environment)
+    (cs : PersistentHashMap Name ConstantInfo) : Kernel.Environment :=
+  { env with constants := { map₂ := cs } }

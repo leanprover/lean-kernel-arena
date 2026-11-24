@@ -73,6 +73,24 @@ elab descr?:(plainDocComment)? "good_thm " name:declId ":" type:term ":=" value:
 elab descr?:(plainDocComment)? "bad_thm " name:declId ":" type:term ":=" value:term : command => do
   elabAndAddTestCaseDecl descr? name type value Outcome.bad ConstantKind.thm
 
+/-! Raw declarations, as in the tutorial -/
+
+open TSyntax.Compat in -- due to plainDocComments vs. docComment
+def elabRawTestDecl (descr? : Option (TSyntax ``plainDocComment)) (decl : Term) (outcome : Outcome) :
+    CommandElabM Unit := liftTermElabM do
+  let expectedType := Lean.mkConst ``Lean.Declaration
+  let declExpr ← elabTerm decl (some expectedType)
+  Term.synthesizeSyntheticMVarsNoPostponing
+  let declExpr ← instantiateMVars declExpr
+  let decl ← unsafe Meta.evalExpr Declaration expectedType declExpr
+  addTestCaseDeclCore (← getDescr descr?) decl outcome
+
+elab descr?:(plainDocComment)? "good_decl " decl:term : command => do
+  elabRawTestDecl descr? decl .good
+
+elab descr?:(plainDocComment)? "bad_decl " decl:term : command => do
+  elabRawTestDecl descr? decl .bad
+
 section Unchecked
 
 /-- An elaborator that just inserts the term, without regard for the actual type needed here -/

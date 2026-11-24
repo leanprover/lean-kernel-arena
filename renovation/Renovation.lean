@@ -540,3 +540,50 @@ bad_inductive { isImpredicative := true } via {} in
 inductive NPImpTree : Prop where
   | node (b : NPBox NPImpTree)
   | leaf
+
+/-! ## Quotients live in `Sort (max 1 u)` (lean4#15023)
+
+With lean4#15023, the kernel declares `Quot.{u} {α : Sort u} (r : α → α → Prop) : Sort (max 1 u)`
+rather than `… : Sort u`, so that quotients of propositions are types, not propositions. This is
+not in the toolchain of lean4#16595 yet, so the type of `Quot` is replaced here, bypassing the
+kernel, and these tests are written out with that `Quot`. From here on, every test sees it.
+-/
+
+open Lean in
+run_meta do
+  let some (.quotInfo v) := (← getEnv).find? ``Quot | throwError "Quot not found"
+  -- `∀ {α : Sort u} (r : α → α → Prop), Sort u` becomes `…, Sort (max 1 u)`
+  let rec go : Expr → Expr
+    | .forallE n d b bi => .forallE n d (go b) bi
+    | .sort u => .sort (mkLevelMax (mkLevelSucc .zero) u)
+    | e => e
+  addConstInfos #[.quotInfo { v with type := go v.type }]
+
+open Lean in
+/-- `Quot.{0} (fun _ _ : True => True)`, a quotient of a proposition -/
+def quotOfTrue : Expr :=
+  mkApp2 (.const ``Quot [0]) (.const ``True [])
+    (.lam `a (.const ``True []) (.lam `b (.const ``True []) (.const ``True []) .default) .default)
+
+/-- A quotient of a proposition is a type (lean4#15023). -/
+good_decl (.defnDecl {
+  name := `quotOfPropIsType
+  levelParams := []
+  type := .sort 1
+  value := quotOfTrue
+  hints := .opaque
+  safety := .safe
+})
+
+/--
+A quotient of a proposition is a type, so proof irrelevance does not apply to its elements: two
+elements of `Quot (fun _ _ : True => True)` are not definitionally equal (lean4#15023).
+-/
+bad_decl (.thmDecl {
+  name := `quotOfPropNoProofIrrel
+  levelParams := []
+  type := .forallE `x quotOfTrue (.forallE `y quotOfTrue
+    (Lean.mkApp3 (.const ``Eq [1]) quotOfTrue (.bvar 1) (.bvar 0)) .default) .default
+  value := .lam `x quotOfTrue (.lam `y quotOfTrue
+    (Lean.mkApp2 (.const ``Eq.refl [1]) quotOfTrue (.bvar 1)) .default) .default
+})
