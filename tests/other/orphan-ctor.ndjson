@@ -16,7 +16,7 @@
 {"forallE":{"binderInfo":"default","body":6,"name":6,"type":1},"ie":7}
 {"forallE":{"binderInfo":"default","body":7,"name":5,"type":3},"ie":8}
 {"in":7,"str":{"pre":0,"str":"Orphan"}}
-{"inductive":{"ctors":[{"cidx":0,"induct":7,"isUnsafe":false,"levelParams":[],"name":2,"numFields":0,"numParams":0,"type":1}],"recs":[{"all":[1],"isUnsafe":false,"k":false,"levelParams":[4],"name":3,"numIndices":0,"numMinors":0,"numMotives":1,"numParams":0,"rules":[],"type":8}],"types":[{"all":[1],"ctors":[],"isRec":false,"isReflexive":false,"isUnsafe":false,"levelParams":[],"name":1,"numIndices":0,"numNested":0,"numParams":0,"type":0}]}}
+{"inductive":{"ctors":[{"cidx":0,"induct":7,"isUnsafe":false,"levelParams":[],"name":2,"numFields":0,"numParams":0,"type":1}],"recs":[{"all":[1],"isUnsafe":false,"k":false,"levelParams":[4],"name":3,"numIndices":0,"numMinors":0,"numMotives":1,"numParams":0,"rules":[],"type":8}],"types":[{"all":[1],"ctors":[],"isRec":false,"isUnsafe":false,"isImpredicative":false,"isK":false,"hasProjections":false,"hasEta":false,"hasLargeElim":true,"levelParams":[],"name":1,"numIndices":0,"numNested":0,"numParams":0,"type":0}]}}
 {"in":8,"str":{"pre":0,"str":"inconsistent"}}
 {"const":{"name":2,"us":[]},"ie":9}
 {"thm":{"all":[8],"levelParams":[],"name":8,"type":1,"value":9}}

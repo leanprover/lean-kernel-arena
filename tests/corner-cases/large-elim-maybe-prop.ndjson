@@ -39,7 +39,7 @@
 {"ie":25,"lam":{"binderInfo":"default","body":24,"name":10,"type":16}}
 {"ie":26,"lam":{"binderInfo":"default","body":25,"name":8,"type":10}}
 {"ie":27,"lam":{"binderInfo":"default","body":26,"name":3,"type":0}}
-{"inductive":{"ctors":[{"cidx":0,"induct":1,"isUnsafe":false,"levelParams":[2],"name":4,"numFields":1,"numParams":1,"type":7}],"recs":[{"all":[1],"isUnsafe":false,"k":false,"levelParams":[7,2],"name":6,"numIndices":0,"numMinors":1,"numMotives":1,"numParams":1,"rules":[{"ctor":4,"nfields":1,"rhs":27}],"type":22}],"types":[{"all":[1],"ctors":[4],"isRec":false,"isReflexive":false,"isUnsafe":false,"levelParams":[2],"name":1,"numIndices":0,"numNested":0,"numParams":1,"type":1}]}}
+{"inductive":{"ctors":[{"cidx":0,"induct":1,"isUnsafe":false,"levelParams":[2],"name":4,"numFields":1,"numParams":1,"type":7}],"recs":[{"all":[1],"isUnsafe":false,"k":false,"levelParams":[7,2],"name":6,"numIndices":0,"numMinors":1,"numMotives":1,"numParams":1,"rules":[{"ctor":4,"nfields":1,"rhs":27}],"type":22}],"types":[{"all":[1],"ctors":[4],"isRec":false,"isUnsafe":false,"isImpredicative":false,"isK":false,"hasProjections":true,"hasEta":true,"hasLargeElim":true,"levelParams":[2],"name":1,"numIndices":0,"numNested":0,"numParams":1,"type":1}]}}
 {"in":11,"str":{"pre":1,"str":"get"}}
 {"forallE":{"binderInfo":"default","body":4,"name":9,"type":8},"ie":28}
 {"forallE":{"binderInfo":"default","body":28,"name":3,"type":0},"ie":29}
