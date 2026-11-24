@@ -360,7 +360,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := true
   }]
 
 /-- An inductive with too few parameters in the type -/
@@ -378,7 +378,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := true
   }]
 
 
@@ -408,7 +408,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   }
   ]
 
@@ -438,7 +438,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   }
   ]
 
@@ -469,7 +469,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   }
   ]
 
@@ -499,7 +499,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := true, hasProjections := false, hasEta := false, hasLargeElim := true
   }
   ]
 
@@ -529,7 +529,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
   }
   ]
 
@@ -570,7 +570,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   },
   dummyRecInfo n,
   .ctorInfo {
@@ -615,7 +615,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
   }
   ]
 
@@ -663,7 +663,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   },
   dummyRecInfo n,
   .ctorInfo {
@@ -776,7 +776,7 @@ bad_raw_consts
       numParams := 0, numIndices := 0, all := [n]
       ctors := [n ++ `mk]
       numNested := 0, isRec := false, isUnsafe := false,
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
     }
   ]
 
@@ -1202,15 +1202,17 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
   }
   ]
 
 /--
 Rejection: recursive occurrence in *index position*, behind a further arrow.
 
-We build an indexed inductive `I : Type → Type` with a constructor argument
+We build an indexed inductive `I : Prop → Prop` with a constructor argument
 `Nat → I (I α)`, so the recursive occurrence appears as an index argument.
+(It is a proposition so that its field `α : Prop` is allowed; for that it is
+impredicative.)
 -/
 bad_raw_consts
   let n := `reflOccInIndex
@@ -1218,21 +1220,21 @@ bad_raw_consts
       name := n ++ `mk
       levelParams := []
       type :=
-        arrow (n := `α) (.sort 1) <|
+        arrow (n := `α) (.sort 0) <|
         arrow (arrow (Lean.mkConst ``Nat) <|
-          Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (.bvar 0))) <|
+          Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (.bvar 1))) <|
         Lean.mkApp (Lean.mkConst n) (.bvar 1)
       numParams := 0
       induct := n
       cidx := 0
-      numFields := 1
+      numFields := 2
       isUnsafe := false
   },
   dummyRecInfo n,
   .inductInfo {
       name := n
       levelParams := []
-      type := arrow (n := `α) (.sort 1) (.sort 1)
+      type := arrow (n := `α) (.sort 0) (.sort 0)
       numParams := 0
       numIndices := 1
       all := [n]
@@ -1240,7 +1242,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
+      isImpredicative := true, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
