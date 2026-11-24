@@ -16,17 +16,25 @@ inductive NewBool : Type where | tt | ff
 theorem pick_tt : true = pick .tt  := rfl
 theorem pick_ff : pick .ff = false := rfl
 
+/-- Replaces the constant `ci.name` by `ci`, for the kernel as well as for the elaborator. -/
+private def replaceConst (env : Environment) (ci : ConstantInfo) : Environment :=
+  let update (ac : AsyncConsts) : AsyncConsts :=
+    match ac.map.find? ci.name with
+    | some a =>
+      let a := { a with constInfo := .ofConstantInfo ci }
+      { ac with map := ac.map.insert ci.name a
+                normalizedTrie := ac.normalizedTrie.insert (privateToUserName ci.name) a }
+    | none => ac
+  { env with
+    asyncConstsMap := env.asyncConstsMap.map update
+    checked := env.checked.map fun e => { e with constants := e.constants.insert ci.name ci } }
+
 -- Shenanigans
 run_cmd do
   let some (.inductInfo v) := (← getEnv).find? ``NewBool | throwError "?"
   let ci : ConstantInfo := .inductInfo { v with type := .sort 0 }
-  modifyEnv fun env =>
-    -- Tell the kernel `NewBool` was a `Prop` all along
-    let env := env.setCheckedSync <| env.checked.get.add ci
-    -- Convince the elaborator to go along with this nonsense
-    { env with
-      base.public.constants.map₁  := env.base.public.constants.map₁.insert ci.name ci
-      base.private.constants.map₁ := env.base.private.constants.map₁.insert ci.name ci }
+  -- Tell the kernel and the elaborator that `NewBool` was a `Prop` all along
+  modifyEnv (replaceConst · ci)
 
 /-- Because `.tt` and `.ff` are classified by a `Prop`, they're definitionally equal -/
 theorem tt_eq_ff : NewBool.tt = NewBool.ff := rfl

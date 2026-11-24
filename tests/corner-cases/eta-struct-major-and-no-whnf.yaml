@@ -1,6 +1,6 @@
 description: |
-  The combination of `corner-cases/eta-struct-major-and` and
-  `corner-cases/eta-struct-major-no-whnf`.
+  `corner-cases/eta-struct-major-and`, with a major premise that has no weak
+  head normal form.
 
   `andConst h` is `And.rec (fun _ _ => 1) h`, applied here to a proof of
   `True ∧ True` that has no weak head normal form (built from Coquand's

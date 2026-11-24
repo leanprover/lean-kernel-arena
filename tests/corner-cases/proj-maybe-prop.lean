@@ -17,6 +17,10 @@ run_cmd liftTermElabM do
   addDecl <| .inductDecl [`u] 0 [
     { name := `MaybeProp
       type := .sort (.param `u)
+      -- As the elaborator would choose them, with the kernel renovation (lean4#16595): not
+      -- impredicative (`u` need not be `0`), and with projections, eta and large elimination
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true
+      hasLargeElim := true
       ctors := [
         { name := `MaybeProp.mk
           type :=

@@ -25,6 +25,9 @@ run_cmd liftTermElabM do
                      (`VanishNeg, fun t => kNat (.forallE `y t (mkConst ``Nat) .default))] do
     let T := mkConst n
     addDecl <| .inductDecl [] 0 [{
-      name := n, type := mkSort 1, ctors := [
+      name := n, type := mkSort 1
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false
+      hasLargeElim := true
+      ctors := [
         { name := n ++ `leaf, type := T },
         { name := n ++ `node, type := .forallE `x (field T) T .default }] }] false

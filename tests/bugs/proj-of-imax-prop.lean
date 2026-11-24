@@ -30,9 +30,14 @@ run_cmd liftTermElabM do
   addDecl <| .inductDecl [] 0 [
     { name := `ImaxPropDummy
       type := .sort 0
+      -- `imax 1 0` normalizes to `0`, and `ImaxProp` has data, so the block is impredicative
+      isImpredicative := true, isK := false, hasProjections := false, hasEta := false
+      hasLargeElim := false
       ctors := [{ name := `ImaxPropDummy.intro, type := .const `ImaxPropDummy [] }] },
     { name := `ImaxProp
       type := .sort (.imax 1 0)
+      isImpredicative := true, isK := false, hasProjections := false, hasEta := false
+      hasLargeElim := false
       ctors := [{ name := `ImaxProp.mk
                   type := .forallE `value (.const ``Bool []) (.const `ImaxProp []) .default }] }
   ] false
