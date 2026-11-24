@@ -326,7 +326,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
@@ -344,7 +343,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
@@ -362,7 +360,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
@@ -381,7 +378,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
@@ -412,7 +408,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -443,7 +438,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -475,7 +469,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -506,7 +499,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -537,7 +529,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -579,7 +570,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   },
   dummyRecInfo n,
@@ -625,7 +615,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -674,7 +663,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   },
   dummyRecInfo n,
@@ -787,7 +775,7 @@ bad_raw_consts
       name := n, levelParams := [], type := .sort 1
       numParams := 0, numIndices := 0, all := [n]
       ctors := [n ++ `mk]
-      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false,
+      numNested := 0, isRec := false, isUnsafe := false,
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
     }
   ]
@@ -1214,7 +1202,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
@@ -1253,7 +1240,6 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
       isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]

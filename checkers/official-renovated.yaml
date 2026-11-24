@@ -1,12 +1,12 @@
-version: "pr-16595-8f3431e"
+version: "pr-16595-55bd690"
 description: |
   The official Lean 4 kernel checker implementation, from the PR release of the
   upcoming kernel renovation ([lean4#16595](https://github.com/leanprover/lean4/pull/16595))
-  at 8f3431e, which handles the inductive flags of export format 3.2.0. It only
+  at 55bd690, which handles the inductive flags of export format 3.2.0. It only
   runs the `renovation` tests.
 language: cpp
 build: |
-  echo leanprover/lean4-pr-releases:pr-release-16595-8f3431e > lean-toolchain
+  echo leanprover/lean4-pr-releases:pr-release-16595-55bd690 > lean-toolchain
   lean --version
 run: leanchecker --from-export "$IN"
 # Only for the renovation tests: decline everything else

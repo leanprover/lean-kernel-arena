@@ -340,7 +340,10 @@ def parseInductInfo (json : Json) : M Unit := do
   let some (.num (numNested : Nat)) := data["numNested"]? | fail s!"inductInfo invalid"
   let some (.bool isRec) := data["isRec"]? | fail s!"inductInfo invalid"
   let some (.bool isUnsafe) := data["isUnsafe"]? | fail s!"inductInfo invalid"
-  let some (.bool isReflexive) := data["isReflexive"]? | fail s!"inductInfo invalid"
+  -- No longer exported with the kernel renovation (lean4#16595); only shown, so default it
+  let isReflexive := match data["isReflexive"]? with
+    | some (.bool b) => b
+    | _ => false
 
   let name ← getName nameIdx
   let levelParams ← getNameList levelParamsIdxs
