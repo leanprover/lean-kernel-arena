@@ -8,23 +8,22 @@ description: |
   accepts it. The exported definition projects out its first field,
   `field : PUnit.{u}`.
 
-  The official kernel accepts this. The field is not a proof for every `u`,
-  but the projection is sound at every instantiation: `MaybeProp.{u}` is a
-  proposition only for `u := 0`, and there the field's type `PUnit.{0}` is a
-  proposition too. That is no coincidence. A structure that is not a `Prop`
-  had every constructor field's universe checked against its resulting
-  universe (see the tutorial's `typeWithTooHighTypeField`), here `u ≤ u`, and
-  such an inequality survives instantiation — so wherever the structure does
-  turn out to be a proposition, so do all of its fields.
+  With the inductive flags of the kernel renovation (lean4#16595), whether a
+  type has projections is the declared flag `hasProjections`, and whether it
+  might be a proposition plays no role. `MaybeProp` is exported with
+  `hasProjections` (as well as `hasEta` and `hasLargeElim`), which it may
+  have: it has one constructor and no indices, and it is not impredicative, as
+  its fields all live in `Sort u`. So the projection is valid, and a checker
+  must accept it.
 
-  At the same time, the official kernel here allows more projections than the
-  recursor allows: `MaybeProp.rec` eliminates into `Prop` only, so this
-  projection cannot be expressed through the recursor. The elaborator does not
-  currently rely on this extra power, so for now it is reasonable for a
-  checker to be more restrictive here and reject the projection — for example
-  by asking "could this be a proposition?" and then demanding that the field
-  be definitely a proof. See
-  <https://github.com/leanprover/lean4/issues/7637> for discussion.
+  Before the renovation, the outcome of this test was open. The official kernel
+  accepted the projection, which is sound at every instantiation, while
+  `MaybeProp.rec` eliminated into `Prop` only, so that the projection could not
+  be expressed through the recursor
+  (<https://github.com/leanprover/lean4/issues/7637>). A checker could
+  reasonably reject it, for example by asking "could this be a proposition?"
+  and then demanding that the field be definitely a proof. With `hasEta`,
+  `MaybeProp.rec` now eliminates into every universe, so that mismatch is gone.
 leanfile: tests/corner-cases/proj-maybe-prop.lean
 export-decls: ["projMaybeProp"]
-outcome: either
+outcome: accept
