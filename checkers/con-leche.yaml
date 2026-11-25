@@ -14,7 +14,7 @@ description: |
 language: lean
 url: https://github.com/leanprover/con-leche
 ref: renovation
-rev: 3871e1422ac601186d70bfd4b60941fe094121cc
+rev: 7fb732aa36ac6def788cce854e4e7d68940d8403
 build: lake build con-leche
 threads: 4
 run: .lake/build/bin/con-leche --verified --jobs=4 "$IN"
