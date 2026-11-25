@@ -1,0 +1,29 @@
+description: |
+  Nucleus is an independently implemented Rust proof checker developed by
+  [Metalogic Labs](https://mathgraph.org/). It is separate from MathGraph Flash,
+  the sokonanoda-derived checker on the main Arena.
+
+  This initial preview entry supports a bounded fragment of export format
+  3.2.0. It reconstructs admitted nonrecursive inductive families and
+  recursors from source types, validates their feature flags and computation
+  rules, and checks a bounded projection fragment with dependent field
+  substitutions. Unsupported declarations or conversions are declined.
+  The launcher freezes the qualified configuration and explicitly declines
+  inputs larger than 10 MiB. It passes input bytes unchanged and consults no
+  external checker at runtime. Full Mathlib acceptance is not established.
+version: "beta-2026-11-26"
+language: rust
+threads: 1
+timeout: 120
+declines:
+  - init
+  - std
+  - perf/grind-ring-5
+  - perf/gf3-matrix-product
+url: https://github.com/heathsanchez/test
+ref: research/nucleus-beta-entry-20261126
+rev: 578697991a903ab78d344aa71165d465bef3c3d7
+build: |
+  cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+run: |
+  python3 metatron-kernel/arena.py < "$IN"
