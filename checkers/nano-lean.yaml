@@ -3,7 +3,7 @@ description: |
 language: rust
 url: https://github.com/sdiehl/nano-lean
 ref: v0.4.3
-rev: c9839b841b5ab5a0c725b9a68013d3e338f99d33
+rev: 0416e760d60c2d33b06ffdb878a50ea458a17277
 build: scripts/pgo.sh
 run: target/release/nl-fast -q -j 4 "$IN"
 threads: 4
