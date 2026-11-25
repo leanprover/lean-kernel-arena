@@ -17,12 +17,13 @@ description: |
   with 3 otherwise, so a crash of V8 or of the host never reads as a verdict.
 
   The build installs `susz` 0.1.4 and the Aver release pinned in
-  `.aver-version` (0.37.0) from crates.io, and optimizes the module for speed with
+  `.aver-version` (0.38.0) from crates.io, and optimizes the module for speed with
   Binaryen's `wasm-opt`.
 language: aver
+version: "0.2.0"
 url: https://github.com/jasisz/pestka
-ref: main
-rev: cea66e6e50a0999735fd76455f2358772351ccba
+ref: v0.2.0
+rev: b58afd24297e42fe8ee7f1545ea95aceb7b9d078
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --features wasm --root "$PWD/.aver"
