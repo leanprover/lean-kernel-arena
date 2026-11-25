@@ -14,10 +14,21 @@ def assertKernelRejects (decl : Declaration) : CoreM Unit := do
 
 /-! Definitions and theorems, as in the tutorial -/
 
-def addTestCaseDeclCore (descr? : Option String) (decl : Lean.Declaration) (outcome : Outcome) :
-    CoreM Unit := do
+/--
+Adds a test of a change that the toolchain does not have yet (an "ahead" test): a good declaration
+that the kernel at hand rejects, added without checking it. Warns if the kernel accepts it after
+all, as it should then be an ordinary test.
+-/
+def addAheadDecl (decl : Lean.Declaration) : CoreM Unit := do
+  if ((← getEnv).toKernelEnv.addDecl (← getOptions) decl).toBool then
+    logWarning "the kernel accepts this test of a change ahead of the toolchain; make it an ordinary one"
+  withOptions (fun o => debug.skipKernelTC.set o true) do
+    addDecl decl
+
+def addTestCaseDeclCore (descr? : Option String) (decl : Lean.Declaration) (outcome : Outcome)
+    (ahead := false) : CoreM Unit := do
   match outcome with
-  | .good => addDecl decl
+  | .good => if ahead then addAheadDecl decl else addDecl decl
   | .bad =>
     assertKernelRejects decl
     withOptions (fun o => debug.skipKernelTC.set o true) do
@@ -35,7 +46,7 @@ def getDescr (descr? : Option (TSyntax ``plainDocComment)) : CoreM (Option Strin
 
 open TSyntax.Compat in -- due to plainDocComments vs. docComment
 def elabAndAddTestCaseDecl (descr? : Option (TSyntax ``plainDocComment)) (name : TSyntax ``declId)
-    (type : Term) (value : Term) (outcome : Outcome) (declKind : ConstantKind) :
+    (type : Term) (value : Term) (outcome : Outcome) (declKind : ConstantKind) (ahead := false) :
     CommandElabM Unit := liftTermElabM do
   let descrStr? ← getDescr descr?
   let (declName, lparams) ← match name with
@@ -59,7 +70,7 @@ def elabAndAddTestCaseDecl (descr? : Option (TSyntax ``plainDocComment)) (name :
       | .thm => pure <| .thmDecl {
           name := declName, levelParams := lparams, type := typeExpr, value := valueExpr }
       | _ => throwError "Unsupported declaration kind in test case: {repr declKind}"
-    addTestCaseDeclCore descrStr? decl outcome
+    addTestCaseDeclCore descrStr? decl outcome (ahead := ahead)
 
 elab descr?:(plainDocComment)? "good_def " name:declId ":" type:term ":=" value:term : command => do
   elabAndAddTestCaseDecl descr? name type value Outcome.good ConstantKind.defn
@@ -72,6 +83,10 @@ elab descr?:(plainDocComment)? "good_thm " name:declId ":" type:term ":=" value:
 
 elab descr?:(plainDocComment)? "bad_thm " name:declId ":" type:term ":=" value:term : command => do
   elabAndAddTestCaseDecl descr? name type value Outcome.bad ConstantKind.thm
+
+/-- A good theorem testing a change ahead of the toolchain; see `addAheadDecl`. -/
+elab descr?:(plainDocComment)? "ahead_good_thm " name:declId ":" type:term ":=" value:term : command => do
+  elabAndAddTestCaseDecl descr? name type value Outcome.good ConstantKind.thm (ahead := true)
 
 /-! Raw declarations, as in the tutorial -/
 
@@ -325,3 +340,50 @@ def RecursorVal.motiveToProp (v : RecursorVal) : RecursorVal :=
     { v with levelParams := us, type := inst v.type,
              rules := v.rules.map fun r => { r with rhs := inst r.rhs } }
   | [] => v
+
+/-! Universe level comparison -/
+
+/-- The universe parameters of `ls`, in a fixed order. -/
+def levelParamsOf (ls : List Level) : List Name :=
+  let rec go : Level → NameSet → NameSet
+    | .param n, s => s.insert n
+    | .succ l, s => go l s
+    | .max a b, s | .imax a b, s => go b (go a s)
+    | _, s => s
+  let s := ls.foldl (fun s l => go l s) {}
+  [`u, `v, `w].filter s.contains
+
+/--
+A test of the level equation `l₁ = l₂`: a definition of type `Sort (l₁ + 1)` whose value is
+`Sort l₂`. A good one is a test of complete level comparison, which the toolchain does not have yet
+(see `addAheadDecl`).
+-/
+def levelEqTest (name : Name) (outcome : Outcome) (descr : String) (l₁ l₂ : Level) : CoreM Unit := do
+  let decl : Declaration := .defnDecl {
+    name, levelParams := levelParamsOf [l₁, l₂], type := .sort (.succ l₁), value := .sort l₂
+    hints := .opaque, safety := .safe }
+  addTestCaseDeclCore descr decl outcome (ahead := outcome matches .good)
+
+/--
+A test of the level inequality `l₂ ≤ l₁`: an inductive type in `Sort (l₁ + 1)` whose constructor
+has a field of type `Sort l₂`, which is allowed if `l₂ + 1 ≤ l₁ + 1`. A good one is a test of
+complete level comparison, which the toolchain does not have yet.
+-/
+def levelLeTest (name : Name) (outcome : Outcome) (descr : String) (l₁ l₂ : Level) : CoreM Unit := do
+  let ps := levelParamsOf [l₁, l₂]
+  let mkDecl (l : Level) : Declaration := .inductDecl ps 0 [{
+    name, type := .sort (.succ l)
+    ctors := [{ name := name ++ `mk
+                type := .forallE `x (.sort l₂) (.const name (ps.map .param)) .default }]
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := true
+    hasLargeElim := true }] false
+  let decl := mkDecl l₁
+  match outcome with
+  | .good =>
+    if ((← getEnv).toKernelEnv.addDecl (← getOptions) decl).toBool then
+      logWarning "the kernel accepts this test of a change ahead of the toolchain; make it an ordinary one"
+  | .bad => assertKernelRejects decl
+  -- The constants of the same type in `Sort (max l₁ l₂ + 1)`, which the kernel accepts, with the
+  -- type of `decl`
+  addConstInfos (← badInductiveConsts decl (mkDecl (.max l₁ l₂)))
+  registerTestCase { decls := #[name], outcome, description := descr }

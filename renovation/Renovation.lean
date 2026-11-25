@@ -613,6 +613,148 @@ inductive NPImpTree : Prop where
   | node (b : NPBox NPImpTree)
   | leaf
 
+/-! ## Complete level comparison
+
+Universe levels are compared completely: an equation or inequality of levels holds if it holds for
+every assignment of natural numbers to the universe parameters, where `imax a b` is `0` if `b` is
+`0` and `max a b` otherwise. (Before, kernels normalized levels incompletely, and these were corner
+cases.) The toolchain does not compare levels completely yet, so the good tests here are added
+without checking them; the bad ones are false for some assignment.
+
+Each equation `l₁ = l₂` is a definition of type `Sort (l₁ + 1)` whose value is `Sort l₂`; each
+inequality `l₂ ≤ l₁` is an inductive type in `Sort (l₁ + 1)` with a field of type `Sort l₂`.
+-/
+
+section Levels
+open Lean
+
+private def u : Level := .param `u
+private def v : Level := .param `v
+private def w : Level := .param `w
+private def one : Level := .succ .zero
+
+run_meta do
+  -- `imax` whose right operand is nonzero
+  levelEqTest `levelImaxRightOne .good
+    "`imax u 1 = max u 1`: the right operand of `imax` is nonzero." (.max u one) (.imax u one)
+  levelEqTest `levelImaxRightSucc .good
+    "`imax u (v + 1) = max u (v + 1)`: the right operand of `imax` is nonzero."
+    (.max u (.succ v)) (.imax u (.succ v))
+  levelEqTest `levelImaxRightMaxSucc .good
+    "`imax u (max v (w + 1)) = max u (max v (w + 1))`: the right operand of `imax` is nonzero, as one side of its `max` is."
+    (.max u (.max v (.succ w))) (.imax u (.max v (.succ w)))
+  -- absorption
+  levelEqTest `levelImaxAbsorbRight .good
+    "`imax u v = imax (imax u v) v`: if `v` is `0`, both are `0`; otherwise both are `max u v`."
+    (.imax u v) (.imax (.imax u v) v)
+  levelEqTest `levelImaxAbsorbLeft .good
+    "`imax u v = imax v (imax u v)`: if `v` is `0`, both are `0`; otherwise both are `max u v`."
+    (.imax u v) (.imax v (.imax u v))
+  levelEqTest `levelImaxSameRight .good
+    "`imax (imax u w) w = imax u w`: if `w` is `0`, both are `0`; otherwise both are `max u w`."
+    (.imax (.imax u w) w) (.imax u w)
+  levelEqTest `levelImaxTwice .good
+    "`imax u (imax u v) = imax u v`: if `v` is `0`, both are `0`; otherwise both are `max u v`."
+    (.imax u (.imax u v)) (.imax u v)
+  -- distributivity
+  levelEqTest `levelImaxDistribLeft .good
+    "`imax (max u v) w = max (imax u w) (imax v w)`: `imax` distributes over `max` on the left."
+    (.imax (.max u v) w) (.max (.imax u w) (.imax v w))
+  levelEqTest `levelImaxDistribRight .good
+    "`imax u (max v w) = max (imax u v) (imax u w)`: `imax` distributes over `max` on the right."
+    (.imax u (.max v w)) (.max (.imax u v) (.imax u w))
+  levelEqTest `levelImaxNested .good
+    "`imax u (imax v w) = imax (max u v) w`: if `w` is `0`, both are `0`; otherwise both are `max u v w`."
+    (.imax u (.imax v w)) (.imax (.max u v) w)
+  -- inequalities
+  levelLeTest `levelImaxLeMax .good
+    "`imax u v ≤ max u v`: if `v` is `0`, the left side is `0`; otherwise they are equal."
+    (.max u v) (.imax u v)
+  -- false ones
+  levelEqTest `levelImaxIsNotMax .bad
+    "`imax u v = max u v` is false: for `v = 0` and `u = 1`, it is `0 = 1`." (.imax u v) (.max u v)
+  levelEqTest `levelImaxNotComm .bad
+    "`imax u v = imax v u` is false: for `u = 0` and `v = 1`, it is `1 = 0`." (.imax u v) (.imax v u)
+  levelEqTest `levelImaxNotAssoc .bad
+    "`imax u (imax v w) = imax (imax u v) w` is false: for `u = 2`, `v = 0` and `w = 1`, it is `2 = 1`."
+    (.imax u (.imax v w)) (.imax (.imax u v) w)
+  levelEqTest `levelMaxImaxNotAbsorb .bad
+    "`max (imax u v) v = max u v` is false: for `v = 0` and `u = 1`, it is `0 = 1`."
+    (.max (.imax u v) v) (.max u v)
+  levelEqTest `levelImaxNotRight .bad
+    "`imax u v = v` is false: for `u = 2` and `v = 1`, it is `2 = 1`."
+    (.imax u v) v
+  levelLeTest `levelImaxNotGeLeft .bad
+    "`u ≤ imax u v` is false: for `u = 1` and `v = 0`, it is `1 ≤ 0`." (.imax u v) u
+
+end Levels
+
+/-! ## Eta for unit-like types
+
+Any two elements of a unit-like type are definitionally equal. A type is unit-like if it is a
+structure with `hasEta` whose fields are all of unit-like types or proofs, or a function type into a
+unit-like type (lean4#15372). The toolchain does not have this yet (lean4#15372 was reverted in
+lean4#16443), so these are added without checking them.
+-/
+
+structure UnitField where
+  u : Unit
+
+structure ProofField : Type where
+  p : True
+
+structure Mixed (A B : Type) where
+  b : B
+  u : Unit
+  t : True
+  e : A = B
+
+/-- Unit-like eta for a function type: any two `p q : α → Unit` are equal. -/
+ahead_good_thm unitLikePi : ∀ (α : Type) (p q : α → Unit), p = q :=
+  fun α p q => unchecked (Eq.refl q)
+
+/-- Unit-like eta for a structure whose only field is of type `Unit`. -/
+ahead_good_thm unitLikeStruct : ∀ (p q : UnitField), p = q := fun p q => unchecked (Eq.refl q)
+
+/-- Unit-like eta for a structure in `Type` whose only field is a proof of `True`. -/
+ahead_good_thm unitLikeProofField : ∀ (p q : ProofField), p = q := fun p q => unchecked (Eq.refl q)
+
+/--
+Unit-like eta for a structure whose fields are proofs, `Unit`, and (after instantiating the
+parameters) a function into a unit-like structure.
+-/
+ahead_good_thm unitLikeNested : ∀ (p q : Mixed Nat (Bool → UnitField)), p = q :=
+  fun p q => unchecked (Eq.refl q)
+
+/-! ## Eta for partial applications
+
+A partially applied constructor of a structure (lean4#15373), and a recursor of a structure or with
+rule K that is missing its major premise (lean4#15374), are eta-expanded when compared with another
+term. The toolchain does not have the latter yet, so those tests are added without checking them.
+-/
+
+structure CtorEtaT where
+  val : Bool
+  proof : True
+
+/-- Function eta between a partially applied constructor and a free variable. -/
+good_thm etaCtor : ∀ (x : True → CtorEtaT), (CtorEtaT.mk (x True.intro).val) = x :=
+  fun x => unchecked (Eq.refl x)
+
+/--
+Function eta between a recursor of a structure that is missing its major premise and a free
+variable: `Prod.rec (fun b c => a (b, c))` eta-expands to `fun p => Prod.rec (fun b c => a (b, c)) p`,
+whose body reduces, by structure eta on `p`, to `a (p.1, p.2)`, which is `a p`.
+-/
+ahead_good_thm etaRecStruct : ∀ (a : Bool × Bool → Bool),
+    @Prod.rec Bool Bool (fun _ => Bool) (fun b c => a (b, c)) = a :=
+  fun a => unchecked (Eq.refl a)
+
+/-- Function eta between a partially applied recursor with rule K and a free variable. -/
+ahead_good_thm etaRuleK : ∀ (a : true = true → Bool),
+    @Eq (true = true → Bool) (@Eq.rec Bool true (fun _ _ => Bool) (a (Eq.refl true)) true) a :=
+  fun a => unchecked (Eq.refl a)
+
 /-! ## Quotients live in `Sort (max 1 u)` (lean4#15023)
 
 With lean4#15023, the kernel declares `Quot.{u} {α : Sort u} (r : α → α → Prop) : Sort (max 1 u)`
@@ -659,3 +801,40 @@ bad_decl (.thmDecl {
   value := .lam `x quotOfTrue (.lam `y quotOfTrue
     (Lean.mkApp2 (.const ``Eq.refl [1]) quotOfTrue (.bvar 1)) .default) .default
 })
+
+/-! ### Conversion with quotients of propositions
+
+With the `Quot` above, `Quot r` for a relation `r` on a proposition is a type, so proof irrelevance
+does not apply to its elements. (Before lean4#15023, it did, and algorithmic conversion was not
+transitive here: the checker had to find the representative of the quotient.)
+-/
+
+/--
+`Quot r` for a relation on a proposition is a type, so `q` and `Quot.mk r z` are not equal by proof
+irrelevance, and neither are the `Quot.lift`s applied to them.
+-/
+bad_thm quotLiftNoProofIrrel : ∀ (P : Prop) (r : P → P → Prop) (α : Sort 1) (f : P → α)
+    (h : ∀ x y, r x y → f x = f y) (q : Quot r) (z : P),
+    Quot.lift f h q = Quot.lift f h (Quot.mk r z) :=
+  fun P r α f h q z => unchecked (Eq.refl (Quot.lift f h q))
+
+def quotLift := @Quot.lift
+
+/-- Like `quotLiftNoProofIrrel`, with `Quot.lift` behind a definition. -/
+bad_thm quotLiftDefNoProofIrrel : ∀ (P : Prop) (r : P → P → Prop) (α : Sort 1) (f : P → α)
+    (h : ∀ x y, r x y → f x = f y) (q : Quot r) (z : P),
+    quotLift f h q = quotLift f h (Quot.mk r z) :=
+  fun P r α f h q z => unchecked (Eq.refl (quotLift f h q))
+
+/-- The computation rule of quotients, for a quotient of a proposition. -/
+good_thm quotLiftMk : ∀ (P : Prop) (r : P → P → Prop) (α : Sort 1) (f : P → α)
+    (h : ∀ x y, r x y → f x = f y) (z : P), Quot.lift f h (Quot.mk r z) = f z :=
+  fun P r α f h z => rfl
+
+/--
+`Quot.lift f h q = f z`, which held by proof irrelevance and the computation rule before
+lean4#15023, but not without the former.
+-/
+bad_thm quotLiftTrans : ∀ (P : Prop) (r : P → P → Prop) (α : Sort 1) (f : P → α)
+    (h : ∀ x y, r x y → f x = f y) (q : Quot r) (z : P), Quot.lift f h q = f z :=
+  fun P r α f h q z => unchecked (Eq.refl (Quot.lift f h q))

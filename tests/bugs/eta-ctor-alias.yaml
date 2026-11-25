@@ -3,7 +3,7 @@ description: |
   reducible alias for `Bool → Box`.
 
   A checker that eta-expands a partially applied constructor (see
-  `corner-cases/eta-ctor`) has to take the missing arguments from the type of
+  `renovation/etaCtor`) has to take the missing arguments from the type of
   the constructor application. Taking them from the type of the other side
   without unfolding it, here `BoxFn`, finds no arguments to add, then compares
   the (zero) given fields only, and accepts.

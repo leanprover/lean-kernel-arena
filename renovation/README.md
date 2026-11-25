@@ -11,10 +11,18 @@ The flags are inputs to the kernel. A checker checks that each flag is allowed f
 declaration and rejects it if not; it must not recompute the flags. Each of these tests
 exercises one flag and one of its conditions.
 
-The last ones are about [lean4#15023](https://github.com/leanprover/lean4/pull/15023), which
-makes `Quot` live in `Sort (max 1 u)` rather than `Sort u`, so that quotients of propositions
-are types. That PR is not in the toolchain of lean4#16595, so the type of `Quot` is replaced
-by hand there, and only a kernel with lean4#15023 gets these right.
+The others are about the other changes of the renovation: complete comparison of universe
+levels, eta for unit-like types (lean4#15372), for the major premise of a recursor
+(lean4#15371) and for partial applications of constructors and recursors (lean4#15373,
+lean4#15374), and `Quot` living in `Sort (max 1 u)` rather than `Sort u`
+([lean4#15023](https://github.com/leanprover/lean4/pull/15023)), so that quotients of
+propositions are types.
+
+Some of these changes are not in the toolchain of lean4#16595 yet. The good tests of complete
+level comparison, of lean4#15372 and of lean4#15374 are added without the kernel checking them
+(`ahead_good_thm`, `levelEqTest`, `levelLeTest`), and warn once the kernel accepts them; for
+lean4#15023, the type of `Quot` is replaced by hand, bypassing the kernel. Only a kernel with
+these changes gets them right.
 
 The tests are written out like the tutorial tests, with the exporter that ships with the
 toolchain of lean4#16595.
@@ -22,6 +30,6 @@ toolchain of lean4#16595.
 ## Toolchain
 
 The project is pinned to the PR release of lean4#16595 (at `55bd690`). The generator checks
-that its kernel accepts every good test and rejects every bad one (for the tests of
-lean4#15023: with the replaced `Quot`). Its exporter still writes format version `3.1.0`, so
-the generator writes `3.2.0` into the metadata itself.
+that its kernel accepts every good test (except those ahead of it) and rejects every bad one
+(for the tests of lean4#15023: with the replaced `Quot`). Its exporter still writes format
+version `3.1.0`, so the generator writes `3.2.0` into the metadata itself.

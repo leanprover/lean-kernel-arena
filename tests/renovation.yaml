@@ -1,10 +1,12 @@
 description: |
-  Small tests for the per-inductive feature flags (`isImpredicative`, `isK`,
-  `hasProjections`, `hasEta`, `hasLargeElim`) of the upcoming kernel renovation
-  (lean4#16595), in export format 3.2.0, generated from the Lean project in the
-  renovation directory. The flags are inputs: a checker must check that each
-  flag is allowed, and must not recompute them. The last tests are about
-  `Quot` living in `Sort (max 1 u)` (lean4#15023).
+  Tests of the kernel logic renovation (lean4#14977), generated from the Lean
+  project in the renovation directory: mostly the per-inductive feature flags
+  (`isImpredicative`, `isK`, `hasProjections`, `hasEta`, `hasLargeElim`) of
+  lean4#16595, in export format 3.2.0, which a checker must check and must not
+  recompute; and also complete level comparison, the extended eta rules
+  (lean4#15371, lean4#15372, lean4#15373, lean4#15374) and `Quot` living in
+  `Sort (max 1 u)` (lean4#15023). Some of these are ahead of the toolchain the
+  tests are generated with.
 dir: renovation
 multiple: true
 # Each test is tiny, but andMajorNoWhnf makes a checker that reduces the major
