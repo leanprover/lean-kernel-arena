@@ -8,12 +8,6 @@ A rendered view of the exported test cases is available at
 https://arena.lean-lang.org/tutorial/
 -/
 
-axiom aDepProp : Type → Prop
-axiom mkADepProp : ∀ t, aDepProp t
-axiom aType : Type
-axiom aProp : Prop
-
-
 /-- Basic definition -/
 good_def basicDef : Type := Prop
 
@@ -245,9 +239,9 @@ Type checking a dependent let
 good_decl (.defnDecl {
     name := `letTypeDep
     levelParams := []
-    type := (Lean.mkConst `aDepProp).app (.sort 0)
+    type := arrow (.sort 0) (.sort 0)
     value := .letE (nondep := false) `x (.sort 1) (.sort 0) <|
-             (Lean.mkConst ``mkADepProp).app (.bvar 0)
+             .lam `y (.bvar 0) (.bvar 0) .default
     hints := .opaque
     safety := .safe
   })
@@ -259,7 +253,7 @@ good_decl (.defnDecl {
     name := `letRed
     levelParams := []
     type := .letE (nondep := false) `x (.sort 1) (.sort 0) <| .bvar 0
-    value := Lean.mkConst ``aProp
+    value := (.forallE `p (.sort 0) (.bvar 0) .default)
     hints := .opaque
     safety := .safe
   })
@@ -335,7 +329,7 @@ bad_raw_consts
   #[ .inductInfo {
       name := n
       levelParams := []
-      type := .const `aType []
+      type := .forallE `p (.sort 0) (.bvar 0) .default
       numParams := 0
       numIndices := 0
       all := [n]
@@ -388,7 +382,7 @@ bad_raw_consts
   #[ .ctorInfo {
       name := n ++ `mk
       levelParams := []
-      type := arrow (.sort 1) ((Lean.mkConst n).app (.const `aProp []))
+      type := arrow (.sort 1) ((Lean.mkConst n).app (.forallE `p (.sort 0) (.bvar 0) .default))
       numParams := 1
       induct := n
       cidx := 0
@@ -479,7 +473,7 @@ bad_raw_consts
   #[ .ctorInfo {
       name := n ++ `mk
       levelParams := []
-      type := Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (Lean.mkConst ``aProp))
+      type := Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (.forallE `p (.sort 0) (.bvar 0) .default))
       numParams := 0
       induct := n
       cidx := 0
@@ -595,7 +589,7 @@ bad_raw_consts
   #[ .ctorInfo {
       name := n ++ `mk
       levelParams := []
-      type := arrow (arrow (Lean.mkApp2 (.const ``constType []) (.const ``aType []) (.const n [])) (.const n [])) (.const n [])
+      type := arrow (arrow (Lean.mkApp2 (.const ``constType []) (.sort 0) (.const n [])) (.const n [])) (.const n [])
       numParams := 0
       induct := n
       cidx := 0
@@ -620,7 +614,7 @@ bad_raw_consts
   ]
 
 /--
-info: indNegReducible.mk (x : constType aType indNegReducible → indNegReducible) : indNegReducible
+info: indNegReducible.mk (x : constType Prop indNegReducible → indNegReducible) : indNegReducible
 -/
 #guard_msgs in #check indNegReducible.mk
 
@@ -1097,21 +1091,16 @@ are still definitionally equal. Just applying proof irrelevance at `Sort 0` isn'
 -/
 good_def proofIrrelevanceWhnf : ∀ (p : id Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
 
-axiom anElem : aType
-axiom anotherElem : aType
-axiom aPropFamily : aProp → Prop
-axiom aPropFamilyProof : ∀ h : aType → aProp, aPropFamily (h anotherElem)
-
 /--
 Proof irrelevance applies to any two terms of a proposition, not just to variables.
-Checking this definition needs `aPropFamily (h anElem) ≡ aPropFamily (h anotherElem)`,
-i.e. `h anElem ≡ h anotherElem`. Both are proofs of `aProp`, since `h : aType → aProp`,
-so they are definitionally equal even though their arguments are not. A checker that
-compares the two applications structurally, without first noticing that they are
-proofs, wrongly rejects this.
+Checking this definition needs `F (h b) ≡ F (h a)`, i.e. `h b ≡ h a`. Both are proofs of
+`P`, since `h : A → P`, so they are definitionally equal even though their arguments are
+not. A checker that compares the two applications structurally, without first noticing
+that they are proofs, wrongly rejects this.
 -/
-good_def proofIrrelevanceUnderBinder : ∀ h : aType → aProp, aPropFamily (h anElem) :=
-  aPropFamilyProof
+good_def proofIrrelevanceUnderBinder :
+    ∀ (A : Type) (a b : A) (P : Prop) (F : P → Prop) (h : A → P), F (h b) → F (h a) :=
+  fun _ _ _ _ _ _ x => x
 
 /-- Unit eta -/
 good_def unitEta1 : ∀ (x y : Unit), x = y := fun _ _ => rfl
