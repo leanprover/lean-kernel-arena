@@ -19,6 +19,7 @@ description: |
   Maintained by [Metalogic Labs](https://mathgraph.org/).
 version: "flash-2026-11-25"
 language: rust
+threads: 2
 url: https://github.com/metalogiclabs/mathgraph-lean-kernel
 ref: release-candidate/flash-20261125
 rev: 819d59c34db3fd8f7b790a83f5728f255f75f33e
