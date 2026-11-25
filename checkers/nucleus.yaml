@@ -15,6 +15,11 @@ version: "beta-2026-11-26"
 language: rust
 threads: 1
 timeout: 120
+declines:
+  - init
+  - std
+  - perf/grind-ring-5
+  - perf/gf3-matrix-product
 url: https://github.com/heathsanchez/test
 ref: research/nucleus-beta-entry-20261126
 rev: 578697991a903ab78d344aa71165d465bef3c3d7
