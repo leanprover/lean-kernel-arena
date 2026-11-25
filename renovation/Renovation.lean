@@ -553,6 +553,16 @@ major first does not terminate. Proofs need not normalize, so eta has to come fi
 good_thm andMajorNoWhnf : @Eq Nat (andConst (Omega _ ⟨.intro, .intro⟩)) 1 :=
   unchecked (Eq.refl 1)
 
+/-- Structure eta on the major premise of the recursor of a structure in `Type` with `hasEta`. -/
+good_thm pPairMajorEta : ∀ (A : Type) (f : Nat → Bool → A) (x : PPair),
+    @Eq A (PPair.rec f (PPair.mk (proj% PPair 0 x) (proj% PPair 1 x))) (PPair.rec f x) :=
+  fun A f x => unchecked (Eq.refl (PPair.rec (motive := fun _ => A) f x))
+
+/-- No structure eta on the major premise of the recursor of a structure without `hasEta`. -/
+bad_thm nEPairMajorEta : ∀ (A : Type) (f : Nat → Bool → A) (x : NEPair),
+    @Eq A (NEPair.rec f (NEPair.mk (proj% NEPair 0 x) (proj% NEPair 1 x))) (NEPair.rec f x) :=
+  fun A f x => unchecked (Eq.refl (NEPair.rec (motive := fun _ => A) f x))
+
 /-! ## Nested inductive types -/
 
 /-
@@ -726,6 +736,23 @@ parameters) a function into a unit-like structure.
 ahead_good_thm unitLikeNested : ∀ (p q : Mixed Nat (Bool → UnitField)), p = q :=
   fun p q => unchecked (Eq.refl q)
 
+structure BoolField where
+  b : Bool
+
+/-- A structure with a field of type `Bool` is not unit-like. -/
+bad_thm notUnitLikeStruct : ∀ (p q : BoolField), p = q := fun p q => unchecked (Eq.refl q)
+
+/-- A function type into `Bool` is not unit-like. -/
+bad_thm notUnitLikePi : ∀ (α : Type) (p q : α → Bool), p = q := fun α p q => unchecked (Eq.refl q)
+
+/-- A structure with a field of type `Unit`, but without eta. -/
+good_inductive { hasProjections := true, hasLargeElim := true } in
+inductive UnitFieldNoEta : Type where
+  | mk (u : Unit)
+
+/-- A structure without `hasEta` is not unit-like, even if its fields are. -/
+bad_thm notUnitLikeNoEta : ∀ (p q : UnitFieldNoEta), p = q := fun p q => unchecked (Eq.refl q)
+
 /-! ## Eta for partial applications
 
 A partially applied constructor of a structure (lean4#15373), and a recursor of a structure or with
@@ -754,6 +781,23 @@ ahead_good_thm etaRecStruct : ∀ (a : Bool × Bool → Bool),
 ahead_good_thm etaRuleK : ∀ (a : true = true → Bool),
     @Eq (true = true → Bool) (@Eq.rec Bool true (fun _ _ => Bool) (a (Eq.refl true)) true) a :=
   fun a => unchecked (Eq.refl a)
+
+/-- A structure like `CtorEtaT`, but without eta. -/
+good_inductive { hasProjections := true, hasLargeElim := true } in
+inductive CtorNoEtaT : Type where
+  | mk (val : Bool) (proof : True)
+
+/-- No function eta for a partially applied constructor of a structure without `hasEta`. -/
+bad_thm etaCtorNoEta : ∀ (x : True → CtorNoEtaT), (CtorNoEtaT.mk (proj% CtorNoEtaT 0 (x True.intro))) = x :=
+  fun x => unchecked (Eq.refl x)
+
+/--
+No function eta for a recursor that is missing its major premise if the type of the major has no
+`hasEta`: `NEPair.rec (fun a b => f (NEPair.mk a b))` is not `f`.
+-/
+bad_thm etaRecNoEta : ∀ (f : NEPair → Bool),
+    @NEPair.rec (fun _ => Bool) (fun a b => f (NEPair.mk a b)) = f :=
+  fun f => unchecked (Eq.refl f)
 
 /-! ## Quotients live in `Sort (max 1 u)` (lean4#15023)
 
