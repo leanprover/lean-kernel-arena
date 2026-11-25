@@ -1,0 +1,61 @@
+description: |
+  **Pestka** is a type checker for Lean 4 exports written in
+  [Aver](https://github.com/jasisz/aver), a statically typed language
+  designed for AI to write and humans to review, which compiles to Rust.
+  It implements Lean's type theory on its own (universe levels,
+  definitional equality, inductive types with their recursors, quotients,
+  and the Nat and String literal extensions), following the reference
+  kernel's substitution-based algorithm, without NbE, to see how far that
+  algorithm can be pushed. It was written by an AI agent under human guidance.
+
+  The export is first converted to [Susz](https://github.com/jasisz/susz),
+  a binary form of lean4export's ndjson, by the `susz` converter (Rust).
+  The converter is not trusted: Susz holds structure only, and Pestka checks
+  every reference, count and offset itself. An export the converter finds
+  invalid is rejected, one it cannot convert is declined. Pestka reads a
+  theorem's proof from the Susz file only when the theorem is checked.
+
+  Declarations are checked on four workers, which take jobs from a queue
+  as they become free; each keeps what it finds from one declaration to the
+  next, and declarations are grouped by namespace so that this is reused
+  while still warm. A free variable is named by its type, value and how many
+  of its kind are open, so a binder opened again gets the same variable and
+  what was found under it holds again. Proof arguments of one constant are
+  not compared. Weak head normalization runs a lazy machine that unfolds a
+  matcher into its callers once and goes from a casesOn straight to its
+  branch. A recursive definition that keeps unfolding gets a rule, derived
+  once by reducing it on fresh variables, which later calls take instead of
+  unfolding it.
+
+  Where the reference's order of lazy delta would start a closed
+  computation that the two sides do not need, Pestka changes only the order
+  of its steps: a Nat operation on arguments that are not all literals waits
+  while the other side can still unfold, two applications of one projection
+  step by turns until one side reaches a form the other had, and two
+  definitions of different names first step toward each other's head. Each
+  is tried within a bounded attempt, and the reference path runs when it
+  does not meet. Caches are bounded by default (low-memory mode).
+
+  Pestka 0.2.0 checks all of CFSG (39,656,013 declarations) in 2:01:19 on
+  64 workers (AWS r7a.16xlarge) at 128.4 GiB peak memory. Pestka 0.2.1
+  reads exports without `isReflexive` (Susz kind 8) and follows the
+  renovation's rules: `Quot` in `Sort (max 1 u)`, complete level
+  comparison, eta for partial applications and unit-like types.
+
+  The build installs `susz` 0.5.0 and the Aver release pinned in
+  `.aver-version` (0.38.0) from crates.io, and builds Pestka with a profile from
+  checking `Init`.
+language: aver
+version: "0.2.1"
+url: https://github.com/jasisz/pestka
+ref: v0.2.1
+rev: 12497ee6ca3c0e1a47af6980bce2197c94a23f03
+build: |
+  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.5.0 --locked --root "$PWD/.susz"
+  cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
+  curl -sSfL -o init.susz https://huggingface.co/datasets/jasisz/susz/resolve/108beeec4e2524eeee237330ec6dd99ee2e50216/susz-0.1/init.susz
+  echo "b775c241147ff359c4b50aceef2f47282dad9123ecb9f39e28b3c4db21d638d4  init.susz" | sha256sum -c
+  AVER="$PWD/.aver/bin/aver" FLAGS="-C target-cpu=native" bin/build-pgo "$PWD/init.susz"
+  rm -f init.susz
+run: bin/arena-run "$IN" 4
+threads: 4
