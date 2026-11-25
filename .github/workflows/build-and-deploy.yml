@@ -436,6 +436,23 @@ jobs:
           name: github-pages-${{ github.run_attempt }}
           path: '_out'
 
+      # deploy-pages looks the artifact up in the run's list of artifacts,
+      # which can lag behind its upload; then it fails with "No artifacts
+      # named github-pages-N were found". Wait until it is listed.
+      - name: Wait for the Pages artifact to be listed
+        if: env.DEPLOY == 'true'
+        run: |
+          for _ in $(seq 1 30); do
+            if gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+                --jq '.artifacts[].name' | grep -qx "github-pages-$GITHUB_RUN_ATTEMPT"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::github-pages-$GITHUB_RUN_ATTEMPT is not listed yet; deploying anyway"
+        env:
+          GH_REPO: ${{ github.repository }}
+
       # Only put a complete site live. A checker job that failed did not
       # produce results, and the site does not distinguish a checker without
       # results from one that was never run, so deploying would quietly drop
