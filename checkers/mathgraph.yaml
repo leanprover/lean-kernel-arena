@@ -11,16 +11,17 @@ description: |
   optimizations, and removal of redundant work found through profiling and
   differential testing.
 
-  This revision additionally avoids forcing an inferred function type when it
-  is already a Pi type, and uses two worker threads. A larger architectural
-  rewrite is future work rather than something claimed by this submission.
+  This revision strengthens recursor validation, nested-name and universe
+  scope checks, and closure equality, and repairs literal natural-number
+  shifts including open operands that reduce to numerals. It retains two
+  worker threads. The checker reports its raw exit status to the Arena.
 
   Maintained by [Metalogic Labs](https://mathgraph.org/).
-version: "flash"
+version: "flash-2026-11-25"
 language: rust
 url: https://github.com/metalogiclabs/mathgraph-lean-kernel
-ref: flash
-rev: 78c7502bac8a5ba000057b3f083bc0595ac65750
+ref: release-candidate/flash-20261125
+rev: 819d59c34db3fd8f7b790a83f5728f255f75f33e
 build: |
   cat > config.json <<__END__
    {
@@ -32,6 +33,6 @@ build: |
      "num_threads": 2
    }
   __END__
-  RUSTFLAGS="-C target-cpu=native" cargo build --release
+  RUSTFLAGS="-C target-cpu=native" cargo build --release --locked
 run: |
-  target/release/sokonanoda config.json < "$IN" || exit 1
+  target/release/sokonanoda config.json < "$IN"
