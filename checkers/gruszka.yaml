@@ -41,11 +41,12 @@ description: |
   reference it reads, and builds the quotient package and every recursor
   itself before comparing them with the file.
 language: rust
+version: "0.2.0"
 url: https://github.com/jasisz/gruszka
-ref: main
-rev: ebc80dcb20786d4f25335146b8a9fe8f398843c1
+ref: v0.2.0
+rev: 39d03331823f084a39323998fb1ee73de374182e
 build: |
-  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
+  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.4.0 --locked --root "$PWD/.susz"
   curl -sSfL -o init.susz https://huggingface.co/datasets/jasisz/susz/resolve/108beeec4e2524eeee237330ec6dd99ee2e50216/susz-0.1/init.susz
   echo "b775c241147ff359c4b50aceef2f47282dad9123ecb9f39e28b3c4db21d638d4  init.susz" | sha256sum -c
   FLAGS="-C target-cpu=native" scripts/build-pgo.sh "$PWD/init.susz"
