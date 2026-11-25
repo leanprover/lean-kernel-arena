@@ -15,7 +15,7 @@ set -euo pipefail
 dir="$1"
 mkdir -p "$dir"
 
-if ! runs=$(gh run list --workflow build-and-deploy.yml --branch master --limit 50 \
+if ! runs=$(gh run list --workflow build-and-deploy.yml --branch renovation --limit 50 \
   --json databaseId,event \
   --jq '.[] | select(.event == "push" or .event == "workflow_dispatch") | .databaseId'); then
   echo "::warning::Could not list the builds of master; running everything anew"

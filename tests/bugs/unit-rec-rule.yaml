@@ -13,10 +13,9 @@ description: |
   theorem boom : EmptyProp := badR
   ```
   is a closed proof of an empty proposition, with no axioms. A checker must
-  derive the rule itself and reject an export whose rule differs from it, as the
-  official kernel does.
+  derive the rule itself and reject an export whose rule differs from it.
 
-  Sokonanoda accepted this export; it rejects `bugs/nat-rec-rules`, whose wrong
+  Sokonanoda accepted this export; it rejected `bugs/nat-rec-rules`, whose wrong
   rule is for a constructor with fields. Found by a differential run of Pestka
   against other checkers.
 # Hand-written export file: lean4export writes the recursor rules Lean derived,

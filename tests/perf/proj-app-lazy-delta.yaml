@@ -13,10 +13,10 @@ description: |
   that instead reduces the projected structures to constructors before
   comparing evaluates `big N`, for **Θ(N)**.
 
-  Official compares bare projections `s.1 =?= t.1` lazily, but not applied
-  ones: for those it reduces the structures with `whnf` first
-  (leanprover/lean4#16613). The issue uses N = 2^(2^32), on which official
-  gives up; N=100000 in the Lean source, where it is merely slow.
+  When this test was added, official compared bare projections `s.1 =?= t.1`
+  lazily, but not applied ones: for those it reduced the structures with
+  `whnf` first (leanprover/lean4#16613). The issue uses N = 2^(2^32), on which
+  official gave up; N=100000 in the Lean source, where it was merely slow.
 leanfile: tests/perf/proj-app-lazy-delta.lean
 export-decls: ["proj_app_lazy_delta"]
 outcome: accept

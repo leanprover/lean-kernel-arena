@@ -5,9 +5,9 @@
    `multiple` test, each in a section with an anchor #}
 {% set single = runs | length == 1 and not runs[0].anchor %}
 
-{% block title %}{{ checker.name }} on {{ page }} - Lean Kernel Arena{% endblock %}
+{% block title %}{{ checker.name }} on {{ page }} - Lean Kernel Arena (Preview){% endblock %}
 
-{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena</a> / <a href="{{ root_path }}checker/{{ checker.name }}/">{{ checker.name }}</a> / {% if single %}<a href="{{ root_path }}test/{{ page }}/">{{ page }}</a>{% else %}{{ page }}{% endif %}
+{% block h1 %}<a href="{{ root_path }}">Lean Kernel Arena (Preview)</a> / <a href="{{ root_path }}checker/{{ checker.name }}/">{{ checker.name }}</a> / {% if single %}<a href="{{ root_path }}test/{{ page }}/">{{ page }}</a>{% else %}{{ page }}{% endif %}
 {% endblock %}
 
 {% block style %}

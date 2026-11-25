@@ -13,7 +13,7 @@ description: |
   `loop` instead lays out the `&&` of N tests stuck on `g`, for **Θ(N)**
   time and nesting depth.
 
-  Official (v4.36.0) needs 0.3 s here. Distilled from AxiomMath/CFSG's
+  Official (v4.36.0) needed 0.3 s here. Distilled from AxiomMath/CFSG's
   `CFSG.Sporadic.HNSchreier.Native.Kernel.orbitTreeCheck_certificate`,
   where a `change` leaves the same comparison over 1140000 points.
 leanfile: tests/perf/loop-unfolded-once.lean

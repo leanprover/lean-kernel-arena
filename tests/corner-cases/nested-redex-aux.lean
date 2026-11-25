@@ -20,7 +20,10 @@ run_cmd liftTermElabM do
   let list (e : Expr) := mkApp (mkConst ``List [0]) e
   let redex := mkApp (.lam `h (mkConst ``Bool) T .default) (mkConst ``Bool.true)
   addDecl <| .inductDecl [] 0 [{
-    name := `NestedRedex, type := mkSort 1, ctors := [
+    name := `NestedRedex, type := mkSort 1
+    isImpredicative := false, isK := false, hasProjections := false, hasEta := false
+    hasLargeElim := true
+    ctors := [
       { name := `NestedRedex.leaf, type := T },
       { name := `NestedRedex.a, type := .forallE `x (list redex) T .default },
       { name := `NestedRedex.b, type := .forallE `x (list T) T .default }] }] false

@@ -12,14 +12,14 @@ description: |
   structure `gC slowA c` to a constructor instead decides `slowA = c`: it
   evaluates `slowA`, for **Θ(2^19)**, and then is stuck on `c` anyway.
   Unlike in `proj-cheap-struct`, the projections are not compared as such:
-  each is the head of an application. Official reaches `whnf_core` with full
-  reduction of projected structures before it compares the applications by
-  their arguments.
+  each is the head of an application. Official (v4.35.0) reached `whnf_core`
+  with full reduction of projected structures before it compared the
+  applications by their arguments.
 
-  Official (v4.35.0) needs about 19 s and 1.4 GB here, nearly all of it
+  Official (v4.35.0) needed about 19 s and 1.4 GB here, nearly all of it
   evaluating `slowA`, `slowB` and `slowC`. Distilled from
   AxiomMath/CFSG's `CertificateChecks.KernelSporSch.RuE64.invol_eq`, where
-  the same shape takes it over 24 GB and more than 1.5 hours.
+  the same shape took it over 24 GB and more than 1.5 hours.
 leanfile: tests/perf/proj-applied-struct.lean
 export-decls: ["proj_applied_struct_1", "proj_applied_struct_2", "proj_applied_struct_3"]
 outcome: accept

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Lean Kernel Arena{% endblock %}</title>
+    <title>{% block title %}Lean Kernel Arena (Preview){% endblock %}</title>
     {# Chota is vendored rather than loaded from a CDN: archived rounds are
        frozen artifacts that must still render years from now. #}
     <link rel="stylesheet" href="{{ root_path }}static/chota.min.css">
@@ -19,7 +19,7 @@
 <body>
     <div class="container">
         <header class="is-center">
-            <h1>{% block h1 %}Lean Kernel Arena – {% if build_info.round %}Round {{ build_info.round }}{% else %}Round in progress{% endif %}{% endblock %}</h1>
+            <h1>{% block h1 %}Lean Kernel Arena (Preview) – {% if build_info.round %}Round {{ build_info.round }}{% else %}Round in progress{% endif %}{% endblock %}</h1>
         </header>
 
         <main>

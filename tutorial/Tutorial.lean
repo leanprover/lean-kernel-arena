@@ -8,12 +8,6 @@ A rendered view of the exported test cases is available at
 https://arena.lean-lang.org/tutorial/
 -/
 
-axiom aDepProp : Type → Prop
-axiom mkADepProp : ∀ t, aDepProp t
-axiom aType : Type
-axiom aProp : Prop
-
-
 /-- Basic definition -/
 good_def basicDef : Type := Prop
 
@@ -245,9 +239,9 @@ Type checking a dependent let
 good_decl (.defnDecl {
     name := `letTypeDep
     levelParams := []
-    type := (Lean.mkConst `aDepProp).app (.sort 0)
+    type := arrow (.sort 0) (.sort 0)
     value := .letE (nondep := false) `x (.sort 1) (.sort 0) <|
-             (Lean.mkConst ``mkADepProp).app (.bvar 0)
+             .lam `y (.bvar 0) (.bvar 0) .default
     hints := .opaque
     safety := .safe
   })
@@ -259,7 +253,7 @@ good_decl (.defnDecl {
     name := `letRed
     levelParams := []
     type := .letE (nondep := false) `x (.sort 1) (.sort 0) <| .bvar 0
-    value := Lean.mkConst ``aProp
+    value := (.forallE `p (.sort 0) (.bvar 0) .default)
     hints := .opaque
     safety := .safe
   })
@@ -326,7 +320,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
 /-- Another inductive type with a non-sort type -/
@@ -335,7 +329,7 @@ bad_raw_consts
   #[ .inductInfo {
       name := n
       levelParams := []
-      type := .const `aType []
+      type := .forallE `p (.sort 0) (.bvar 0) .default
       numParams := 0
       numIndices := 0
       all := [n]
@@ -343,7 +337,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }]
 
 /-- An inductive with duplicate level params -/
@@ -360,7 +354,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := true
   }]
 
 /-- An inductive with too few parameters in the type -/
@@ -378,7 +372,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := false, hasEta := false, hasLargeElim := true
   }]
 
 
@@ -388,7 +382,7 @@ bad_raw_consts
   #[ .ctorInfo {
       name := n ++ `mk
       levelParams := []
-      type := arrow (.sort 1) ((Lean.mkConst n).app (.const `aProp []))
+      type := arrow (.sort 1) ((Lean.mkConst n).app (.forallE `p (.sort 0) (.bvar 0) .default))
       numParams := 1
       induct := n
       cidx := 0
@@ -408,7 +402,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   }
   ]
 
@@ -438,7 +432,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   }
   ]
 
@@ -469,7 +463,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   }
   ]
 
@@ -479,7 +473,7 @@ bad_raw_consts
   #[ .ctorInfo {
       name := n ++ `mk
       levelParams := []
-      type := Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (Lean.mkConst ``aProp))
+      type := Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (.forallE `p (.sort 0) (.bvar 0) .default))
       numParams := 0
       induct := n
       cidx := 0
@@ -499,7 +493,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := true, hasProjections := false, hasEta := false, hasLargeElim := true
   }
   ]
 
@@ -529,7 +523,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
   }
   ]
 
@@ -542,6 +536,7 @@ good_decl
   let n := `reduceCtorParam
   .inductDecl (lparams := []) (nparams := 1) (isUnsafe := false) [{
     name := n
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
     type := arrow (.sort 1) (.sort 1)
     ctors := [{
         name := n ++ `mk
@@ -569,7 +564,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   },
   dummyRecInfo n,
   .ctorInfo {
@@ -594,7 +589,7 @@ bad_raw_consts
   #[ .ctorInfo {
       name := n ++ `mk
       levelParams := []
-      type := arrow (arrow (Lean.mkApp2 (.const ``constType []) (.const ``aType []) (.const n [])) (.const n [])) (.const n [])
+      type := arrow (arrow (Lean.mkApp2 (.const ``constType []) (.sort 0) (.const n [])) (.const n [])) (.const n [])
       numParams := 0
       induct := n
       cidx := 0
@@ -614,12 +609,12 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
   }
   ]
 
 /--
-info: indNegReducible.mk (x : constType aType indNegReducible → indNegReducible) : indNegReducible
+info: indNegReducible.mk (x : constType Prop indNegReducible → indNegReducible) : indNegReducible
 -/
 #guard_msgs in #check indNegReducible.mk
 
@@ -662,7 +657,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
   },
   dummyRecInfo n,
   .ctorInfo {
@@ -774,7 +769,8 @@ bad_raw_consts
       name := n, levelParams := [], type := .sort 1
       numParams := 0, numIndices := 0, all := [n]
       ctors := [n ++ `mk]
-      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false
+      numNested := 0, isRec := false, isUnsafe := false,
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := true, hasLargeElim := true
     }
   ]
 
@@ -798,10 +794,11 @@ inductive SortElimProp (b : Bool) : Bool → Bool → Prop
   | mk (b1 b2 : Bool) : SortElimProp b b2 b1
 
 /--
-Inductive predicates eliminate into Sort if they have one constructors and it carries data, but the data is
-known from the type, e.g. a parameter or an index
+Inductive predicates with one constructor that carries data eliminate into Prop only, even if the data
+is known from the type, e.g. a parameter or an index. (Before the kernel renovation, lean4#16595, they
+eliminated into Sort.)
 -/
-good_def sortElimPropRec.{u} : ∀ {b : Bool} {motive : ∀ b1 b2, SortElimProp b b1 b2 → Sort u}
+good_def sortElimPropRec : ∀ {b : Bool} {motive : ∀ b1 b2, SortElimProp b b1 b2 → Prop}
   (mk : ∀ b1 b2, motive b2 b1 (.mk b1 b2)) (b1 b2 : Bool) (x : SortElimProp b b1 b2), motive b1 b2 x := @SortElimProp.rec
 
 inductive SortElimProp2 (b : Bool) : Bool → Bool → Prop
@@ -935,33 +932,36 @@ meta def mkPropStructureTest (n : Lean.Name) (resType : Lean.Expr) (idx : Nat) :
 
 /-- Projecting out of a proposition
 
-The lean kernel allows projections out of propositions if they precede
-all dependent data fields.
+Before the kernel renovation (lean4#16595), the lean kernel allowed projections out of propositions
+if they precede all dependent data fields. Now `PropStructure`, which has data fields, is
+impredicative, and an impredicative type has no projections at all.
 -/
-good_raw_consts mkPropStructureTest `projProp1 (Lean.mkConst ``PUnit [0]) 0
+bad_raw_consts mkPropStructureTest `projProp1 (Lean.mkConst ``PUnit [0]) 0
 
 /-- Projecting out of a proposition
 
-The lean kernel disallows data projections out of propositional structures.
+Data projections out of propositional structures are not allowed.
 -/
 bad_raw_consts mkPropStructureTest `projProp2 (Lean.mkConst ``PUnit [1]) 1
 
 /-- Projecting out of a proposition
 
-The lean kernel allows projections out of propositions if they precede
-all dependent data fields. Non-dependent data fields are not relevant.
+Before the kernel renovation (lean4#16595), the lean kernel allowed projections out of propositions
+if they precede all dependent data fields, and non-dependent data fields were not relevant. Now
+`PropStructure`, which has data fields, is impredicative, and an impredicative type has no
+projections at all.
 -/
-good_raw_consts mkPropStructureTest `projProp3 (Lean.mkConst ``PUnit [0]) 2
+bad_raw_consts mkPropStructureTest `projProp3 (Lean.mkConst ``PUnit [0]) 2
 
 /-- Projecting out of a proposition
 
-The lean kernel disallows data projections out of propositional structures.
+Data projections out of propositional structures are not allowed.
 -/
 bad_raw_consts mkPropStructureTest `projProp4 (Lean.mkConst ``PUnit [1]) 3
 
 /-- Projecting out of a proposition
 
-The lean kernel disallows proof projections out of propositional structures that depend on data.
+Proof projections out of propositional structures that depend on data are not allowed.
 -/
 bad_raw_consts mkPropStructureTest `projProp5
   (Lean.mkApp3 (Lean.mkConst ``Eq [1]) (Lean.mkConst ``PUnit [1]) (.proj ``PropStructure 3 (.bvar 0)) (.proj ``PropStructure 3 (.bvar 0))) 4
@@ -969,8 +969,8 @@ bad_raw_consts mkPropStructureTest `projProp5
 /--
 Projecting out of a proposition.
 
-The lean kernel rejects any projections out of a proposition that
-come after a dependent data field, even if that is not used by the present projection.
+Projections out of a proposition that come after a dependent data field are not allowed,
+even if that is not used by the present projection.
 -/
 bad_raw_consts mkPropStructureTest `projProp6 (Lean.mkConst ``PUnit [0]) 5
 
@@ -1047,13 +1047,6 @@ bad_thm ruleKbad : ∀ (h : true = false) (a : Bool),
   Eq.rec (motive := fun _ _ => Bool) a h = a :=
   fun _ a => unchecked Eq.refl a
 
-/--
-Rule k should not fire for `Acc`.
--/
-bad_thm ruleKAcc.{u} : ∀ (α : Sort u) (p : α → α → Prop) (x : α) (h : Acc p x) (a : Bool),
-  Acc.rec (motive := fun _ _ => Bool) (fun _ _ _=> a) h = a :=
-  fun α p x h a => unchecked Eq.refl a
-
 /-- Type checking Nat literals -/
 good_decl (.defnDecl {
   name := `aNatLit
@@ -1098,21 +1091,16 @@ are still definitionally equal. Just applying proof irrelevance at `Sort 0` isn'
 -/
 good_def proofIrrelevanceWhnf : ∀ (p : id Prop) (h1 h2 : p), h1 = h2 := fun _ _ _ => rfl
 
-axiom anElem : aType
-axiom anotherElem : aType
-axiom aPropFamily : aProp → Prop
-axiom aPropFamilyProof : ∀ h : aType → aProp, aPropFamily (h anotherElem)
-
 /--
 Proof irrelevance applies to any two terms of a proposition, not just to variables.
-Checking this definition needs `aPropFamily (h anElem) ≡ aPropFamily (h anotherElem)`,
-i.e. `h anElem ≡ h anotherElem`. Both are proofs of `aProp`, since `h : aType → aProp`,
-so they are definitionally equal even though their arguments are not. A checker that
-compares the two applications structurally, without first noticing that they are
-proofs, wrongly rejects this.
+Checking this definition needs `F (h b) ≡ F (h a)`, i.e. `h b ≡ h a`. Both are proofs of
+`P`, since `h : A → P`, so they are definitionally equal even though their arguments are
+not. A checker that compares the two applications structurally, without first noticing
+that they are proofs, wrongly rejects this.
 -/
-good_def proofIrrelevanceUnderBinder : ∀ h : aType → aProp, aPropFamily (h anElem) :=
-  aPropFamilyProof
+good_def proofIrrelevanceUnderBinder :
+    ∀ (A : Type) (a b : A) (P : Prop) (F : P → Prop) (h : A → P), F (h b) → F (h a) :=
+  fun _ _ _ _ _ _ x => x
 
 /-- Unit eta -/
 good_def unitEta1 : ∀ (x y : Unit), x = y := fun _ _ => rfl
@@ -1129,8 +1117,8 @@ inductive IndexedUnit : Bool → Type where
 /--
 The unit-like rule, which makes any two elements of a single-constructor type with
 no fields definitionally equal, is also restricted to non-recursive structures
-*without indices* (`is_def_eq_unit_like` goes through `is_non_rec_structure`), so it
-does not fire for `IndexedUnit`.
+*without indices* (in the official kernel, `is_def_eq_unit_like` went through
+`is_non_rec_structure` when this test was written), so it does not fire for `IndexedUnit`.
 -/
 bad_def indexedUnitEta : ∀ (x y : IndexedUnit true), x = y :=
   fun x y => unchecked Eq.refl x
@@ -1142,9 +1130,10 @@ inductive IndexedSingleton : Bool → Type where
   | mk : True → IndexedSingleton true
 
 /--
-Structure eta applies only to *non-recursive structures without indices*: the
-official kernel's `is_non_rec_structure` requires `nindices == 0`, so it does not
-fire for `IndexedSingleton` even though that has a single constructor.
+Structure eta applies only to *non-recursive structures without indices* (the
+official kernel's `is_non_rec_structure` required `nindices == 0` when this test was
+written), so it does not fire for `IndexedSingleton` even though that has a single
+constructor.
 
 Every field of `IndexedSingleton.mk` is a proof, so a kernel that checks only
 "has a single constructor" and then compares the fields against projections
@@ -1203,15 +1192,17 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
   }
   ]
 
 /--
 Rejection: recursive occurrence in *index position*, behind a further arrow.
 
-We build an indexed inductive `I : Type → Type` with a constructor argument
+We build an indexed inductive `I : Prop → Prop` with a constructor argument
 `Nat → I (I α)`, so the recursive occurrence appears as an index argument.
+(It is a proposition so that its field `α : Prop` is allowed; for that it is
+impredicative.)
 -/
 bad_raw_consts
   let n := `reflOccInIndex
@@ -1219,21 +1210,21 @@ bad_raw_consts
       name := n ++ `mk
       levelParams := []
       type :=
-        arrow (n := `α) (.sort 1) <|
+        arrow (n := `α) (.sort 0) <|
         arrow (arrow (Lean.mkConst ``Nat) <|
-          Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (.bvar 0))) <|
+          Lean.mkApp (Lean.mkConst n) (Lean.mkApp (Lean.mkConst n) (.bvar 1))) <|
         Lean.mkApp (Lean.mkConst n) (.bvar 1)
       numParams := 0
       induct := n
       cidx := 0
-      numFields := 1
+      numFields := 2
       isUnsafe := false
   },
   dummyRecInfo n,
   .inductInfo {
       name := n
       levelParams := []
-      type := arrow (n := `α) (.sort 1) (.sort 1)
+      type := arrow (n := `α) (.sort 0) (.sort 0)
       numParams := 0
       numIndices := 1
       all := [n]
@@ -1241,7 +1232,7 @@ bad_raw_consts
       numNested := 0
       isRec := false
       isUnsafe := false
-      isReflexive := false
+      isImpredicative := true, isK := false, hasProjections := false, hasEta := false, hasLargeElim := false
   }
   ]
 
@@ -1255,6 +1246,7 @@ good_decl
   let n := `reduceCtorParamRefl
   .inductDecl (lparams := []) (nparams := 1) (isUnsafe := false) [{
     name := n
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
     type := arrow (.sort 1) (.sort 1)
     ctors := [{
         name := n ++ `mk
@@ -1281,6 +1273,7 @@ good_decl
   let n := `reduceCtorParamRefl2
   .inductDecl (lparams := []) (nparams := 1) (isUnsafe := false) [{
     name := n
+    isImpredicative := false, isK := false, hasProjections := true, hasEta := false, hasLargeElim := true
     type := arrow (.sort 1) (.sort 1)
     ctors := [{
         name := n ++ `mk
@@ -1321,23 +1314,6 @@ noncomputable def accRecType := @Acc.rec
 
 /-- Asserting the type of `Acc.rec`. -/
 good_consts #[``accRecType]
-
-/-! `Acc` and reduction -/
-
-/-- `Acc.rec` reduces on `Acc.intro`. -/
-good_thm accRecReduction :
-  ∀ {α : Type} (r : α → α → Prop) (a : α)
-    (h : ∀ b, r b a → Acc r b) (p : Bool),
-    Acc.rec (motive := fun _ _ => Bool) (fun _ _ _ => p) (Acc.intro (x := a) h) = p := by
-  intro α r a h p
-  rfl
-
-/-- `Acc.rec` does not have structure eta. -/
-bad_thm accRecNoEta :
-  ∀ {α : Type} (r : α → α → Prop) (a : α)
-    (h : Acc r a) (p : Bool),
-    Acc.rec (motive := fun _ _ => Bool) (fun _ _ _ => p) h = p :=
-  @fun α r a h p => unchecked Eq.refl p
 
 /-! Quotients -/
 
@@ -1442,7 +1418,7 @@ bad_consts #[`DupInd2]
 
 Unsafe and partial declarations can't be used in theorems.
 
-Kernels are permitted to automatically reject or decline whenever they see an unsafe or partial declaration (nanoda does this).
+Kernels are permitted to automatically reject or decline whenever they see an unsafe or partial declaration (nanoda, for example, did this).
 That's reasonable if you're using `lean4export` in the common way where you specify specific constants,
 and only the transitive dependencies of those constants are output.
 In that mode, if unsafe or partial declarations aren't used, they simply won't be output at all.
@@ -1466,7 +1442,7 @@ partial def partialLoop : False := partialLoop
 ```
 
 The reason is that the Lean's *elaborator* only allows `partial def` to be an inhabited type.
-The kernel does not ensure that `.partial` types are inhabited.
+A kernel need not ensure that `.partial` types are inhabited.
 -/
 run_meta Lean.addDecl (.mutualDefnDecl [{
   name := `partialLoop

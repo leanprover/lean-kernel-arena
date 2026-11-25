@@ -18,11 +18,11 @@ description: |
 
   A checker must reject `U` itself: the universe parameters occurring in the
   types of an inductive block and its constructors must be among the block's
-  `levelParams`, exactly as for definitions, theorems and axioms. The official
-  kernel rejects with `invalid reference to undefined universe level parameter
-  'u'`.
+  `levelParams`, exactly as for definitions, theorems and axioms.
 
-  Nanoda, nanoclo and nanobruijn accepted this export. Found by differential
+  Nanoda, nanoclo and nanobruijn accepted this export, while the official
+  kernel rejected it with `invalid reference to undefined universe level
+  parameter 'u'`. Found by differential
   fuzzing of export checkers against the official kernel.
 # Hand-written export file: Lean refuses `U` when elaborating it, so
 # lean4export cannot produce it.

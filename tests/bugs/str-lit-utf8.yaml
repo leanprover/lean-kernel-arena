@@ -1,7 +1,7 @@
 description: |
   Non-ASCII UTF-8 string literal reduction.
 
-  In Lean's kernel, a string literal reduces to `String.ofList` of `Char.ofNat`
+  A string literal reduces to `String.ofList` of `Char.ofNat`
   applied to each Unicode scalar value, not each raw UTF-8 byte.  This test
   checks `"é€😀" = String.ofList [Char.ofNat 0xE9, Char.ofNat 0x20AC, Char.ofNat 0x1F600]`
   by reflexivity, covering 2-, 3-, and 4-byte UTF-8 sequences.

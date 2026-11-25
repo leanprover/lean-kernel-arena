@@ -1,0 +1,14 @@
+description: |
+  An export whose name references are not assigned consecutively.
+
+  The export format specifies that the internalization-table references
+  (`in` for names, `il` for levels and `ie` for expressions) are assigned
+  consecutively and in order, as lean4export does. This file does not follow
+  that: its name references skip numbers. If the "2" and "4" were replaced by
+  "1" and "0", respectively, it would be the expected encoding of
+  `axiom foo : Prop`.
+
+  A checker need not support such files, so it may reject this one; it may
+  also be permissive and accept it.
+file: tests/corner-cases/sparse-name-index.ndjson
+outcome: either

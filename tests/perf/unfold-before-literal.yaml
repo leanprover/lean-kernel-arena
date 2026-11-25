@@ -12,10 +12,10 @@ description: |
   unfolding evaluates `slowA` to a literal first, for **Θ(2^19)**. The test
   asks whether literal arithmetic waits until unfolding has had its chance.
 
-  Official (v4.35.0) needs about 20 s and 1.4 GB here, nearly all of it
+  Official (v4.35.0) needed about 20 s and 1.4 GB here, nearly all of it
   evaluating `slowA`, `slowB` and `slowC`. Distilled from
   AxiomMath/CFSG's `CertificateChecks.KernelJ2Cover.totalC`, where the
-  same shape costs it more than 100 GB.
+  same shape cost it more than 100 GB.
 leanfile: tests/perf/unfold-before-literal.lean
 export-decls: ["unfold_before_literal_1", "unfold_before_literal_2", "unfold_before_literal_3"]
 outcome: accept

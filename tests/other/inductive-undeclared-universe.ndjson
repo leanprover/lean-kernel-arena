@@ -35,7 +35,7 @@
 {"ie":20,"lam":{"binderInfo":"default","name":12,"type":12,"body":5}}
 {"ie":21,"lam":{"binderInfo":"default","name":11,"type":14,"body":20}}
 {"ie":22,"lam":{"binderInfo":"default","name":6,"type":9,"body":21}}
-{"inductive":{"types":[{"all":[2],"ctors":[3,4],"isRec":false,"isReflexive":false,"isUnsafe":false,"levelParams":[],"name":2,"numIndices":0,"numNested":0,"numParams":0,"type":1}],"ctors":[{"cidx":0,"induct":2,"isUnsafe":false,"levelParams":[],"name":3,"numFields":0,"numParams":0,"type":2},{"cidx":1,"induct":2,"isUnsafe":false,"levelParams":[],"name":4,"numFields":0,"numParams":0,"type":2}],"recs":[{"all":[2],"isUnsafe":false,"k":false,"levelParams":[],"name":5,"numIndices":0,"numMinors":2,"numMotives":1,"numParams":0,"rules":[{"ctor":3,"nfields":0,"rhs":19},{"ctor":4,"nfields":0,"rhs":22}],"type":16}]}}
+{"inductive":{"types":[{"all":[2],"ctors":[3,4],"isRec":false,"isUnsafe":false,"isImpredicative":false,"isK":false,"hasProjections":false,"hasEta":false,"hasLargeElim":false,"levelParams":[],"name":2,"numIndices":0,"numNested":0,"numParams":0,"type":1}],"ctors":[{"cidx":0,"induct":2,"isUnsafe":false,"levelParams":[],"name":3,"numFields":0,"numParams":0,"type":2},{"cidx":1,"induct":2,"isUnsafe":false,"levelParams":[],"name":4,"numFields":0,"numParams":0,"type":2}],"recs":[{"all":[2],"isUnsafe":false,"k":false,"levelParams":[],"name":5,"numIndices":0,"numMinors":2,"numMotives":1,"numParams":0,"rules":[],"type":16}]}}
 {"def":{"all":[8],"hints":"abbrev","levelParams":[1],"name":8,"safety":"safe","type":1,"value":2}}
 {"ie":23,"const":{"name":8,"us":[0]}}
 {"thm":{"all":[9],"levelParams":[],"name":9,"type":23,"value":3}}

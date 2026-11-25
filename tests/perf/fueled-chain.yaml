@@ -1,6 +1,6 @@
 description: |
   Distilled from con-leche's fuel-bridge (`_datF`) lemmas, the declarations on
-  which nanobruijn times out on the `con-leche` test.
+  which nanobruijn timed out on the `con-leche` test.
 
   `Fueled α` packages a fuel-indexed family `p : Nat → Except Unit α` with a
   proof whose type mentions `p` twice under binders. A `_datF` lemma states that

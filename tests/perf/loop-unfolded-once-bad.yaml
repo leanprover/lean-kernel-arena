@@ -7,7 +7,7 @@ description: |
   with N = 300, must be rejected: the right side tests the points
   `1 … N` instead of `0 … N - 1`. After the cheap steps the loop bodies
   differ under a binder, which refutes nothing by itself, and checkers then
-  unfold the loop. N is small because official (v4.36.0) refutes in time
+  unfold the loop. N is small because official (v4.36.0) refuted in time
   roughly cubic in N: about 7 s here, and more than 5 minutes for N = 1000.
 leanfile: tests/perf/loop-unfolded-once-bad.lean
 export-decls: ["loop_unfolded_once_bad"]

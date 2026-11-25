@@ -6,6 +6,10 @@ description: |
 
   Kiota accepted this until it was [fixed](https://github.com/sankalpsthakur/kiota/pull/8).
 
+  With the inductive flags of lean4#16595, `NewBool` is exported as a
+  proposition with two constructors that is marked `hasLargeElim`, which a
+  checker must reject.
+
 leanfile: tests/bugs/large-elim-prop-bool.lean
 export-decls: ["boom"]
 outcome: reject

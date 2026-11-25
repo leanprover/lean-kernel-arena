@@ -13,8 +13,8 @@ description: |
   axioms and declines streams that use others.
 language: lean
 url: https://github.com/leanprover/con-leche
-ref: master
-rev: 600d3b583b769176e911b06d20ba16330c9a179b
+ref: renovation
+rev: 3871e1422ac601186d70bfd4b60941fe094121cc
 build: lake build con-leche
 threads: 4
 run: .lake/build/bin/con-leche --verified --jobs=4 "$IN"

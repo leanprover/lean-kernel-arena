@@ -9,7 +9,7 @@ description: |
   (step c N x).1` by `rfl`, the sides differing only in `id c` vs `c`.
 
   A checker that leaves a stuck projection's structure argument alone (as
-  the reference kernel's `whnf_core` does when `reduce_proj` fails) compares
+  the reference kernel's `whnf_core` did when `reduce_proj` failed) compares
   `step (id c) N x =?= step c N x`, tries the arguments first, and is done
   at once. A checker that replaces it by its weak head normal form has lost
   the `step` head and unrolls the recursion tree on both sides:

@@ -16,8 +16,8 @@ want to get bad inductives into the environment, we have to use this.
 public def insertConstInfo (env : Environment) (ci : Lean.ConstantInfo) (key : Name := ci.name) :
     Environment :=
   { env with
-    base.public.constants.map₁ := env.base.public.constants.map₁.insert key ci
-    base.private.constants.map₁ := env.base.private.constants.map₁.insert key ci
+    base.public.constants := env.base.public.constants.insert key ci
+    base.private.constants := env.base.private.constants.insert key ci
     checked := env.checked.map (fun e => { e with constants := e.constants.insert key ci })
   }
 
