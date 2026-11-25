@@ -3,4 +3,5 @@
 {"il":2,"succ":0}
 {"il":1,"succ":2}
 {"ie":0,"sort":1}
-{"axiom":{"isUnsafe":false,"levelParams":[],"name":1,"type":0}}
+{"ie":1,"sort":2}
+{"def":{"all":[1],"hints":"opaque","levelParams":[],"name":1,"safety":"safe","type":0,"value":1}}

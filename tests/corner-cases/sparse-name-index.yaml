@@ -4,9 +4,9 @@ description: |
   The export format specifies that the internalization-table references
   (`in` for names, `il` for levels and `ie` for expressions) are assigned
   consecutively and in order, as lean4export does. This file does not follow
-  that: its name references skip numbers. If the "2" and "4" were replaced by
-  "1" and "0", respectively, it would be the expected encoding of
-  `axiom foo : Prop`.
+  that: its name and expression references skip numbers. If the name "2" were
+  replaced by "1", and the expressions "4" and "6" by "0" and "1", it would be
+  the expected encoding of `def foo : Type := Prop`.
 
   A checker need not support such files, so it may reject this one; it may
   also be permissive and accept it.
