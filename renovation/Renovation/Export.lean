@@ -8,19 +8,6 @@ Exports test cases with the exporter that ships with the Lean toolchain of lean4
 writes the per-inductive feature flags.
 -/
 
-/--
-The metadata line. The toolchain still writes format version `3.1.0`, but the new flags on
-inductive types make this format `3.2.0`, as proposed for lean4#16595.
--/
-def renovationMetadata : Json :=
-  Json.mkObj [
-    ("meta", Json.mkObj [
-      ("exporter", Json.mkObj [("name", "lean4export"), ("version", "3.2.0")]),
-      ("lean", Json.mkObj [("version", versionString), ("githash", githash)]),
-      ("format", Json.mkObj [("version", "3.2.0")])
-    ])
-  ]
-
 /-- Like `M.run`, but with HashMap capacities suitable for small exports. -/
 def M.runSmall (env : Environment) (act : M α) : IO α :=
   StateT.run' (s := {
@@ -79,7 +66,7 @@ def exportDeclsFromEnv (env : Lean.Environment) (constants : Array Name) : IO Un
   let env := Environment.ofKernelEnv (kenv.withConsts (exportClosure kenv constants))
   M.runSmall env do
     initState env ["--export-unsafe"]
-    IO.println renovationMetadata.compress
+    dumpMetadata
     for c in constants do
       modify (fun st => { st with noMDataExprs := {} })
       dumpConstant c

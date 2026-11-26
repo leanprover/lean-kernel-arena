@@ -757,7 +757,7 @@ bad_thm notUnitLikeNoEta : ∀ (p q : UnitFieldNoEta), p = q := fun p q => unche
 
 A partially applied constructor of a structure (lean4#15373), and a recursor of a structure or with
 rule K that is missing its major premise (lean4#15374), are eta-expanded when compared with another
-term. The toolchain does not have the latter yet, so those tests are added without checking them.
+term.
 -/
 
 structure CtorEtaT where
@@ -773,12 +773,12 @@ Function eta between a recursor of a structure that is missing its major premise
 variable: `Prod.rec (fun b c => a (b, c))` eta-expands to `fun p => Prod.rec (fun b c => a (b, c)) p`,
 whose body reduces, by structure eta on `p`, to `a (p.1, p.2)`, which is `a p`.
 -/
-ahead_good_thm etaRecStruct : ∀ (a : Bool × Bool → Bool),
+good_thm etaRecStruct : ∀ (a : Bool × Bool → Bool),
     @Prod.rec Bool Bool (fun _ => Bool) (fun b c => a (b, c)) = a :=
   fun a => unchecked (Eq.refl a)
 
 /-- Function eta between a partially applied recursor with rule K and a free variable. -/
-ahead_good_thm etaRuleK : ∀ (a : true = true → Bool),
+good_thm etaRuleK : ∀ (a : true = true → Bool),
     @Eq (true = true → Bool) (@Eq.rec Bool true (fun _ _ => Bool) (a (Eq.refl true)) true) a :=
   fun a => unchecked (Eq.refl a)
 
