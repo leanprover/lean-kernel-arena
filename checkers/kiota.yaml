@@ -6,7 +6,7 @@ version: "0.1.0"
 language: rust
 url: https://github.com/sankalpsthakur/kiota
 ref: main
-rev: 606c3c08f892243d83faadf33ae2acd8bf218f78
+rev: f7c09605e8fe7dc7ddcb3b1650aeb259793ee3aa
 build: cargo build --release
 run: ./target/release/kiota "$IN"
 timeout: 5680
