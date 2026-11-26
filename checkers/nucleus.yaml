@@ -20,10 +20,10 @@ declines:
   - std
   - perf/grind-ring-5
   - perf/gf3-matrix-product
-url: https://github.com/heathsanchez/test
-ref: research/nucleus-beta-entry-20261126
-rev: 578697991a903ab78d344aa71165d465bef3c3d7
+url: https://github.com/metalogiclabs/nucleus
+ref: main
+rev: cfbafd7531ce8e3d2e439e745c149d1b63ce8999
 build: |
-  cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+  cargo build --locked --release --features diagnostics
 run: |
-  python3 metatron-kernel/arena.py < "$IN"
+  python3 arena.py < "$IN"
