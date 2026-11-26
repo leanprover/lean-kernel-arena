@@ -1,0 +1,16 @@
+description: |
+  [con-ron-stream](https://github.com/liaoliaojun/con-ron/tree/feat/con-ron-stream)
+  is an experimental disk-backed driver for con-ron. It reads lean4export
+  NDJSON and materializes proof-only terms as needed. The entry keeps the
+  existing con-ron checking core and runs with four workers in --verified
+  mode. The experimental streaming driver is not formally verified.
+language: rust
+url: https://github.com/liaoliaojun/con-ron
+ref: feat/con-ron-stream
+rev: 92e8450df937bbdbe45a629a2e69dbfb6e7e977c
+threads: 4
+build: cargo build --locked --release --bin con-ron-stream
+run: |
+  cache_dir=$(mktemp -d "${TMPDIR:-/tmp}/con-ron-stream.XXXXXXXX") || exit 3
+  trap 'rm -rf -- "$cache_dir"' EXIT
+  ./target/release/con-ron-stream --verified --jobs=4 --cache-dir="$cache_dir" "$IN"
