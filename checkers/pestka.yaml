@@ -37,19 +37,22 @@ description: |
   does not meet. Caches are bounded by default (low-memory mode).
 
   Pestka 0.2.0 checks all of CFSG (39,656,013 declarations) in 2:01:19 on
-  64 workers (AWS r7a.16xlarge) at 128.4 GiB peak memory.
+  64 workers (AWS r7a.16xlarge) at 128.4 GiB peak memory. Pestka 0.2.1
+  reads exports without `isReflexive` (Susz kind 8) and follows the
+  renovation's rules: `Quot` in `Sort (max 1 u)`, complete level
+  comparison, eta for partial applications and unit-like types.
 
-  The build installs `susz` 0.1.4 and the Aver release pinned in
+  The build installs `susz` 0.5.0 and the Aver release pinned in
   `.aver-version` (0.38.0) from crates.io, and builds Pestka with a profile from
   checking `Init`. The same source compiled to WebAssembly is the
   `pestka-wasm` entry.
 language: aver
-version: "0.2.0"
+version: "0.2.2"
 url: https://github.com/jasisz/pestka
-ref: v0.2.0
-rev: b58afd24297e42fe8ee7f1545ea95aceb7b9d078
+ref: v0.2.2
+rev: 72162e89e5008ca405646ccebb2c0f685aed1d45
 build: |
-  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.1.4 --locked --root "$PWD/.susz"
+  RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.5.0 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
   curl -sSfL -o init.susz https://huggingface.co/datasets/jasisz/susz/resolve/108beeec4e2524eeee237330ec6dd99ee2e50216/susz-0.1/init.susz
   echo "b775c241147ff359c4b50aceef2f47282dad9123ecb9f39e28b3c4db21d638d4  init.susz" | sha256sum -c
