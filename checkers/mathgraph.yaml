@@ -11,29 +11,20 @@ description: |
   optimizations, and removal of redundant work found through profiling and
   differential testing.
 
-  This revision strengthens recursor validation, nested-name and universe
-  scope checks, and closure equality, and repairs literal natural-number
-  shifts including open operands that reduce to numerals. It retains two
-  worker threads. The checker reports its raw exit status to the Arena.
+  This revision integrates the sokonanoda core at 9a021b6, with compact term
+  and value identifiers and persistent reconstructed inductive blocks. It
+  retains MathGraph source-record correspondence checks, type checking of
+  changed computation rules, and closed and open Nat-shift repairs. It uses
+  two checking workers and reports its raw exit status to the Arena.
 
   Maintained by [Metalogic Labs](https://mathgraph.org/).
-version: "flash-2026-11-25"
+version: "flash-2026-11-26"
 language: rust
 threads: 2
 url: https://github.com/metalogiclabs/mathgraph-lean-kernel
-ref: release-candidate/flash-20261125
-rev: 819d59c34db3fd8f7b790a83f5728f255f75f33e
+ref: release-candidate/flash-20261126
+rev: bc704eebed4e009bc66af1a849f18315c11f1926
 build: |
-  cat > config.json <<__END__
-   {
-     "use_stdin": true,
-     "nat_extension": true,
-     "string_extension": true,
-     "unpermitted_axiom_hard_error": false,
-     "unsafe_permit_all_axioms": true,
-     "num_threads": 2
-   }
-  __END__
   RUSTFLAGS="-C target-cpu=native" cargo build --release --locked
 run: |
-  target/release/sokonanoda config.json < "$IN"
+  target/release/sokonanoda --stdin --nat-extension --string-extension --axiom-allow-all --threads 2 < "$IN"
