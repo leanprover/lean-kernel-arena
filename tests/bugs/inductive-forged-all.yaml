@@ -1,0 +1,23 @@
+description: |
+  Proof of `False` from a forged inductive block whose `all` list starts with
+  an already-declared valid inductive type.
+
+  The export first declares the ordinary empty proposition `False` (with
+  `False.rec`).  It then emits a second `inductive` record containing
+  `Fake : Prop` with constructor `Fake.mk : False` (whose return type is
+  `False`, not `Fake`) and `recs: []`, setting `Fake`'s `all` list to
+  `[False, Fake]`.  Finally `theorem inconsistent : False := Fake.mk` proves
+  `False` without axioms.
+
+  A checker that checks an inductive declaration by delegating to `all[0]`
+  without verifying that `all[0]` belongs to the same inductive block (and that
+  the block's `all` lists match) resolves `all[0]` to the already-validated
+  `False`, skips validating `Fake` and `Fake.mk`, and admits `Fake.mk : False`.
+
+  rpylean accepted this export because `check_inductive` delegated to
+  `get_decl(kind.all[0])` without verifying block membership or matching `all`
+  lists.
+# Hand-written export file: `lean4export` cannot produce an inductive whose
+# `all` list references a previously declared inductive block.
+file: tests/bugs/inductive-forged-all.ndjson
+outcome: reject

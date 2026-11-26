@@ -1,0 +1,29 @@
+description: |
+  Proof of `False` by projecting a non-propositional field out of a
+  parameterized `Prop`-valued structure.
+
+  The export declares a parameterized single-constructor inductive in `Prop`:
+  ```
+  inductive PBox (α : Type) : Prop where
+    | mk (val : α) : PBox α
+  ```
+  Its type `∀ (α : Type), Prop` is a `ForAll` whose terminal result sort is
+  `Prop`, so `PBox Bool` is a proposition and `PBox.mk true` and `PBox.mk false`
+  are definitionally equal by proof irrelevance. The definition
+  `obs (x : PBox Bool) : Bool := x.0` illegally projects the `Type`-valued
+  field out of `PBox Bool`, and transporting along
+  `eq_p : PBox.mk true = PBox.mk false` derives `inconsistent : False` without
+  axioms.
+
+  A sound kernel must check the terminal sort of the inductive's type (peeling
+  all parameter `ForAll` binders, or inferring the type of the applied
+  structure type, rather than checking whether the outer type node is `Sort 0`)
+  when rejecting non-propositional projections out of a `Prop` structure.
+
+  rpylean accepted this export (reported as
+  [Julian/rpylean#37](https://github.com/Julian/rpylean/issues/37)) because
+  projection type inference checked whether the outer node of `ind.type` was a
+  `Sort` rather than peeling parameter binders to the terminal sort.
+leanfile: tests/bugs/proj-of-param-prop.lean
+export-decls: ["inconsistent"]
+outcome: reject
