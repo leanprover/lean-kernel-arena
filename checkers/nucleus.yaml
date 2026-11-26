@@ -22,7 +22,7 @@ declines:
   - perf/gf3-matrix-product
 url: https://github.com/metalogiclabs/nucleus
 ref: main
-rev: 7bdae211f73a031bb22f53ca1e444c4e0ac7cea9
+rev: cfbafd7531ce8e3d2e439e745c149d1b63ce8999
 build: |
   cargo build --locked --release --features diagnostics
 run: |
