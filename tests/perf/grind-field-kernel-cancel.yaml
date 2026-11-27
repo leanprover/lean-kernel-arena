@@ -1,0 +1,35 @@
+description: |
+  A **grind field-solver benchmark** from the Lean 4 test suite
+  (`tests/elab_bench/grind_field_kernel_cancel.lean`, leanprover/lean4#15944).
+
+  Each of the 20 theorems states `Expr.cancelInvs_cert invs a b = true` by
+  `Eq.refl true`, where `a` is `x₀² · x₁ · p`, `b` is `x₀ · p`, `p` is a
+  linear polynomial in 64 further variables, and `invs` says that `x₀` is the
+  inverse of `x₁`. Checking it means evaluating the certificate in the kernel:
+  normalizing both sides to polynomials and cancelling `x₀ · x₁`, which needs
+  fast reduction of `Nat`, `Int` and list-heavy code.
+leanfile: tests/perf/grind-field-kernel-cancel.lean
+export-decls:
+  - cancelInv_0
+  - cancelInv_1
+  - cancelInv_2
+  - cancelInv_3
+  - cancelInv_4
+  - cancelInv_5
+  - cancelInv_6
+  - cancelInv_7
+  - cancelInv_8
+  - cancelInv_9
+  - cancelInv_10
+  - cancelInv_11
+  - cancelInv_12
+  - cancelInv_13
+  - cancelInv_14
+  - cancelInv_15
+  - cancelInv_16
+  - cancelInv_17
+  - cancelInv_18
+  - cancelInv_19
+outcome: accept
+compare-perf: true
+timeout: 120
