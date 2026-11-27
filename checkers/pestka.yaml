@@ -46,10 +46,10 @@ description: |
   `.aver-version` (0.38.0) from crates.io, and builds Pestka with a profile from
   checking `Init`.
 language: aver
-version: "0.2.2"
+version: "0.2.3"
 url: https://github.com/jasisz/pestka
-ref: v0.2.2
-rev: 72162e89e5008ca405646ccebb2c0f685aed1d45
+ref: v0.2.3
+rev: 667826b4b9971254f254769b095a8c9fde5ecce8
 build: |
   RUSTFLAGS="-C target-cpu=native" cargo install susz --version 0.5.0 --locked --root "$PWD/.susz"
   cargo install aver-lang --version "$(cat .aver-version)" --locked --root "$PWD/.aver"
