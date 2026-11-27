@@ -1,0 +1,29 @@
+description: |
+  Proof of `False` from an ordinary safe definition named `Tree.rec_1`
+  hijacking the auxiliary recursor of a nested inductive type.
+
+  The export declares `Pair (f : Prop → Prop) : Type 1` (`mk (p : Prop) (h : f p)`)
+  and `Box (α : Type) : Type` (`mk (val : α)`), and defines an ordinary safe
+  function `def Tree.rec_1.{u}` taking 6 arguments and returning
+  `Pair.mk (fun _ => True) False True.intro`.
+
+  It then declares a nested inductive `Tree : Type` (`leaf : Tree`,
+  `node : Box Tree → Tree`, `numNested: 1`) whose `recs` list contains only
+  `Tree.rec` (whose `node` rule calls `Tree.rec_1.{u}`) and omits `Tree.rec_1`.
+  A checker that does not reject a nested inductive when a generated auxiliary
+  recursor name (`Tree.rec_1`) is missing from the block and occupied by a
+  non-recursor declaration admits `Tree.rec` with its rule pointing at the
+  pre-declared `def Tree.rec_1`.
+
+  Instantiating `Tree.rec` with motive `Pair (fun p => p)` on
+  `Tree.node (Box.mk Tree.leaf)` evaluates through the hijacked `Tree.rec_1` to
+  `Pair.mk (fun _ => True) False True.intro` at static type `Pair (fun p => p)`,
+  whose second projection `Pair.1` has type `(Tree.rec ...).0 ≡ False`
+  (`inconsistent : False`), without axioms.
+
+  rpylean accepted this export because nested inductive checking did not verify
+  that every generated auxiliary recursor name (`T.rec_k`) was declared as a
+  matching recursor in the same block.
+leanfile: tests/bugs/nested-rec-hijack.lean
+export-decls: ["inconsistent"]
+outcome: reject

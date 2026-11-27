@@ -1,0 +1,23 @@
+description: |
+  Constant application supplying more universe levels than the referenced
+  declaration declares.
+
+  The export declares a monomorphic theorem `mono : ∀ (p : Prop), p → p` (with
+  `levelParams: []`) and `theorem tooManyLevels : ∀ (p : Prop), p → p := mono.{0}`,
+  which instantiates `mono` with one universe level (`0`) instead of zero.
+  Neither declaration depends on `Init.Prelude`.
+
+  Unlike `bugs/constlevels` (which supplies too few levels alongside a type
+  mismatch to trigger undefined behavior in lazy delta unfolding),
+  `tooManyLevels` is otherwise well-typed and never unfolds `mono`: a checker
+  that fast-paths empty `levelParams` or zips `decl.levelParams` with `const.us`
+  without enforcing equal lengths silently ignores the trailing universe level
+  and accepts the export.
+
+  rpylean accepted this export (reported as
+  [Julian/rpylean#38](https://github.com/Julian/rpylean/issues/38)) because
+  constant reference checking and type inference bypassed the level-count check
+  when `decl.levels` was empty.
+leanfile: tests/bugs/const-level-arity.lean
+export-decls: ["tooManyLevels"]
+outcome: reject
