@@ -1,0 +1,29 @@
+description: |
+  Proof of `False` from a kernel that computes `Nat.log2` on literals by its name.
+
+  The Lean kernel computes natively only `Nat.succ` and the fourteen binary
+  operations (`Nat.add` … `Nat.pow`); every other constant, `Nat.log2`
+  included, is an ordinary definition that reduces by unfolding its body.
+  This export brings its own small prelude in which
+
+      def Nat.log2 : Nat → Nat := fun n => n
+
+  is well-typed, so `Nat.log2 8` is `8`. The theorem
+
+      boom : Nat.log2 = L → Nat.log2 8 = 3 → L 8 = 8 → False
+
+  (with `L := fun n => n`) is valid, and `T.final : False` applies it to
+  `rfl`, `rfl`, `rfl`. A checker that evaluates `Nat.log2 8` to `3` natively
+  accepts the middle `rfl` and with it `False`; the reference kernel unfolds
+  the definition and rejects it. See `bugs/nat-log2-not-native` for the
+  valid counterpart.
+
+  Gruszka accepted this export up to 0.2.2 (fixed in
+  [7a88499](https://github.com/jasisz/gruszka/commit/7a88499)). nano-lean
+  accepts it as of v0.4.3 ([issue](ISSUE_URL)).
+# Hand-edited export file: Lean will not let a file redefine `Nat.log2`.
+# lean4export (Lean v4.35.0) exported `boom` and its dependencies from a file
+# defining `X.log2 : Nat → Nat := fun n => n` and `L`; the name `X.log2` was
+# then renamed to `Nat.log2` in the name table and `T.final` appended.
+file: tests/bugs/nat-log2-not-native-bad.ndjson
+outcome: reject

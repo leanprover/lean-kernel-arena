@@ -1,0 +1,17 @@
+description: |
+  `Nat.log2` is an ordinary definition: it reduces by unfolding its body,
+  not by native computation on literals.
+
+  The export brings its own `def Nat.log2 : Nat → Nat := fun n => n` (see
+  `bugs/nat-log2-not-native-bad`) and proves
+
+      T.t : Nat.log2 8 = 8 := rfl
+
+  which the reference kernel accepts. A checker that computes `Nat.log2 8`
+  natively gets `3` and rejects it.
+
+  nano-lean rejects it as of v0.4.3 ([issue](ISSUE_URL)).
+# Hand-edited export file, made as bugs/nat-log2-not-native-bad.ndjson is,
+# with `T.t` appended instead of `T.final`.
+file: tests/bugs/nat-log2-not-native.ndjson
+outcome: accept
