@@ -802,20 +802,8 @@ bad_thm etaRecNoEta : ∀ (f : NEPair → Bool),
 /-! ## Quotients live in `Sort (max 1 u)` (lean4#15023)
 
 With lean4#15023, the kernel declares `Quot.{u} {α : Sort u} (r : α → α → Prop) : Sort (max 1 u)`
-rather than `… : Sort u`, so that quotients of propositions are types, not propositions. This is
-not in the toolchain of lean4#16595 yet, so the type of `Quot` is replaced here, bypassing the
-kernel, and these tests are written out with that `Quot`. From here on, every test sees it.
+rather than `… : Sort u`, so that quotients of propositions are types, not propositions.
 -/
-
-open Lean in
-run_meta do
-  let some (.quotInfo v) := (← getEnv).find? ``Quot | throwError "Quot not found"
-  -- `∀ {α : Sort u} (r : α → α → Prop), Sort u` becomes `…, Sort (max 1 u)`
-  let rec go : Expr → Expr
-    | .forallE n d b bi => .forallE n d (go b) bi
-    | .sort u => .sort (mkLevelMax (mkLevelSucc .zero) u)
-    | e => e
-  addConstInfos #[.quotInfo { v with type := go v.type }]
 
 open Lean in
 /-- `Quot.{0} (fun _ _ : True => True)`, a quotient of a proposition -/

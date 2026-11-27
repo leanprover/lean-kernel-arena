@@ -20,15 +20,13 @@ propositions are types.
 
 Some of these changes are not in the toolchain of lean4#16595 yet. The good tests of complete
 level comparison and of lean4#15372 are added without the kernel checking them
-(`ahead_good_thm`, `levelEqTest`, `levelLeTest`), and warn once the kernel accepts them; for
-lean4#15023, the type of `Quot` is replaced by hand, bypassing the kernel. Only a kernel with
-these changes gets them right.
+(`ahead_good_thm`, `levelEqTest`, `levelLeTest`), and warn once the kernel accepts them. Only a
+kernel with these changes gets them right.
 
 The tests are written out like the tutorial tests, with the exporter that ships with the
 toolchain of lean4#16595.
 
 ## Toolchain
 
-The project is pinned to the PR release of lean4#16595 (at `cb63311`). The generator checks
-that its kernel accepts every good test (except those ahead of it) and rejects every bad one
-(for the tests of lean4#15023: with the replaced `Quot`).
+The project is pinned to the PR release of lean4#16595 (at `a8ad4db`). The generator checks
+that its kernel accepts every good test (except those ahead of it) and rejects every bad one.
