@@ -20,7 +20,7 @@ description: |
 
   Gruszka accepted this export up to 0.2.2 (fixed in
   [7a88499](https://github.com/jasisz/gruszka/commit/7a88499)). nano-lean
-  accepts it as of v0.4.3 ([issue](ISSUE_URL)).
+  accepts it as of v0.4.3 ([issue](https://github.com/sdiehl/nano-lean/issues/7)).
 # Hand-edited export file: Lean will not let a file redefine `Nat.log2`.
 # lean4export (Lean v4.35.0) exported `boom` and its dependencies from a file
 # defining `X.log2 : Nat → Nat := fun n => n` and `L`; the name `X.log2` was

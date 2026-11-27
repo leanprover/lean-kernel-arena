@@ -10,7 +10,7 @@ description: |
   which the reference kernel accepts. A checker that computes `Nat.log2 8`
   natively gets `3` and rejects it.
 
-  nano-lean rejects it as of v0.4.3 ([issue](ISSUE_URL)).
+  nano-lean rejects it as of v0.4.3 ([issue](https://github.com/sdiehl/nano-lean/issues/7)).
 # Hand-edited export file, made as bugs/nat-log2-not-native-bad.ndjson is,
 # with `T.t` appended instead of `T.final`.
 file: tests/bugs/nat-log2-not-native.ndjson
